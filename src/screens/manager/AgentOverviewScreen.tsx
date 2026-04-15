@@ -45,8 +45,6 @@ export default function AgentOverviewScreen() {
       <AnimatedSection index={0}>
         <SectionHeader
           title={t('manager.agentPerformance', 'Agent Performance')}
-          action={t('common.thisMonth', 'This Month')}
-          onAction={() => {}}
           style={styles.headerSpacing}
         />
       </AnimatedSection>
@@ -63,7 +61,6 @@ export default function AgentOverviewScreen() {
             <ThemedCard
               variant="elevated"
               style={styles.agentCard}
-              onPress={() => {}}
             >
               {/* Agent Header */}
               <View style={styles.agentHeader}>
@@ -133,12 +130,12 @@ export default function AgentOverviewScreen() {
       {/* Assign Agent Button */}
       <AnimatedSection index={agents.length + 1}>
         <ThemedButton
-          title={t('manager.assignAgent', 'Assign Agent to Parent')}
-          onPress={() => {}}
+          title={t('manager.manageParents', 'Manage Parents')}
+          onPress={() => router.push('/(app)/parents')}
           variant="primary"
           size="lg"
           fullWidth
-          icon={<Ionicons name="link" size={20} color="#FFFFFF" />}
+          icon={<Ionicons name="people" size={20} color="#FFFFFF" />}
           style={styles.assignButton}
         />
       </AnimatedSection>

@@ -370,12 +370,14 @@ export interface CollectingAgentActivity {
   activityId: number;
   fK_CollectingAgentId: number;
   fK_ParentId?: number;
-  activityType: string;
+  activityType: string | number;
   activityDescription: string;
   notes?: string;
   relatedTransactionId?: number;
   relatedSupportRequestId?: number;
   activityDate: string;
+  parent?: Parent | null;
+  collectingAgent?: CollectingAgent | null;
   createdOn?: string;
   modifiedOn?: string;
 }
@@ -523,6 +525,29 @@ export interface PaidInstallmentsReport {
   totalPaidAmount: number;
   totalPaidCount: number;
   schoolId: number;
+}
+
+export type ReportPeriod = 'week' | 'month' | 'quarter' | 'year';
+
+export interface PaymentTrendPoint {
+  label: string;
+  totalAmount: number;
+  totalTransactions: number;
+}
+
+export interface AgentCollectionSummary {
+  collectingAgentId: number;
+  agentName: string;
+  totalCollectedAmount: number;
+  totalTransactions: number;
+  sharePercentage: number;
+}
+
+export interface PaymentMethodBreakdown {
+  paymentMethod: string;
+  totalAmount: number;
+  totalTransactions: number;
+  percentage: number;
 }
 
 // ─── Status Constants ───────────────────────────────────────────

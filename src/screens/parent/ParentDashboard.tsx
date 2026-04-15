@@ -172,7 +172,7 @@ const ParentDashboard: React.FC = () => {
           </View>
         </View>
         <Pressable
-          onPress={() => {}}
+          onPress={() => router.push('/(app)/notifications')}
           style={[
             styles.bellBtn,
             { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.full },
@@ -220,9 +220,9 @@ const ParentDashboard: React.FC = () => {
 
       {/* Quick Actions */}
       <Animated.View style={[styles.qaRow, qaAnim]}>
-        <QuickAction icon="wallet-outline" label={t('parent.dashboard.payNow', 'Pay Now')} color={theme.colors.primary} onPress={() => {}} index={0} />
-        <QuickAction icon="time-outline" label={t('parent.dashboard.history', 'History')} color={theme.colors.secondary} onPress={() => {}} index={1} />
-        <QuickAction icon="help-circle-outline" label={t('parent.dashboard.support', 'Support')} color={theme.colors.accent} onPress={() => {}} index={2} />
+        <QuickAction icon="wallet-outline" label={t('parent.dashboard.payNow', 'Pay Now')} color={theme.colors.primary} onPress={() => router.push('/(app)/payments')} index={0} />
+        <QuickAction icon="time-outline" label={t('parent.dashboard.history', 'History')} color={theme.colors.secondary} onPress={() => router.push('/(app)/payment-history')} index={1} />
+        <QuickAction icon="help-circle-outline" label={t('parent.dashboard.support', 'Support')} color={theme.colors.accent} onPress={() => router.push('/(app)/support')} index={2} />
       </Animated.View>
 
       {/* Upcoming Dues */}
@@ -230,10 +230,15 @@ const ParentDashboard: React.FC = () => {
         <SectionHeader
           title={t('parent.dashboard.upcomingDues', 'Upcoming Dues')}
           action={t('common.seeAll', 'See All')}
-          onAction={() => {}}
+          onAction={() => router.push('/(app)/payments')}
         />
         {upcomingDues.map((due) => (
-          <ThemedCard key={due.id} variant="elevated" onPress={() => {}} style={styles.dueCard}>
+          <ThemedCard
+            key={due.id}
+            variant="elevated"
+            onPress={() => router.push({ pathname: '/(app)/payment-detail', params: { installmentId: due.id } })}
+            style={styles.dueCard}
+          >
             <View style={styles.dueHeader}>
               <View style={styles.dueFlex}>
                 <ThemedText variant="subtitle">{due.childName}</ThemedText>

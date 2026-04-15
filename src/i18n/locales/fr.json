@@ -494,6 +494,22 @@
         "1": "Paiements en attente",
         "2": "Total élèves",
         "3": "Nombre en attente"
+      },
+      "export": {
+        "title": "Rapport EduFrais",
+        "period": "Période",
+        "students": "Élèves",
+        "activeParents": "Parents actifs",
+        "pendingPayments": "Paiements en attente",
+        "pendingInstallments": "Échéances en attente",
+        "collectedInPeriod": "Collecté sur la période",
+        "paymentTrend": "Tendance des paiements",
+        "transactions": "transactions",
+        "noPayments": "Aucun paiement traité enregistré",
+        "topAgents": "Meilleurs agents",
+        "noAgentCollections": "Aucune collecte d'agent enregistrée",
+        "paymentMethods": "Méthodes de paiement",
+        "noPaymentMethods": "Aucune activité de méthode de paiement enregistrée"
       }
     },
     "students": {
@@ -600,7 +616,11 @@
     "typeMonthly": "Mensuel",
     "typeQuarterly": "Trimestriel",
     "typeWeekly": "Hebdomadaire",
-    "typeCustom": "Personnalisé"
+    "typeCustom": "Personnalisé",
+    "unitDay": "jour(s)",
+    "unitWeek": "semaine(s)",
+    "unitMonth": "mois",
+    "unitYear": "an(s)"
   },
   "about": {
     "termsIntro": "Bienvenue sur EduFrais. En utilisant notre application, vous acceptez les présentes conditions d'utilisation. Veuillez les lire attentivement avant d'utiliser nos services.",

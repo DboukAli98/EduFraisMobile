@@ -178,7 +178,7 @@ export default function AgentDashboard() {
         <SectionHeader
           title={t('agent.recentCommissions', 'Recent Commissions')}
           action={t('common.viewAll', 'View All')}
-          onAction={() => {}}
+          onAction={() => router.push('/(app)/commissions')}
           style={styles.sectionSpacing}
         />
         {loadingCommissions ? (

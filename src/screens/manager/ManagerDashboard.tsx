@@ -40,7 +40,7 @@ export default function ManagerDashboard() {
   const { t } = useTranslation();
   const router = useRouter();
   const user = useAppSelector((state) => state.auth.user);
-  const schoolId = parseInt(user?.schoolId || '0');
+  const schoolId = parseInt((user?.schoolId ?? '0').split(',')[0], 10);
 
   // Real API calls - same report endpoints as Director
   const { data: activeParentsData, isLoading: loadingParents } = useGetTotalActiveParentInSchoolQuery({ schoolId }, { skip: !schoolId });
@@ -113,6 +113,14 @@ export default function ManagerDashboard() {
               color={theme.colors.warning}
               index={1}
             />
+            <View style={{ width: theme.spacing.md }} />
+            <KPIStatCard
+              title={t('manager.totalAgents', 'Active Agents')}
+              value={String(agents.length)}
+              icon="people"
+              color={theme.colors.success}
+              index={2}
+            />
           </ScrollView>
         )}
       </AnimatedSection>
@@ -122,7 +130,7 @@ export default function ManagerDashboard() {
         <SectionHeader
           title={t('manager.agentsOverview', 'Agents Overview')}
           action={t('common.viewAll', 'View All')}
-          onAction={() => {}}
+          onAction={() => router.push('/(app)/agents')}
           style={styles.sectionSpacing}
         />
         {loadingAgents ? (
@@ -182,15 +190,15 @@ export default function ManagerDashboard() {
         <View style={styles.quickActionsRow}>
           <ThemedButton
             title={t('manager.addParent', 'Add Parent')}
-            onPress={() => {}}
+            onPress={() => router.push('/(app)/parents')}
             variant="primary"
             size="md"
             icon={<Ionicons name="person-add" size={18} color="#FFFFFF" />}
             style={styles.quickActionBtn}
           />
           <ThemedButton
-            title={t('manager.processPayment', 'Process Payment')}
-            onPress={() => {}}
+            title={t('manager.reviewPayments', 'Review Payments')}
+            onPress={() => router.push('/(app)/reports')}
             variant="secondary"
             size="md"
             icon={
@@ -205,7 +213,7 @@ export default function ManagerDashboard() {
         </View>
         <ThemedButton
           title={t('manager.viewAgents', 'View Agents')}
-          onPress={() => {}}
+          onPress={() => router.push('/(app)/agents')}
           variant="ghost"
           size="md"
           fullWidth

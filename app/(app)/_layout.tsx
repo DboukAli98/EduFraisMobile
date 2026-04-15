@@ -82,7 +82,7 @@ export default function AppLayout() {
           tabBarIcon: ({ color, size }) => (
             <TabIcon name="card-outline" color={color} size={size} />
           ),
-          href: role === 'parent' || role === 'director' || role === 'manager' ? undefined : null,
+          href: role === 'parent' || role === 'director' ? undefined : null,
         }}
       />
       <Tabs.Screen
@@ -216,6 +216,22 @@ export default function AppLayout() {
       />
       <Tabs.Screen
         name="payment-invoice"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="support"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="support-request"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="agent-detail"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="agent-activities"
         options={{ href: null }}
       />
     </Tabs>

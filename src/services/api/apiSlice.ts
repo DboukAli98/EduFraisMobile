@@ -111,6 +111,10 @@ import type {
   PendingPaymentsReport,
   ActiveParentsReport,
   PaidInstallmentsReport,
+  PaymentTrendPoint,
+  AgentCollectionSummary,
+  PaymentMethodBreakdown,
+  ReportPeriod,
 } from '../../types';
 
 export const apiSlice = createApi({
@@ -470,7 +474,7 @@ export const apiSlice = createApi({
     // COLLECTING AGENTS
     // ═══════════════════════════════════════════════════════════
     getAllAgents: builder.query<PagedResponse<CollectingAgent>, { schoolId?: number } & PaginationRequest>({
-      query: (params) => ({ url: '/collectingagent/GetAllCollectingAgents', params }),
+      query: (params) => ({ url: '/collectingagent/GetCollectingAgents', params }),
       providesTags: ['Agents'],
     }),
     getAgentDetails: builder.query<ApiResponse<CollectingAgent>, { agentId: number }>({
@@ -677,6 +681,27 @@ export const apiSlice = createApi({
       query: (params) => ({ url: '/reports/GetTotalActiveParentInSchool', params: { statusId: 1, ...params } }),
       providesTags: ['Reports'],
     }),
+    getSchoolPaymentTrend: builder.query<
+      ApiResponse<PaymentTrendPoint[]>,
+      { schoolId: number; period?: ReportPeriod; statusId?: number }
+    >({
+      query: (params) => ({ url: '/reports/GetSchoolPaymentTrend', params: { statusId: 8, period: 'month', ...params } }),
+      providesTags: ['Reports'],
+    }),
+    getSchoolAgentCollectionSummary: builder.query<
+      ApiResponse<AgentCollectionSummary[]>,
+      { schoolId: number; period?: ReportPeriod; statusId?: number }
+    >({
+      query: (params) => ({ url: '/reports/GetSchoolAgentCollectionSummary', params: { statusId: 8, period: 'month', ...params } }),
+      providesTags: ['Reports'],
+    }),
+    getSchoolPaymentMethodBreakdown: builder.query<
+      ApiResponse<PaymentMethodBreakdown[]>,
+      { schoolId: number; period?: ReportPeriod; statusId?: number }
+    >({
+      query: (params) => ({ url: '/reports/GetSchoolPaymentMethodBreakdown', params: { statusId: 8, period: 'month', ...params } }),
+      providesTags: ['Reports'],
+    }),
 
     // ═══════════════════════════════════════════════════════════
     // COMMON
@@ -790,6 +815,9 @@ export const {
   useGetStudentCountBySchoolQuery,
   useGetInstallmentsPendingPaymentsTotalQuery,
   useGetTotalActiveParentInSchoolQuery,
+  useGetSchoolPaymentTrendQuery,
+  useGetSchoolAgentCollectionSummaryQuery,
+  useGetSchoolPaymentMethodBreakdownQuery,
   // Common
   useAlterModuleStatusMutation,
 } = apiSlice;

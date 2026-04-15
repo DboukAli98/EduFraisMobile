@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, StyleSheet, Pressable, Alert } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,11 +13,15 @@ import {
   ThemedInput,
   SectionHeader,
 } from '../../components';
-import { useAddSupportRequestMutation } from '../../services/api/apiSlice';
+import { useAddSupportRequestMutation, useGetSchoolDirectorQuery } from '../../services/api/apiSlice';
+import {
+  SUPPORT_PRIORITIES,
+  SUPPORT_REQUEST_DIRECTIONS,
+  SUPPORT_REQUEST_STATUSES,
+} from '../../constants';
 
-// --- Types ---
 type RequestType = 'General' | 'Payment' | 'Help';
-type Priority = 'Low' | 'Medium' | 'High' | 'Urgent';
+type Priority = keyof typeof SUPPORT_PRIORITIES;
 
 const REQUEST_TYPES: { key: RequestType; icon: keyof typeof Ionicons.glyphMap }[] = [
   { key: 'General', icon: 'chatbubble-outline' },
@@ -50,31 +54,78 @@ export default function SupportRequestFormScreen() {
 
   const [addSupportRequest, { isLoading: isSubmitting }] = useAddSupportRequestMutation();
   const user = useAppSelector((state) => state.auth.user);
+  const role = user?.role;
   const schoolId = user?.schoolId ? parseInt(user.schoolId.split(',')[0], 10) : 0;
-  const parentId = user?.entityUserId ? parseInt(user.entityUserId, 10) : undefined;
+  const entityId = user?.entityUserId ? parseInt(user.entityUserId, 10) : 0;
+  const isParent = role === 'parent';
+  const isAgent = role === 'agent';
+  const isSupportedRole = isParent || isAgent;
+
+  const {
+    data: directorData,
+  } = useGetSchoolDirectorQuery(
+    { schoolId },
+    { skip: !isAgent || !schoolId },
+  );
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [selectedType, setSelectedType] = useState<RequestType | null>(null);
-  const [selectedPriority, setSelectedPriority] = useState<Priority | null>(null);
+  const [selectedPriority, setSelectedPriority] = useState<Priority | null>('Medium');
 
-  const canSubmit = title.trim() && description.trim() && selectedType && selectedPriority && !isSubmitting;
+  const requestDirection = useMemo(() => {
+    if (isAgent) {
+      return SUPPORT_REQUEST_DIRECTIONS.AgentToDirector;
+    }
+
+    return SUPPORT_REQUEST_DIRECTIONS.ParentToDirector;
+  }, [isAgent]);
+
+  const canSubmit =
+    isSupportedRole &&
+    !!title.trim() &&
+    !!description.trim() &&
+    !!selectedType &&
+    !!selectedPriority &&
+    !isSubmitting;
 
   const handleSubmit = async () => {
-    if (!canSubmit) return;
+    if (!canSubmit) {
+      return;
+    }
+
+    if (!schoolId || !entityId) {
+      Alert.alert(
+        t('common.error', 'Error'),
+        t('support.missingIdentity', 'Your account is missing the required support request details.'),
+      );
+      return;
+    }
+
+    if (isAgent && !directorData?.data?.directorId) {
+      Alert.alert(
+        t('common.error', 'Error'),
+        t('support.missingDirector', 'No director is configured for this school yet.'),
+      );
+      return;
+    }
+
     try {
       await addSupportRequest({
-        requestDirection: 'parent',
+        requestDirection,
         supportRequestModel: {
           title: title.trim(),
           description: description.trim(),
           supportRequestType: selectedType!,
-          statusId: 1,
+          statusId: SUPPORT_REQUEST_STATUSES.Pending,
           schoolId,
-          parentId,
+          parentId: isParent ? entityId : undefined,
+          collectingAgentId: isAgent ? entityId : undefined,
+          directorId: isAgent ? directorData?.data?.directorId : undefined,
           priority: selectedPriority!,
         },
       }).unwrap();
+
       Alert.alert(
         t('common.success', 'Success'),
         t('support.requestSubmitted', 'Your support request has been submitted.'),
@@ -83,14 +134,28 @@ export default function SupportRequestFormScreen() {
     } catch (error: any) {
       Alert.alert(
         t('common.error', 'Error'),
-        error?.data?.message || t('support.submitError', 'Failed to submit support request.'),
+        error?.data?.message ||
+          error?.data?.error ||
+          t('support.submitError', 'Failed to submit support request.'),
       );
     }
   };
 
+  if (!isSupportedRole) {
+    return (
+      <ScreenContainer>
+        <ThemedText variant="h2" style={styles.unsupportedTitle}>
+          {t('support.newRequest', 'New Request')}
+        </ThemedText>
+        <ThemedText variant="body" color={theme.colors.textSecondary}>
+          {t('support.unsupportedRole', 'Support request creation is currently available for parent and agent accounts.')}
+        </ThemedText>
+      </ScreenContainer>
+    );
+  }
+
   return (
     <ScreenContainer>
-      {/* Title Input */}
       <AnimatedSection index={0}>
         <ThemedInput
           label={t('support.title', 'Title')}
@@ -101,7 +166,6 @@ export default function SupportRequestFormScreen() {
         />
       </AnimatedSection>
 
-      {/* Type Selector */}
       <AnimatedSection index={1}>
         <SectionHeader title={t('support.type', 'Type')} style={styles.sectionLabel} />
         <View style={styles.chipRow}>
@@ -141,7 +205,6 @@ export default function SupportRequestFormScreen() {
         </View>
       </AnimatedSection>
 
-      {/* Priority Selector */}
       <AnimatedSection index={2}>
         <SectionHeader title={t('support.priority', 'Priority')} style={styles.sectionLabel} />
         <View style={styles.chipRow}>
@@ -175,7 +238,6 @@ export default function SupportRequestFormScreen() {
         </View>
       </AnimatedSection>
 
-      {/* Description */}
       <AnimatedSection index={3}>
         <ThemedInput
           label={t('support.description', 'Description')}
@@ -191,7 +253,6 @@ export default function SupportRequestFormScreen() {
         />
       </AnimatedSection>
 
-      {/* Submit Button */}
       <AnimatedSection index={4}>
         <ThemedButton
           title={isSubmitting ? t('common.loading', 'Submitting...') : t('support.submitRequest', 'Submit Request')}
@@ -211,6 +272,10 @@ export default function SupportRequestFormScreen() {
 }
 
 const styles = StyleSheet.create({
+  unsupportedTitle: {
+    marginTop: 8,
+    marginBottom: 12,
+  },
   topInput: {
     marginTop: 8,
   },

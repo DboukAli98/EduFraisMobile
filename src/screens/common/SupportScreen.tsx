@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../theme';
-import { useAnimatedEntry, staggerDelay } from '../../hooks';
+import { useAnimatedEntry, staggerDelay, useAppSelector } from '../../hooks';
 import {
   ScreenContainer,
   ThemedText,
@@ -15,10 +15,10 @@ import {
   LoadingSkeleton,
 } from '../../components';
 import { useGetAllSupportRequestsQuery } from '../../services/api/apiSlice';
+import { SUPPORT_REQUEST_DIRECTIONS, SUPPORT_REQUEST_STATUSES } from '../../constants';
 import { formatDate } from '../../utils';
 import type { SupportRequest } from '../../types';
 
-// --- Types ---
 type SupportFilter = 'all' | 'open' | 'inProgress' | 'resolved';
 
 const FILTERS: { key: SupportFilter; label: string }[] = [
@@ -28,32 +28,48 @@ const FILTERS: { key: SupportFilter; label: string }[] = [
   { key: 'resolved', label: 'Resolved' },
 ];
 
-// statusId mapping: 1 = Open, 2 = In Progress, 3 = Resolved
 const getStatusLabel = (statusId: number): string => {
   switch (statusId) {
-    case 1: return 'Open';
-    case 2: return 'In Progress';
-    case 3: return 'Resolved';
-    default: return 'Open';
+    case SUPPORT_REQUEST_STATUSES.Pending:
+      return 'Open';
+    case SUPPORT_REQUEST_STATUSES.InProgress:
+      return 'In Progress';
+    case SUPPORT_REQUEST_STATUSES.Resolved:
+      return 'Resolved';
+    case SUPPORT_REQUEST_STATUSES.Cancelled:
+      return 'Cancelled';
+    default:
+      return 'Open';
   }
 };
 
 const getStatusColor = (statusId: number, colors: any): string => {
   switch (statusId) {
-    case 1: return colors.warning;
-    case 2: return colors.info;
-    case 3: return colors.success;
-    default: return colors.warning;
+    case SUPPORT_REQUEST_STATUSES.Pending:
+      return colors.warning;
+    case SUPPORT_REQUEST_STATUSES.InProgress:
+      return colors.info;
+    case SUPPORT_REQUEST_STATUSES.Resolved:
+      return colors.success;
+    case SUPPORT_REQUEST_STATUSES.Cancelled:
+      return colors.error;
+    default:
+      return colors.warning;
   }
 };
 
 const getPriorityColor = (priority: string, colors: any): string => {
   switch (priority) {
-    case 'Low': return colors.info;
-    case 'Medium': return colors.warning;
-    case 'High': return colors.accent;
-    case 'Urgent': return colors.error;
-    default: return colors.info;
+    case 'Low':
+      return colors.info;
+    case 'Medium':
+      return colors.warning;
+    case 'High':
+      return colors.accent;
+    case 'Urgent':
+      return colors.error;
+    default:
+      return colors.info;
   }
 };
 
@@ -73,29 +89,69 @@ export default function SupportScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<SupportFilter>('all');
+  const role = useAppSelector((state) => state.auth.user?.role);
 
-  const { data: supportData, isLoading } = useGetAllSupportRequestsQuery({
-    pageNumber: 1,
-    pageSize: 20,
-    filterByCurrentUser: true,
-  });
+  const source = useMemo(() => {
+    if (role === 'agent') {
+      return SUPPORT_REQUEST_DIRECTIONS.AgentToDirector;
+    }
+
+    if (role === 'parent') {
+      return SUPPORT_REQUEST_DIRECTIONS.ParentToDirector;
+    }
+
+    return null;
+  }, [role]);
+
+  const { data: supportData, isLoading } = useGetAllSupportRequestsQuery(
+    {
+      source: source ?? undefined,
+      pageNumber: 1,
+      pageSize: 20,
+      filterByCurrentUser: true,
+    },
+    { skip: !source },
+  );
 
   const requests = supportData?.data ?? [];
 
-  const filteredRequests = requests.filter((r: SupportRequest) => {
-    if (activeFilter === 'all') return true;
-    if (activeFilter === 'open') return r.fK_StatusId === 1;
-    if (activeFilter === 'inProgress') return r.fK_StatusId === 2;
-    return r.fK_StatusId === 3;
+  const filteredRequests = requests.filter((request: SupportRequest) => {
+    if (activeFilter === 'all') {
+      return true;
+    }
+
+    if (activeFilter === 'open') {
+      return request.fK_StatusId === SUPPORT_REQUEST_STATUSES.Pending;
+    }
+
+    if (activeFilter === 'inProgress') {
+      return request.fK_StatusId === SUPPORT_REQUEST_STATUSES.InProgress;
+    }
+
+    return request.fK_StatusId === SUPPORT_REQUEST_STATUSES.Resolved;
   });
+
+  if (!source) {
+    return (
+      <ScreenContainer>
+        <EmptyState
+          icon="chatbubbles-outline"
+          title={t('support.noRequests', 'No Support Requests')}
+          description={t(
+            'support.unsupportedRole',
+            'Support request tracking is currently available for parent and agent accounts.',
+          )}
+        />
+      </ScreenContainer>
+    );
+  }
 
   return (
     <ScreenContainer>
-      {/* New Request Button */}
       <AnimatedSection index={0}>
         <ThemedButton
           title={t('support.newRequest', 'New Request')}
-          onPress={() => { }}
+          onPress={() => router.push('/(app)/support-request')}
           variant="primary"
           size="md"
           fullWidth
@@ -104,7 +160,6 @@ export default function SupportScreen() {
         />
       </AnimatedSection>
 
-      {/* Filter Chips */}
       <AnimatedSection index={1}>
         <View style={styles.filterRow}>
           {FILTERS.map((filter) => {
@@ -136,7 +191,6 @@ export default function SupportScreen() {
         </View>
       </AnimatedSection>
 
-      {/* Request List */}
       {isLoading ? (
         <>
           <LoadingSkeleton width="100%" height={80} borderRadius={12} style={{ marginBottom: 10 }} />
@@ -163,7 +217,6 @@ export default function SupportScreen() {
               <ThemedCard
                 variant="elevated"
                 style={styles.requestCard}
-                onPress={() => { }}
               >
                 <View style={styles.requestHeader}>
                   <ThemedText
@@ -182,7 +235,6 @@ export default function SupportScreen() {
                 </View>
 
                 <View style={styles.badgeRow}>
-                  {/* Type Badge */}
                   <View
                     style={[
                       styles.badge,
@@ -201,7 +253,6 @@ export default function SupportScreen() {
                     </ThemedText>
                   </View>
 
-                  {/* Priority Badge */}
                   <View
                     style={[
                       styles.badge,
@@ -220,7 +271,6 @@ export default function SupportScreen() {
                     </ThemedText>
                   </View>
 
-                  {/* Status Badge */}
                   <View
                     style={[
                       styles.badge,

@@ -494,6 +494,22 @@
         "1": "Pending Payments",
         "2": "Total Students",
         "3": "Pending Count"
+      },
+      "export": {
+        "title": "EduFrais Report",
+        "period": "Period",
+        "students": "Students",
+        "activeParents": "Active parents",
+        "pendingPayments": "Pending payments",
+        "pendingInstallments": "Pending installments",
+        "collectedInPeriod": "Collected in period",
+        "paymentTrend": "Payment trend",
+        "transactions": "transactions",
+        "noPayments": "No processed payments recorded",
+        "topAgents": "Top agents",
+        "noAgentCollections": "No agent collections recorded",
+        "paymentMethods": "Payment methods",
+        "noPaymentMethods": "No payment method activity recorded"
       }
     },
     "students": {
@@ -600,7 +616,11 @@
     "typeMonthly": "Monthly",
     "typeQuarterly": "Quarterly",
     "typeWeekly": "Weekly",
-    "typeCustom": "Custom"
+    "typeCustom": "Custom",
+    "unitDay": "day(s)",
+    "unitWeek": "week(s)",
+    "unitMonth": "month(s)",
+    "unitYear": "year(s)"
   },
   "about": {
     "termsIntro": "Welcome to EduFrais. By using our application, you agree to these terms of service. Please read them carefully before using our services.",

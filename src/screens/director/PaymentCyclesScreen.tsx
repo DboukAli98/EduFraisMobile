@@ -85,7 +85,7 @@ const CycleCard: React.FC<{ cycle: PaymentCycle; index: number; gradeFee: number
         : cycle.paymentCycleType === 'Weekly'
           ? `52 ${t('cycles.installments', 'installments')}`
           : cycle.intervalCount && cycle.intervalUnit != null
-            ? `${t('cycles.every', 'Every')} ${cycle.intervalCount} ${typeof cycle.intervalUnit === 'string' ? cycle.intervalUnit.toLowerCase() : (['day', 'week', 'month', 'year'][cycle.intervalUnit as any] || '')}(s)`
+            ? `${t('cycles.every', 'Every')} ${cycle.intervalCount} ${t(`cycles.unit${typeof cycle.intervalUnit === 'string' ? cycle.intervalUnit : (['Day', 'Week', 'Month', 'Year'][cycle.intervalUnit as any] || '')}`, '')}`
             : '';
 
   return (
@@ -716,7 +716,7 @@ export default function PaymentCyclesScreen() {
                         color={isActive ? theme.colors.primary : theme.colors.text}
                         style={{ fontWeight: isActive ? '700' : '400', marginTop: 4 }}
                       >
-                        {ct.key}
+                        {t(`cycles.type${ct.key}`, ct.key)}
                       </ThemedText>
                       {ct.count !== null && (
                         <ThemedText variant="caption" color={theme.colors.textTertiary} style={{ fontSize: 10 }}>
@@ -769,7 +769,7 @@ export default function PaymentCyclesScreen() {
                                 color={isActive ? '#fff' : theme.colors.text}
                                 style={{ fontWeight: isActive ? '600' : '400', fontSize: 11 }}
                               >
-                                {u}
+                                {t(`cycles.unit${u}`, u)}
                               </ThemedText>
                             </Pressable>
                           );

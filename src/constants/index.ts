@@ -36,6 +36,20 @@ export const SUPPORT_PRIORITIES = {
   Urgent: "Urgent",
 } as const;
 
+export const SUPPORT_REQUEST_STATUSES = {
+  Pending: 6,
+  InProgress: 11,
+  Resolved: 14,
+  Stall: 15,
+  Cancelled: 9,
+} as const;
+
+export const SUPPORT_REQUEST_DIRECTIONS = {
+  ParentToDirector: "PARENT_TO_DIRECTOR",
+  ParentToAgent: "PARENT_TO_AGENT",
+  AgentToDirector: "AGENT_TO_DIRECTOR",
+} as const;
+
 export const ANIMATION_DURATION = {
   fast: 150,
   normal: 250,
