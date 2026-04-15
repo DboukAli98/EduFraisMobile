@@ -78,24 +78,43 @@ export default function AddChildScreen() {
   const handleSubmit = useCallback(async () => {
     if (!validate()) return;
     try {
-      await addChild({
+      const payload = {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        dateOfBirth: dateOfBirth!.toISOString().split('T')[0],
+        dateOfBirth: dateOfBirth!.toISOString().split('T')[0], // "YYYY-MM-DD" for C# DateOnly
         fatherName: fatherName.trim() || undefined,
         parentId,
         schoolId: selectedSchool!.schoolId,
-      }).unwrap();
+      };
+      console.log('[AddChild] payload:', payload);
+      const result = await addChild(payload).unwrap();
+      console.log('[AddChild] success:', result);
       Alert.alert(
         t('common.success', 'Success'),
         t('children.addSuccess', 'Child added successfully. Pending director approval.'),
         [{ text: t('common.done', 'Done'), onPress: () => router.back() }],
       );
     } catch (err: any) {
-      Alert.alert(
-        t('common.error', 'Error'),
-        err?.data?.message || t('children.addError', 'Failed to add child.'),
-      );
+      console.log('[AddChild] error:', JSON.stringify(err, null, 2));
+      // Backend sets response.Error → serialized as `error` (camelCase).
+      // Also handle ASP.NET model-binding errors at err.data.errors.
+      const validationErrors = err?.data?.errors
+        ? Object.values(err.data.errors).flat().join('\n')
+        : null;
+      const message =
+        validationErrors ||
+        err?.data?.error ||
+        err?.data?.Error ||
+        err?.data?.message ||
+        err?.data?.title ||
+        err?.error ||
+        err?.message ||
+        (err?.status === 401
+          ? t('children.authError', 'You are not authorized. Please sign out and sign in again.')
+          : err?.status === 'FETCH_ERROR'
+          ? t('common.networkError', 'Network error. Check your connection.')
+          : t('children.addError', 'Failed to add child.'));
+      Alert.alert(t('common.error', 'Error'), String(message));
     }
   }, [validate, addChild, firstName, lastName, dateOfBirth, fatherName, parentId, selectedSchool, router, t]);
 

@@ -104,36 +104,49 @@ const SignUpScreen: React.FC = () => {
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       e.email = t('auth.emailInvalid');
     }
-    if (!phone.trim() || phone.length < 9) e.phone = t('auth.phoneRequired');
+    if (!phone.trim() || phone.replace(/\D/g, '').length < 9) {
+      e.phone = t('auth.phoneRequired');
+    }
     if (!password.trim() || password.length < 6) {
       e.password = t('auth.passwordMinLength');
     }
     if (password !== confirmPassword) {
       e.confirmPassword = t('auth.passwordMismatch');
     }
-    if (selectedRole === 'parent' && !civilId.trim()) {
-      e.civilId = t('auth.civilIdRequired');
-    }
 
     setErrors(e);
     return Object.keys(e).length === 0;
-  }, [selectedRole, firstName, lastName, email, phone, password, confirmPassword, civilId, t]);
+  }, [selectedRole, firstName, lastName, email, phone, password, confirmPassword, t]);
 
   const handleSignUp = useCallback(async () => {
     if (!validate()) return;
+
+    // The backend's [Authorize(Roles = "...")] is case-sensitive and expects
+    // "Parent" / "Director" / "Agent" / "SuperAdmin". The UI uses lowercase
+    // keys, so map them to the exact strings the backend wants before sending.
+    const ROLE_MAP: Record<UserRole, string> = {
+      parent: 'Parent',
+      director: 'Director',
+      agent: 'Agent',
+      manager: 'Manager',
+      superadmin: 'SuperAdmin',
+    };
+    const apiRole = ROLE_MAP[selectedRole!] || selectedRole!;
 
     setIsLoading(true);
     try {
       const result = await register({
         FirstName: firstName,
         LastName: lastName,
-        Role: selectedRole!,
+        Role: apiRole,
         Password: password,
         SchoolId: needsSchool ? (schoolId ?? 0) : 0,
         CountryCode: COUNTRY_CODE,
-        PhoneNumber: phone,
+        // Prepend the country code shown in the UI next to the input.
+        PhoneNumber: `${countryCode}${phone}`,
         Email: email,
-        CivilId: civilId || undefined,
+        // Backend DB column is NOT NULL — always send a string, never undefined.
+        CivilId: (civilId || '').trim(),
       }).unwrap();
 
       // Auto-login if token returned
@@ -332,7 +345,9 @@ const SignUpScreen: React.FC = () => {
           label={t('auth.phone')}
           value={phone}
           onChangeText={(text) => {
-            setPhone(text);
+            // Keep only digits, and drop a leading zero so "0566..." becomes "566...".
+            const digits = text.replace(/\D/g, '').replace(/^0+/, '');
+            setPhone(digits);
             clearError('phone');
           }}
           placeholder="812 345 678"
@@ -341,7 +356,7 @@ const SignUpScreen: React.FC = () => {
           leftIcon={
             <View style={styles.countryCodeInline}>
               <ThemedText variant="bodySmall" color={theme.colors.textSecondary}>
-                {countryCode}
+                +{countryCode}
               </ThemedText>
               <View style={[styles.codeDivider, { backgroundColor: theme.colors.border }]} />
             </View>

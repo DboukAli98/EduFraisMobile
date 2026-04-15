@@ -1,6 +1,74 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { createApi, fetchBaseQuery, type BaseQueryFn, type FetchArgs, type FetchBaseQueryError } from '@reduxjs/toolkit/query/react';
 import type { RootState } from '../../store/store';
 import { API_BASE_URL } from '../../constants';
+
+// ─── Request/response logger ────────────────────────────────────
+// Wraps fetchBaseQuery so every outbound request is logged, and every
+// response (success or error) is printed. Payment endpoints get extra
+// verbose output so failures are easy to diagnose on the device.
+const rawBaseQuery = fetchBaseQuery({
+  baseUrl: API_BASE_URL,
+  prepareHeaders: (headers, { getState }) => {
+    const token = (getState() as RootState).auth.token;
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+    headers.set('Content-Type', 'application/json');
+    return headers;
+  },
+});
+
+const loggingBaseQuery: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = async (
+  args,
+  api,
+  extraOptions,
+) => {
+  const argsObj = typeof args === 'string' ? { url: args } : args;
+  const url = argsObj.url;
+  const method = (argsObj.method || 'GET').toUpperCase();
+  const isPayment = /\/payments\//i.test(url);
+  const tag = isPayment ? '[API][PAYMENT]' : '[API]';
+  const t0 = Date.now();
+
+  // ── Request
+  if (isPayment) {
+    console.log(
+      `${tag} → ${method} ${API_BASE_URL}${url}`,
+      '\n  body:',
+      argsObj.body ? JSON.stringify(argsObj.body, null, 2) : '(none)',
+      '\n  params:',
+      argsObj.params ? JSON.stringify(argsObj.params) : '(none)',
+    );
+  } else {
+    console.log(`${tag} → ${method} ${url}`);
+  }
+
+  const result = await rawBaseQuery(args, api, extraOptions);
+  const ms = Date.now() - t0;
+
+  // ── Response
+  if ('error' in result && result.error) {
+    console.log(
+      `${tag} ✖ ${method} ${url} (${ms}ms)`,
+      '\n  status:',
+      (result.error as any).status,
+      '\n  data:',
+      JSON.stringify((result.error as any).data, null, 2),
+      '\n  error:',
+      (result.error as any).error,
+    );
+  } else if (isPayment) {
+    console.log(
+      `${tag} ✓ ${method} ${url} (${ms}ms)`,
+      '\n  data:',
+      JSON.stringify((result as any).data, null, 2),
+    );
+  } else {
+    console.log(`${tag} ✓ ${method} ${url} (${ms}ms)`);
+  }
+
+  return result;
+};
 import type {
   LoginRequest,
   LoginResponse,
@@ -47,17 +115,7 @@ import type {
 
 export const apiSlice = createApi({
   reducerPath: 'api',
-  baseQuery: fetchBaseQuery({
-    baseUrl: API_BASE_URL,
-    prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as RootState).auth.token;
-      if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
-      }
-      headers.set('Content-Type', 'application/json');
-      return headers;
-    },
-  }),
+  baseQuery: loggingBaseQuery,
   tagTypes: [
     'Auth', 'Parents', 'Children', 'Schools', 'Payments',
     'Agents', 'Support', 'Notifications', 'Reports', 'Merchandise',
@@ -90,6 +148,13 @@ export const apiSlice = createApi({
     registerPushToken: builder.mutation<BaseResponse, RegisterPushTokenRequest>({
       query: (data) => ({ url: '/authentication/RegisterDevicePushToken', method: 'POST', body: data }),
     }),
+    changePassword: builder.mutation<BaseResponse, { userId: string; currentPassword: string; newPassword: string }>({
+      query: (data) => ({ url: '/authentication/ChangePassword', method: 'POST', body: data }),
+    }),
+
+    sendTestEmail: builder.mutation<BaseResponse, { email: string }>({
+      query: (data) => ({ url: '/authentication/SendTestEmail', method: 'POST', body: data }),
+    }),
 
     // ═══════════════════════════════════════════════════════════
     // PARENTS
@@ -99,7 +164,7 @@ export const apiSlice = createApi({
       providesTags: ['Parents'],
     }),
     getSingleParent: builder.query<ApiResponse<Parent>, { parentId: number }>({
-      query: (params) => ({ url: '/parents/GetSingleParent', params }),
+      query: (params) => ({ url: '/parents/GetSingleParentDetails', params }),
       providesTags: ['Parents'],
     }),
     addParent: builder.mutation<BaseResponse, {
@@ -426,7 +491,7 @@ export const apiSlice = createApi({
       countryCode: string; phoneNumber: string;
       assignedArea?: string; commissionPercentage?: number; statusId: number;
     }>({
-      query: (data) => ({ url: '/collectingagent/EditCollectingAgent', method: 'PUT', body: data }),
+      query: (data) => ({ url: '/collectingagent/EditAgent', method: 'PUT', body: data }),
       invalidatesTags: ['Agents'],
     }),
     assignAgentToParent: builder.mutation<BaseResponse, {
@@ -486,6 +551,12 @@ export const apiSlice = createApi({
     // ═══════════════════════════════════════════════════════════
     getSchoolDirector: builder.query<ApiResponse<Director>, { schoolId: number }>({
       query: (params) => ({ url: '/director/GetSchoolDirector', params }),
+    }),
+    updateDirector: builder.mutation<BaseResponse, {
+      directorId: number; firstname?: string; lastname?: string;
+      email?: string; countryCode?: string; phoneNumber?: string; statusId?: number;
+    }>({
+      query: (data) => ({ url: '/director/UpdateDirector', method: 'PUT', body: data }),
     }),
     getPendingChildren: builder.query<PagedResponse<Child>, { schoolId: number } & PaginationRequest>({
       query: (params) => ({ url: '/director/GetPendingChildren', params }),
@@ -627,6 +698,8 @@ export const {
   useResetPasswordInitMutation,
   useResetPasswordFinalMutation,
   useRegisterPushTokenMutation,
+  useChangePasswordMutation,
+  useSendTestEmailMutation,
   // Parents
   useGetParentsQuery,
   useGetSingleParentQuery,
@@ -694,6 +767,7 @@ export const {
   useRequestCommissionApprovalMutation,
   // Director
   useGetSchoolDirectorQuery,
+  useUpdateDirectorMutation,
   useGetPendingChildrenQuery,
   useApproveChildMutation,
   useRejectChildMutation,

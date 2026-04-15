@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { View, Pressable, StyleSheet, Switch } from 'react-native';
+import React, { useState, useCallback, useEffect } from 'react';
+import { View, Pressable, StyleSheet, Switch, Alert } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -11,9 +11,16 @@ import {
   ThemedButton,
   ThemedInput,
 } from '../../components';
-import { useAuth, useAnimatedEntry } from '../../hooks';
+import { useAuth, useAnimatedEntry, useAppSelector } from '../../hooks';
 import { useTheme } from '../../theme';
 import { COUNTRY_CODE } from '../../constants';
+import {
+  isBiometricAvailable,
+  getBiometricType,
+  authenticateWithBiometric,
+  getStoredCredentials,
+  saveCredentials,
+} from '../../services/biometric';
 
 const SignInScreen: React.FC = () => {
   const { t } = useTranslation();
@@ -31,6 +38,65 @@ const SignInScreen: React.FC = () => {
     {},
   );
   const [apiError, setApiError] = useState('');
+
+  // Biometric state
+  const biometricEnabled = useAppSelector((state) => state.app.biometricEnabled);
+  const [biometricReady, setBiometricReady] = useState(false);
+  const [biometricIcon, setBiometricIcon] = useState<'finger-print-outline' | 'scan-outline'>('finger-print-outline');
+
+  // Check biometric availability on mount and auto-trigger
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      if (!biometricEnabled) return;
+      const available = await isBiometricAvailable();
+      if (!available || !mounted) return;
+      const stored = await getStoredCredentials();
+      if (!stored || !mounted) return;
+      setBiometricReady(true);
+      const type = await getBiometricType();
+      if (type === 'face' && mounted) setBiometricIcon('scan-outline');
+      // Auto-trigger biometric on mount
+      handleBiometricLogin();
+    })();
+    return () => { mounted = false; };
+  }, [biometricEnabled]);
+
+  const handleBiometricLogin = useCallback(async () => {
+    try {
+      const stored = await getStoredCredentials();
+      if (!stored) {
+        Alert.alert(
+          t('auth.biometricError', 'Biometric Error'),
+          t('auth.biometricNoCredentials', 'No saved credentials. Please sign in with your password first.'),
+        );
+        return;
+      }
+      const success = await authenticateWithBiometric(
+        t('auth.biometricPrompt', 'Sign in to EduFrais'),
+      );
+      if (!success) return;
+
+      setApiError('');
+      setIsLoading(true);
+      const result = await login({
+        CountryCode: stored.countryCode,
+        MobileNumber: stored.mobileNumber,
+        Password: stored.password,
+      });
+      if (result.success) {
+        router.replace('/(app)/dashboard');
+      } else {
+        setApiError(result.message || t('auth.invalidCredentials'));
+      }
+    } catch (err: any) {
+      const message =
+        err?.data?.message || err?.data?.Message || err?.message || t('auth.invalidCredentials');
+      setApiError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [login, router, t]);
 
   // Staggered entry animations
   const logoAnim = useAnimatedEntry({ type: 'fadeIn', delay: 0, duration: 400 });
@@ -70,6 +136,14 @@ const SignInScreen: React.FC = () => {
       });
 
       if (result.success) {
+        // Save credentials for biometric login if enabled
+        if (biometricEnabled) {
+          await saveCredentials({
+            countryCode: COUNTRY_CODE,
+            mobileNumber: phone,
+            password,
+          });
+        }
         router.replace('/(app)/dashboard');
       } else {
         setApiError(result.message || t('auth.invalidCredentials'));
@@ -81,7 +155,7 @@ const SignInScreen: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [validate, phone, password, login, router, t]);
+  }, [validate, phone, password, login, router, t, biometricEnabled]);
 
   return (
     <ScreenContainer scrollable padding>
@@ -213,7 +287,7 @@ const SignInScreen: React.FC = () => {
         </ThemedText>
       ) : null}
 
-      {/* Sign In Button + Sign Up Link */}
+      {/* Sign In Button + Biometric + Sign Up Link */}
       <Animated.View style={[styles.buttonSection, buttonAnim]}>
         <ThemedButton
           title={t('auth.signIn')}
@@ -222,6 +296,29 @@ const SignInScreen: React.FC = () => {
           fullWidth
           loading={isLoading}
         />
+
+        {/* Biometric Login Button */}
+        {biometricReady && (
+          <Pressable
+            onPress={handleBiometricLogin}
+            style={[
+              styles.biometricButton,
+              {
+                borderColor: theme.colors.border,
+                borderRadius: theme.borderRadius.md,
+              },
+            ]}
+          >
+            <Ionicons
+              name={biometricIcon}
+              size={28}
+              color={theme.colors.primary}
+            />
+            <ThemedText variant="body" color={theme.colors.primary} style={styles.biometricText}>
+              {t('auth.biometricSignIn', 'Sign in with biometric')}
+            </ThemedText>
+          </Pressable>
+        )}
 
         <View style={styles.signUpRow}>
           <ThemedText variant="bodySmall" color={theme.colors.textSecondary}>
@@ -311,6 +408,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  biometricButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    paddingVertical: 14,
+    gap: 10,
+  },
+  biometricText: {
+    fontWeight: '600',
   },
 });
 

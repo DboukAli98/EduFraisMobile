@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme';
 import ThemedText from './ThemedText';
 
@@ -16,34 +17,41 @@ interface PaymentStatusBadgeProps {
   size?: 'sm' | 'md';
 }
 
+const statusTranslationKey: Record<PaymentStatusType, string> = {
+  Paid: 'payments.paid',
+  Pending: 'payments.pending',
+  Overdue: 'payments.overdue',
+  InProgress: 'payments.inProgress',
+  Failed: 'payments.failed',
+  Cancelled: 'payments.cancelled',
+};
+
 const PaymentStatusBadge: React.FC<PaymentStatusBadgeProps> = ({
   status,
   size = 'md',
 }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
 
-  const getStatusColors = (): { bg: string; text: string } => {
+  const getStatusBg = (): string => {
     switch (status) {
       case 'Paid':
-        return { bg: theme.colors.successLight, text: theme.colors.success };
+        return theme.colors.success;
       case 'Pending':
-        return { bg: theme.colors.warningLight, text: theme.colors.warning };
+        return theme.colors.warning;
       case 'Overdue':
       case 'Failed':
-        return { bg: theme.colors.errorLight, text: theme.colors.error };
+        return theme.colors.error;
       case 'InProgress':
-        return { bg: theme.colors.infoLight, text: theme.colors.info };
+        return theme.colors.info;
       case 'Cancelled':
-        return {
-          bg: theme.colors.disabled,
-          text: theme.colors.disabledText,
-        };
+        return theme.colors.disabled;
       default:
-        return { bg: theme.colors.disabled, text: theme.colors.disabledText };
+        return theme.colors.disabled;
     }
   };
 
-  const colors = getStatusColors();
+  const bg = getStatusBg();
   const isSmall = size === 'sm';
 
   return (
@@ -51,7 +59,7 @@ const PaymentStatusBadge: React.FC<PaymentStatusBadgeProps> = ({
       style={[
         styles.badge,
         {
-          backgroundColor: colors.bg,
+          backgroundColor: bg,
           paddingHorizontal: isSmall ? 8 : 12,
           paddingVertical: isSmall ? 2 : 4,
           borderRadius: theme.borderRadius.full,
@@ -60,10 +68,10 @@ const PaymentStatusBadge: React.FC<PaymentStatusBadgeProps> = ({
     >
       <ThemedText
         variant="caption"
-        color={colors.text}
+        color="#FFFFFF"
         style={isSmall ? styles.smallText : undefined}
       >
-        {status}
+        {t(statusTranslationKey[status] ?? '', status)}
       </ThemedText>
     </View>
   );

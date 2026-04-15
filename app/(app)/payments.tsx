@@ -1,3 +1,3 @@
-import PaymentsScreen from '../../src/screens/common/PaymentsScreen';
+import PaymentsScreen from '../../src/screens/parent/PaymentsScreen';
 
 export default PaymentsScreen;

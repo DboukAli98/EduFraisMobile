@@ -1,3 +1,4 @@
+export { useNotificationHub } from './useNotificationHub';
 export { useResponsive } from './useResponsive';
 export { useAnimatedEntry, staggerDelay } from './useAnimatedEntry';
 

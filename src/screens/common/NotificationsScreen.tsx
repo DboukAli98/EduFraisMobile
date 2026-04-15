@@ -1,11 +1,11 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useEffect } from 'react';
 import { View, StyleSheet, Pressable, RefreshControl, ScrollView, ActivityIndicator } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../theme';
-import { useAnimatedEntry, staggerDelay, useAppSelector } from '../../hooks';
+import { useAnimatedEntry, staggerDelay, useAppSelector, useAppDispatch } from '../../hooks';
 import {
   ScreenContainer,
   ThemedText,
@@ -17,6 +17,7 @@ import {
   useGetNotificationsQuery,
   useMarkAllNotificationsAsReadMutation,
 } from '../../services/api/apiSlice';
+import { setNotifications, markAllRead } from '../../store/slices/notificationSlice';
 import type { AppNotification } from '../../types';
 
 const AnimatedSection: React.FC<{
@@ -39,6 +40,7 @@ export default function NotificationsScreen() {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const userId = useAppSelector((state) => state.auth.user?.id) ?? '';
 
   const {
@@ -51,10 +53,17 @@ export default function NotificationsScreen() {
     { skip: !userId },
   );
 
-  const [markAllAsRead, { isLoading: isMarkingRead }] =
+  const [markAllAsReadMutation, { isLoading: isMarkingRead }] =
     useMarkAllNotificationsAsReadMutation();
 
   const notifications = notificationsData?.data ?? [];
+
+  // Sync API notifications into Redux for badge count
+  useEffect(() => {
+    if (notifications.length > 0) {
+      dispatch(setNotifications(notifications));
+    }
+  }, [notifications, dispatch]);
 
   const todayStr = useMemo(() => new Date().toISOString(), []);
 
@@ -75,11 +84,27 @@ export default function NotificationsScreen() {
   const handleMarkAllRead = useCallback(async () => {
     if (!userId) return;
     try {
-      await markAllAsRead({ userId }).unwrap();
+      await markAllAsReadMutation({ userId }).unwrap();
+      dispatch(markAllRead());
     } catch {
       // Silently fail - user can retry
     }
-  }, [userId, markAllAsRead]);
+  }, [userId, markAllAsReadMutation, dispatch]);
+
+  const handleNotificationPress = useCallback(
+    (notification: AppNotification) => {
+      const type = notification.type?.toLowerCase() || '';
+      if (type === 'payment') {
+        router.push('/(app)/payments');
+      } else if (type === 'approval') {
+        router.push('/(app)/children');
+      } else if (type === 'reminder') {
+        router.push('/(app)/payments');
+      }
+      // For other types, just show the notification (no navigation)
+    },
+    [router],
+  );
 
   const hasNotifications = notifications.length > 0;
 
@@ -153,7 +178,7 @@ export default function NotificationsScreen() {
                   <NotificationItem
                     key={notification.notificationId}
                     notification={notification}
-                    onPress={() => {}}
+                    onPress={handleNotificationPress}
                   />
                 ))}
               </AnimatedSection>
@@ -170,7 +195,7 @@ export default function NotificationsScreen() {
                   <NotificationItem
                     key={notification.notificationId}
                     notification={notification}
-                    onPress={() => {}}
+                    onPress={handleNotificationPress}
                   />
                 ))}
               </AnimatedSection>

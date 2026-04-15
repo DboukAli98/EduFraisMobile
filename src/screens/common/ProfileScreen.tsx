@@ -15,7 +15,28 @@ import {
   UserRoleChip,
 } from '../../components';
 import { useUpdateParentMutation } from '../../services/api/apiSlice';
+import { COUNTRY_CODE } from '../../constants';
 import type { UserRole } from '../../types';
+
+/**
+ * Strip the international country code (and any "+"/"00" prefix) so the input
+ * field shows the local part only — e.g. "242701565490" → "701565490".
+ */
+const toLocalPhone = (raw: string): string => {
+  let d = (raw || '').replace(/\D/g, '');
+  if (d.startsWith('00')) d = d.slice(2);
+  if (d.startsWith(COUNTRY_CODE)) d = d.slice(COUNTRY_CODE.length);
+  return d.replace(/^0+/, '');
+};
+
+/**
+ * Re-attach the country code for persistence so the DB always stores the full
+ * international number — e.g. "701565490" → "242701565490".
+ */
+const toInternationalPhone = (raw: string): string => {
+  const local = toLocalPhone(raw);
+  return local ? `${COUNTRY_CODE}${local}` : '';
+};
 
 const AnimatedSection: React.FC<{
   index: number;
@@ -45,7 +66,8 @@ export default function ProfileScreen() {
   const [firstName, setFirstName] = useState(initialFirstName);
   const [lastName, setLastName] = useState(initialLastName);
   const [email, setEmail] = useState(user?.email || '');
-  const [phone, setPhone] = useState('');
+  // Show the local part only; the country code is re-attached on save.
+  const [phone, setPhone] = useState(toLocalPhone(user?.phoneNumber || ''));
   const [civilId] = useState('');
 
   return (
@@ -123,10 +145,17 @@ export default function ProfileScreen() {
         <ThemedInput
           label={t('profile.phone', 'Phone Number')}
           value={phone}
-          onChangeText={setPhone}
-          placeholder={t('profile.phonePlaceholder', 'Enter phone number')}
+          onChangeText={(v) => setPhone(toLocalPhone(v))}
+          placeholder={t('profile.phonePlaceholder', 'e.g. 701565490')}
           keyboardType="phone-pad"
         />
+        <ThemedText
+          variant="caption"
+          color={theme.colors.textTertiary}
+          style={styles.phoneHint}
+        >
+          {t('profile.phoneHint', `+${COUNTRY_CODE} will be added automatically.`)}
+        </ThemedText>
       </AnimatedSection>
 
       <AnimatedSection index={6}>
@@ -150,7 +179,7 @@ export default function ProfileScreen() {
                   firstName,
                   lastName,
                   email,
-                  phoneNumber: phone,
+                  phoneNumber: toInternationalPhone(phone),
                 }).unwrap();
                 Alert.alert(t('common.success', 'Success'), t('profile.saved', 'Profile updated successfully.'));
               } catch (error: any) {
@@ -200,5 +229,10 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     marginTop: 8,
+  },
+  phoneHint: {
+    marginTop: -8,
+    marginBottom: 8,
+    marginLeft: 4,
   },
 });

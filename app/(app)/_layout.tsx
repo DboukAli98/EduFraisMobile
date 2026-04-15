@@ -1,9 +1,11 @@
 import { Tabs } from 'expo-router';
+import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '../../src/store/store';
-import { AnimatedTabBar } from '../../src/components';
+import { AnimatedTabBar, ThemedText } from '../../src/components';
 import { useTheme } from '../../src/theme';
+import { useNotificationHub } from '../../src/hooks';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -11,10 +13,49 @@ function TabIcon({ name, color, size }: { name: IoniconsName; color: string; siz
   return <Ionicons name={name} size={size} color={color} />;
 }
 
+function NotificationTabIcon({ color, size, badgeCount }: { color: string; size: number; badgeCount: number }) {
+  return (
+    <View>
+      <Ionicons name="notifications-outline" size={size} color={color} />
+      {badgeCount > 0 && (
+        <View style={badgeStyles.badge}>
+          <ThemedText variant="caption" color="#fff" style={badgeStyles.badgeText}>
+            {badgeCount > 99 ? '99+' : badgeCount}
+          </ThemedText>
+        </View>
+      )}
+    </View>
+  );
+}
+
+const badgeStyles = StyleSheet.create({
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -8,
+    backgroundColor: '#EF4444',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    lineHeight: 14,
+  },
+});
+
 export default function AppLayout() {
   const role = useAppSelector((state) => state.auth.user?.role);
+  const unreadCount = useAppSelector((state) => state.notifications.unreadCount);
   const { theme } = useTheme();
   const { t } = useTranslation();
+
+  // Start SignalR notification hub
+  useNotificationHub();
 
   return (
     <Tabs
@@ -129,7 +170,7 @@ export default function AppLayout() {
         options={{
           title: t('notifications.title'),
           tabBarIcon: ({ color, size }) => (
-            <TabIcon name="notifications-outline" color={color} size={size} />
+            <NotificationTabIcon color={color} size={size} badgeCount={unreadCount} />
           ),
         }}
       />
@@ -163,6 +204,18 @@ export default function AppLayout() {
       />
       <Tabs.Screen
         name="merchandise-detail"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="payment-detail"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="payment-history"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="payment-invoice"
         options={{ href: null }}
       />
     </Tabs>

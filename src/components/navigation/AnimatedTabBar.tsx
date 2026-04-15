@@ -68,11 +68,8 @@ const AnimatedTabBar: React.FC<BottomTabBarProps> = ({
       const label = (options.tabBarLabel ?? options.title ?? route.name) as string;
       const isFocused = state.index === index;
 
-      const iconName = (options.tabBarIcon as any)?.({
-        focused: isFocused,
-        color: '',
-        size: 0,
-      })?.props?.name as keyof typeof Ionicons.glyphMap | undefined;
+      // Get the tabBarIcon render function
+      const tabBarIconFn = options.tabBarIcon as any;
 
       const onPress = () => {
         const event = navigation.emit({
@@ -97,7 +94,7 @@ const AnimatedTabBar: React.FC<BottomTabBarProps> = ({
         <TabItem
           key={route.key}
           label={label}
-          iconName={iconName}
+          tabBarIconFn={tabBarIconFn}
           isFocused={isFocused}
           onPress={onPress}
           onLongPress={onLongPress}
@@ -138,7 +135,7 @@ const AnimatedTabBar: React.FC<BottomTabBarProps> = ({
 
 interface TabItemProps {
   label: string;
-  iconName?: keyof typeof Ionicons.glyphMap;
+  tabBarIconFn?: (props: { focused: boolean; color: string; size: number }) => React.ReactNode;
   isFocused: boolean;
   onPress: () => void;
   onLongPress: () => void;
@@ -147,7 +144,7 @@ interface TabItemProps {
 
 const TabItem: React.FC<TabItemProps> = ({
   label,
-  iconName,
+  tabBarIconFn,
   isFocused,
   onPress,
   onLongPress,
@@ -192,11 +189,10 @@ const TabItem: React.FC<TabItemProps> = ({
       accessibilityLabel={label}
     >
       <Animated.View style={animatedIconStyle}>
-        <Ionicons
-          name={iconName ?? 'ellipse-outline'}
-          size={24}
-          color={color}
-        />
+        {tabBarIconFn
+          ? tabBarIconFn({ focused: isFocused, color, size: 24 })
+          : <Ionicons name="ellipse-outline" size={24} color={color} />
+        }
       </Animated.View>
       <ThemedText
         variant="caption"
