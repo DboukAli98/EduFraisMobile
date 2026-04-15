@@ -104,8 +104,8 @@ const CycleCard: React.FC<{ cycle: PaymentCycle; index: number; gradeFee: number
               {cycle.paymentCycleName}
             </ThemedText>
             <View style={styles.cycleMetaRow}>
-              <View style={[styles.typeBadge, { backgroundColor: theme.colors.primaryLight + '20', borderRadius: theme.borderRadius.sm }]}>
-                <ThemedText variant="caption" color={theme.colors.primary} style={{ fontWeight: '600' }}>
+              <View style={[styles.typeBadge, { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.sm }]}>
+                <ThemedText variant="caption" color="#FFFFFF" style={{ fontWeight: '600' }}>
                   {typeLabels[cycle.paymentCycleType] ?? cycle.paymentCycleType}
                 </ThemedText>
               </View>

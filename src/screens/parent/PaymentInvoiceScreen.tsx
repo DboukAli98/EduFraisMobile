@@ -306,14 +306,14 @@ const PaymentInvoiceScreen: React.FC = () => {
           style={[
             styles.statusBadge,
             {
-              backgroundColor: isPaid ? theme.colors.success + '15' : theme.colors.textSecondary + '15',
+              backgroundColor: isPaid ? theme.colors.success : theme.colors.textSecondary,
               borderRadius: theme.borderRadius.md,
             },
           ]}
         >
           <ThemedText
             variant="bodySmall"
-            color={isPaid ? theme.colors.success : theme.colors.textSecondary}
+            color="#FFFFFF"
             style={styles.statusText}
           >
             {isPaid

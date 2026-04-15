@@ -24,42 +24,42 @@ const UserRoleChip: React.FC<UserRoleChipProps> = ({ role }) => {
       case 'parent':
         return {
           label: 'Parent',
-          color: theme.colors.primary,
-          bgColor: theme.colors.primaryLight + '20',
+          color: '#FFFFFF',
+          bgColor: theme.colors.primary,
           icon: 'people-outline',
         };
       case 'director':
         return {
           label: 'Director',
-          color: theme.colors.accent,
-          bgColor: theme.colors.accent + '20',
+          color: '#FFFFFF',
+          bgColor: theme.colors.accent,
           icon: 'shield-outline',
         };
       case 'manager':
         return {
           label: 'Manager',
-          color: theme.colors.lavender,
-          bgColor: theme.colors.lavender + '20',
+          color: '#FFFFFF',
+          bgColor: theme.colors.lavender,
           icon: 'briefcase-outline',
         };
       case 'agent':
         return {
           label: 'Agent',
-          color: theme.colors.secondary,
-          bgColor: theme.colors.secondary + '20',
+          color: '#FFFFFF',
+          bgColor: theme.colors.secondary,
           icon: 'wallet-outline',
         };
       case 'superadmin':
         return {
           label: 'Admin',
-          color: theme.colors.error,
-          bgColor: theme.colors.errorLight,
+          color: '#FFFFFF',
+          bgColor: theme.colors.error,
           icon: 'key-outline',
         };
       default:
         return {
           label: role,
-          color: theme.colors.textSecondary,
+          color: '#FFFFFF',
           bgColor: theme.colors.disabled,
           icon: 'person-outline',
         };

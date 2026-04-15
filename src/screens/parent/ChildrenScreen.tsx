@@ -77,18 +77,15 @@ const ChildCard: React.FC<ChildCardProps> = ({ child, index, onPress }) => {
 
   const statusConfig = {
     approved: {
-      bg: theme.colors.successLight,
-      color: theme.colors.success,
+      bg: theme.colors.success,
       label: t('children.approved', 'Approved'),
     },
     pending: {
-      bg: theme.colors.warningLight,
-      color: theme.colors.warning,
+      bg: theme.colors.warning,
       label: t('children.pending', 'Pending'),
     },
     rejected: {
-      bg: theme.colors.errorLight,
-      color: theme.colors.error,
+      bg: theme.colors.error,
       label: t('children.rejected', 'Rejected'),
     },
   };
@@ -113,10 +110,10 @@ const ChildCard: React.FC<ChildCardProps> = ({ child, index, onPress }) => {
                 <View
                   style={[
                     styles.gradeBadge,
-                    { backgroundColor: theme.colors.primaryLight + '20', borderRadius: theme.borderRadius.sm },
+                    { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.sm },
                   ]}
                 >
-                  <ThemedText variant="caption" color={theme.colors.primary} style={styles.gradeTxt}>
+                  <ThemedText variant="caption" color="#FFFFFF" style={styles.gradeTxt}>
                     {child.gradeName}
                   </ThemedText>
                 </View>
@@ -128,7 +125,7 @@ const ChildCard: React.FC<ChildCardProps> = ({ child, index, onPress }) => {
                   { backgroundColor: sc.bg, borderRadius: theme.borderRadius.full },
                 ]}
               >
-                <ThemedText variant="caption" color={sc.color} style={styles.approvalTxt}>
+                <ThemedText variant="caption" color="#FFFFFF" style={styles.approvalTxt}>
                   {sc.label}
                 </ThemedText>
               </View>

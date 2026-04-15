@@ -143,8 +143,8 @@ const CycleCard: React.FC<{
           <ThemedText variant="subtitle" color={isSelected ? theme.colors.primary : theme.colors.text}>
             {cycle.paymentCycleName}
           </ThemedText>
-          <View style={[styles.typeBadge, { backgroundColor: theme.colors.primaryLight + '20', borderRadius: theme.borderRadius.sm }]}>
-            <ThemedText variant="caption" color={theme.colors.primary} style={{ fontWeight: '600' }}>
+          <View style={[styles.typeBadge, { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.sm }]}>
+            <ThemedText variant="caption" color="#FFFFFF" style={{ fontWeight: '600' }}>
               {cycle.paymentCycleType}
             </ThemedText>
           </View>
@@ -245,9 +245,9 @@ export default function ChildDetailScreen() {
   const isApproved = !isPending && !isRejected;
 
   const statusConfig = useMemo(() => {
-    if (isPending) return { label: t('children.pending', 'Pending'), color: theme.colors.warning, bg: theme.colors.warningLight };
-    if (isRejected) return { label: t('children.rejected', 'Rejected'), color: theme.colors.error, bg: theme.colors.errorLight };
-    return { label: t('children.approved', 'Approved'), color: theme.colors.success, bg: theme.colors.successLight };
+    if (isPending) return { label: t('children.pending', 'Pending'), bg: theme.colors.warning };
+    if (isRejected) return { label: t('children.rejected', 'Rejected'), bg: theme.colors.error };
+    return { label: t('children.approved', 'Approved'), bg: theme.colors.success };
   }, [isPending, isRejected, theme, t]);
 
   // Current grade info
@@ -363,7 +363,7 @@ export default function ChildDetailScreen() {
                     { backgroundColor: statusConfig.bg, borderRadius: theme.borderRadius.full },
                   ]}
                 >
-                  <ThemedText variant="caption" color={statusConfig.color} style={{ fontWeight: '600' }}>
+                  <ThemedText variant="caption" color="#FFFFFF" style={{ fontWeight: '600' }}>
                     {statusConfig.label}
                   </ThemedText>
                 </View>

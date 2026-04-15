@@ -95,7 +95,7 @@ export default function SupportScreen() {
       <AnimatedSection index={0}>
         <ThemedButton
           title={t('support.newRequest', 'New Request')}
-          onPress={() => {}}
+          onPress={() => { }}
           variant="primary"
           size="md"
           fullWidth
@@ -163,7 +163,7 @@ export default function SupportScreen() {
               <ThemedCard
                 variant="elevated"
                 style={styles.requestCard}
-                onPress={() => {}}
+                onPress={() => { }}
               >
                 <View style={styles.requestHeader}>
                   <ThemedText
@@ -187,14 +187,14 @@ export default function SupportScreen() {
                     style={[
                       styles.badge,
                       {
-                        backgroundColor: theme.colors.primaryLight + '15',
+                        backgroundColor: theme.colors.primary,
                         borderRadius: theme.borderRadius.full,
                       },
                     ]}
                   >
                     <ThemedText
                       variant="caption"
-                      color={theme.colors.primary}
+                      color="#FFFFFF"
                       style={{ fontWeight: '600' }}
                     >
                       {request.supportRequestType}
@@ -206,14 +206,14 @@ export default function SupportScreen() {
                     style={[
                       styles.badge,
                       {
-                        backgroundColor: priorityColor + '15',
+                        backgroundColor: priorityColor,
                         borderRadius: theme.borderRadius.full,
                       },
                     ]}
                   >
                     <ThemedText
                       variant="caption"
-                      color={priorityColor}
+                      color="#FFFFFF"
                       style={{ fontWeight: '600' }}
                     >
                       {request.priority}
@@ -225,14 +225,14 @@ export default function SupportScreen() {
                     style={[
                       styles.badge,
                       {
-                        backgroundColor: statusColor + '15',
+                        backgroundColor: statusColor,
                         borderRadius: theme.borderRadius.full,
                       },
                     ]}
                   >
                     <ThemedText
                       variant="caption"
-                      color={statusColor}
+                      color="#FFFFFF"
                       style={{ fontWeight: '600' }}
                     >
                       {statusLabel}

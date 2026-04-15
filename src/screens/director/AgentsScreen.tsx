@@ -79,7 +79,7 @@ const AgentsScreen: React.FC = () => {
   const listAnim = useAnimatedEntry({ type: 'slideUp', delay: staggerDelay(4) });
 
   const renderAgent = ({ item }: { item: CollectingAgent }) => (
-    <ThemedCard variant="elevated" onPress={() => {}} style={styles.agentCard}>
+    <ThemedCard variant="elevated" onPress={() => { }} style={styles.agentCard}>
       <View style={styles.agentRow}>
         <Avatar firstName={item.firstName} lastName={item.lastName} size="lg" />
         <View style={styles.agentInfo}>
@@ -94,10 +94,10 @@ const AgentsScreen: React.FC = () => {
             <View
               style={[
                 styles.commBadge,
-                { backgroundColor: theme.colors.secondary + '20', borderRadius: theme.borderRadius.full },
+                { backgroundColor: theme.colors.secondary, borderRadius: theme.borderRadius.full },
               ]}
             >
-              <ThemedText variant="caption" color={theme.colors.secondary} style={styles.commTxt}>
+              <ThemedText variant="caption" color="#FFFFFF" style={styles.commTxt}>
                 {item.commissionPercentage}%
               </ThemedText>
             </View>
@@ -156,7 +156,7 @@ const AgentsScreen: React.FC = () => {
       <View style={styles.fabContainer}>
         <ThemedButton
           title={t('director.agents.addAgent', 'Add Agent')}
-          onPress={() => {}}
+          onPress={() => { }}
           variant="primary"
           size="lg"
           fullWidth

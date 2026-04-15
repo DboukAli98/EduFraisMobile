@@ -181,8 +181,8 @@ export default function MerchandiseDetailScreen() {
         <Animated.View style={[styles.infoSection, infoAnim]}>
           {/* Category Badge */}
           {category && (
-            <View style={[styles.categoryBadge, { backgroundColor: theme.colors.primaryLight + '20', borderRadius: theme.borderRadius.sm }]}>
-              <ThemedText variant="caption" color={theme.colors.primary} style={{ fontWeight: '600' }}>
+            <View style={[styles.categoryBadge, { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.sm }]}>
+              <ThemedText variant="caption" color="#FFFFFF" style={{ fontWeight: '600' }}>
                 {category.schoolMerchandiseCategoryName}
               </ThemedText>
             </View>
@@ -233,8 +233,8 @@ export default function MerchandiseDetailScreen() {
               <ThemedText variant="caption" color={theme.colors.textSecondary} style={styles.detailLabel}>
                 {t('merchandiseDetail.status', 'Status')}
               </ThemedText>
-              <View style={[styles.statusBadge, { backgroundColor: theme.colors.successLight }]}>
-                <ThemedText variant="caption" color={theme.colors.success} style={{ fontWeight: '600' }}>
+              <View style={[styles.statusBadge, { backgroundColor: theme.colors.success }]}>
+                <ThemedText variant="caption" color="#FFFFFF" style={{ fontWeight: '600' }}>
                   {t('merchandiseDetail.available', 'Available')}
                 </ThemedText>
               </View>
