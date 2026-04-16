@@ -34,7 +34,29 @@ import {
   useGetAllAgentsQuery,
 } from '../../services/api/apiSlice';
 import { formatCurrency, formatDate, formatPhone } from '../../utils';
+import { COUNTRY_CODE } from '../../constants';
 import AgentAreaPicker from './AgentAreaPicker';
+
+/**
+ * Renders an agent phone number consistently, regardless of whether the
+ * backend row stores it as a full international number ("24270156590")
+ * or as a local-only number paired with a separate countryCode column.
+ */
+const formatAgentPhone = (countryCode?: string, phoneNumber?: string): string => {
+  const cc = (countryCode || '').replace(/\D/g, '');
+  const num = (phoneNumber || '').replace(/\s/g, '');
+  if (!num) return cc ? `+${cc}` : '';
+  if (cc && num.startsWith(cc)) return `+${num}`;
+  return cc ? `+${cc} ${num}` : num;
+};
+
+/** Strip the country-code prefix and leading zeros from a stored phone. */
+const toLocalDigits = (countryCode: string | undefined, phoneNumber: string | undefined): string => {
+  const cc = (countryCode || '').replace(/\D/g, '');
+  let digits = (phoneNumber || '').replace(/\D/g, '');
+  if (cc && digits.startsWith(cc)) digits = digits.slice(cc.length);
+  return digits.replace(/^0+/, '');
+};
 
 interface AgentFormState {
   firstName: string;
@@ -135,7 +157,9 @@ const AgentDetailScreen: React.FC = () => {
     setAgentForm({
       firstName: agent.firstName ?? '',
       lastName: agent.lastName ?? '',
-      phoneNumber: agent.phoneNumber ?? '',
+      // Pre-fill with local digits (without the country-code prefix) so the
+      // user edits the human-readable part; we re-attach the prefix on save.
+      phoneNumber: toLocalDigits(agent.countryCode, agent.phoneNumber),
       email: agent.email ?? '',
       assignedArea: agent.assignedArea ?? '',
       commissionPercentage:
@@ -170,14 +194,22 @@ const AgentDetailScreen: React.FC = () => {
     }
 
     try {
+      // Send the full international phone (e.g. "24270156590") so the
+      // CollectingAgent row is stored with the country code baked in.
+      const countryCode = agent.countryCode || COUNTRY_CODE;
+      const localDigits = agentForm.phoneNumber.replace(/\D/g, '').replace(/^0+/, '');
+      const fullPhone = localDigits.startsWith(countryCode)
+        ? localDigits
+        : `${countryCode}${localDigits}`;
+
       await editAgent({
         collectingAgentId: agent.collectingAgentId,
         schoolId: agent.fK_SchoolId,
         firstName: agentForm.firstName.trim(),
         lastName: agentForm.lastName.trim(),
         email: agentForm.email.trim(),
-        countryCode: agent.countryCode,
-        phoneNumber: agentForm.phoneNumber.trim(),
+        countryCode,
+        phoneNumber: fullPhone,
         assignedArea: agentForm.assignedArea.trim() || undefined,
         commissionPercentage: agentForm.commissionPercentage.trim()
           ? Number(agentForm.commissionPercentage)
@@ -261,7 +293,7 @@ const AgentDetailScreen: React.FC = () => {
               {agent.firstName} {agent.lastName}
             </ThemedText>
             <ThemedText variant="bodySmall" color={theme.colors.textSecondary}>
-              +{agent.countryCode} {formatPhone(agent.phoneNumber, '').trim()}
+              {formatAgentPhone(agent.countryCode, agent.phoneNumber)}
             </ThemedText>
             {!!agent.email && (
               <ThemedText variant="caption" color={theme.colors.textTertiary}>
@@ -512,6 +544,11 @@ const AgentDetailScreen: React.FC = () => {
                 }
                 placeholder="812345678"
                 keyboardType="phone-pad"
+                leftIcon={
+                  <ThemedText variant="bodySmall" color={theme.colors.textSecondary}>
+                    +{agent.countryCode || COUNTRY_CODE}
+                  </ThemedText>
+                }
               />
               <ThemedInput
                 label={t('auth.email', 'Email')}

@@ -85,6 +85,16 @@ const SignInScreen: React.FC = () => {
         Password: stored.password,
       });
       if (result.success) {
+        if (result.mustChangePassword) {
+          router.replace({
+            pathname: '/(auth)/change-password-required',
+            params: {
+              userId: (result as any).userId ?? '',
+              currentPassword: stored.password,
+            },
+          });
+          return;
+        }
         router.replace('/(app)/dashboard');
       } else {
         setApiError(result.message || t('auth.invalidCredentials'));
@@ -136,6 +146,21 @@ const SignInScreen: React.FC = () => {
       });
 
       if (result.success) {
+        // If the backend flagged the account as needing a mandatory password
+        // change (e.g. collecting agent's first login with an auto-generated
+        // password), route them to the dedicated change-password screen before
+        // saving biometric credentials or entering the main app.
+        if (result.mustChangePassword) {
+          router.replace({
+            pathname: '/(auth)/change-password-required',
+            params: {
+              userId: (result as any).userId ?? '',
+              currentPassword: password,
+            },
+          });
+          return;
+        }
+
         // Save credentials for biometric login if enabled
         if (biometricEnabled) {
           await saveCredentials({

@@ -64,7 +64,24 @@
     "backToSignIn": "Retour à la connexion",
     "resetPasswordDesc": "Entrez votre numéro de téléphone et nous vous enverrons un lien pour réinitialiser votre mot de passe.",
     "rememberPassword": "Vous vous souvenez de votre mot de passe ?",
-    "registrationSuccess": "Inscription réussie ! Veuillez vous connecter."
+    "registrationSuccess": "Inscription réussie ! Veuillez vous connecter.",
+    "changePasswordRequired": {
+      "title": "Mettez à jour votre mot de passe",
+      "description": "Pour votre sécurité, veuillez remplacer le mot de passe temporaire reçu par un mot de passe personnel avant de continuer.",
+      "currentLabel": "Mot de passe temporaire",
+      "newLabel": "Nouveau mot de passe",
+      "confirmLabel": "Confirmer le nouveau mot de passe",
+      "submit": "Mettre à jour le mot de passe",
+      "currentRequired": "Saisissez votre mot de passe temporaire.",
+      "tooShort": "Le nouveau mot de passe doit comporter au moins 6 caractères.",
+      "mismatch": "Le nouveau mot de passe et sa confirmation ne correspondent pas.",
+      "sameAsCurrent": "Le nouveau mot de passe doit être différent du mot de passe temporaire.",
+      "missingUser": "Session utilisateur manquante. Veuillez vous reconnecter.",
+      "successMessage": "Votre mot de passe a été mis à jour. Veuillez vous reconnecter avec votre nouveau mot de passe.",
+      "genericError": "Impossible de mettre à jour le mot de passe.",
+      "cancelTitle": "Ignorer le changement de mot de passe ?",
+      "cancelBody": "Vous serez déconnecté et devrez vous reconnecter. Continuer ?"
+    }
   },
   "onboarding": {
     "slide1Title": "Gérer les frais scolaires",

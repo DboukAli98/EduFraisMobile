@@ -62,6 +62,22 @@ const INITIAL_AGENT_FORM: AgentFormState = {
   commissionPercentage: '',
 };
 
+/**
+ * Renders an agent phone number consistently, regardless of whether the
+ * backend row stores it as a full international number ("24270156590")
+ * or as a local-only number paired with a separate countryCode column
+ * ("70156590" + "242"). Prevents duplicated country codes in the UI.
+ */
+const formatAgentPhone = (countryCode?: string, phoneNumber?: string): string => {
+  const cc = (countryCode || '').replace(/\D/g, '');
+  const num = (phoneNumber || '').replace(/\s/g, '');
+  if (!num) return cc ? `+${cc}` : '';
+  if (cc && num.startsWith(cc)) {
+    return `+${num}`;
+  }
+  return cc ? `+${cc} ${num}` : num;
+};
+
 const SummaryItem: React.FC<SummaryItemProps> = ({ icon, label, value, color, index }) => {
   const { theme } = useTheme();
   const anim = useAnimatedEntry({ type: 'scaleIn', delay: staggerDelay(index) });
@@ -223,13 +239,21 @@ const AgentsScreen: React.FC = () => {
     }
 
     try {
+      // Send the full international phone so the backend stores e.g.
+      // "24270156590" in the CollectingAgent.PhoneNumber column. The backend
+      // is tolerant of already-prefixed numbers (see AuthenticationService.Register).
+      const localDigits = agentForm.phoneNumber.replace(/\D/g, '').replace(/^0+/, '');
+      const fullPhone = localDigits.startsWith(COUNTRY_CODE)
+        ? localDigits
+        : `${COUNTRY_CODE}${localDigits}`;
+
       await addAgent({
         schoolId,
         firstName: agentForm.firstName.trim(),
         lastName: agentForm.lastName.trim(),
         email: agentForm.email.trim() || undefined,
         countryCode: COUNTRY_CODE,
-        phoneNumber: agentForm.phoneNumber.trim(),
+        phoneNumber: fullPhone,
         assignedArea: agentForm.assignedArea.trim() || undefined,
         commissionPercentage: agentForm.commissionPercentage.trim()
           ? Number(agentForm.commissionPercentage)
@@ -302,7 +326,7 @@ const AgentsScreen: React.FC = () => {
             {item.firstName} {item.lastName}
           </ThemedText>
           <ThemedText variant="caption" color={theme.colors.textSecondary}>
-            +{item.countryCode} {item.phoneNumber}
+            {formatAgentPhone(item.countryCode, item.phoneNumber)}
           </ThemedText>
           {!!item.email && (
             <ThemedText variant="caption" color={theme.colors.textTertiary}>

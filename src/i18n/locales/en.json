@@ -64,7 +64,24 @@
     "backToSignIn": "Back to Sign In",
     "resetPasswordDesc": "Enter your phone number and we'll send you a link to reset your password.",
     "rememberPassword": "Remember your password?",
-    "registrationSuccess": "Registration successful! Please sign in."
+    "registrationSuccess": "Registration successful! Please sign in.",
+    "changePasswordRequired": {
+      "title": "Update your password",
+      "description": "For security, please replace the temporary password you received with a personal one before continuing.",
+      "currentLabel": "Current (temporary) password",
+      "newLabel": "New password",
+      "confirmLabel": "Confirm new password",
+      "submit": "Update password",
+      "currentRequired": "Enter your current (temporary) password.",
+      "tooShort": "The new password must be at least 6 characters.",
+      "mismatch": "The new password and its confirmation do not match.",
+      "sameAsCurrent": "The new password must be different from the temporary one.",
+      "missingUser": "User session is missing. Please sign in again.",
+      "successMessage": "Your password has been updated. Please sign in again with your new password.",
+      "genericError": "Could not update the password.",
+      "cancelTitle": "Skip password change?",
+      "cancelBody": "You will be signed out and will have to sign in again. Continue?"
+    }
   },
   "onboarding": {
     "slide1Title": "Manage School Fees",

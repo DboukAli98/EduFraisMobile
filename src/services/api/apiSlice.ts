@@ -519,6 +519,38 @@ export const apiSlice = createApi({
       query: (params) => ({ url: '/collectingagent/GetParentsCollectingAgents', params }),
       providesTags: ['Agents'],
     }),
+    requestAgentAssignment: builder.mutation<BaseResponse & { collectingAgentParentId?: number }, {
+      collectingAgentId: number; parentId: number; assignmentNotes?: string;
+    }>({
+      query: (data) => ({ url: '/collectingagent/RequestAgentAssignment', method: 'POST', body: data }),
+      invalidatesTags: ['Agents'],
+    }),
+    getPendingAgentRequests: builder.query<
+      PagedResponse<CollectingAgentParents>,
+      { schoolId: number } & PaginationRequest
+    >({
+      query: (params) => ({ url: '/collectingagent/GetPendingAgentRequests', params }),
+      providesTags: ['Agents'],
+    }),
+    getMyAgentRequests: builder.query<
+      PagedResponse<CollectingAgentParents>,
+      { parentId: number } & PaginationRequest
+    >({
+      query: (params) => ({ url: '/collectingagent/GetMyAgentRequests', params }),
+      providesTags: ['Agents'],
+    }),
+    approveAgentRequest: builder.mutation<BaseResponse, {
+      collectingAgentParentId: number; directorId: number; approvalNotes?: string;
+    }>({
+      query: (data) => ({ url: '/collectingagent/ApproveAgentRequest', method: 'POST', body: data }),
+      invalidatesTags: ['Agents', 'Parents'],
+    }),
+    rejectAgentRequest: builder.mutation<BaseResponse, {
+      collectingAgentParentId: number; directorId: number; approvalNotes?: string;
+    }>({
+      query: (data) => ({ url: '/collectingagent/RejectAgentRequest', method: 'POST', body: data }),
+      invalidatesTags: ['Agents', 'Parents'],
+    }),
     getMyActivities: builder.query<
       PagedResponse<CollectingAgentActivity>,
       { startDate?: string; endDate?: string; activityType?: string } & PaginationRequest
@@ -785,6 +817,11 @@ export const {
   useUnassignAgentFromParentMutation,
   useGetAgentParentsQuery,
   useGetParentsCollectingAgentsQuery,
+  useRequestAgentAssignmentMutation,
+  useGetPendingAgentRequestsQuery,
+  useGetMyAgentRequestsQuery,
+  useApproveAgentRequestMutation,
+  useRejectAgentRequestMutation,
   useGetMyActivitiesQuery,
   useLogMyActivityMutation,
   useGetMyCommissionsQuery,

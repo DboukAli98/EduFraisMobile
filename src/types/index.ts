@@ -13,6 +13,11 @@ export interface LoginResponse {
   success: boolean;
   message: string;
   token: string;
+  // Backend sets this to true when the user (typically a freshly-created
+  // collecting agent) logged in with an auto-generated password and must
+  // change it before using the app.
+  mustChangePassword?: boolean;
+  userId?: string;
 }
 
 export interface RegisterRequest {
@@ -424,7 +429,14 @@ export interface CollectingAgentParents {
   unassignedDate?: string;
   isActive: boolean;
   assignmentNotes?: string;
-  fK_AssignedByDirectorId: number;
+  fK_AssignedByDirectorId?: number | null;
+  approvalStatus?: 'Pending' | 'Approved' | 'Rejected' | null;
+  requestedByParent?: boolean;
+  approvalNotes?: string | null;
+  reviewedDate?: string | null;
+  fK_ReviewedByDirectorId?: number | null;
+  collectingAgent?: CollectingAgent;
+  parent?: Parent;
 }
 
 // ─── Director ───────────────────────────────────────────────────
