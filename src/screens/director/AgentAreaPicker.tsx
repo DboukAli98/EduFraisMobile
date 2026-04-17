@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme';
 import { ThemedText } from '../../components';
 
@@ -15,10 +16,14 @@ const AgentAreaPicker: React.FC<AgentAreaPickerProps> = ({
   selectedArea,
   suggestions,
   onSelectArea,
-  title = 'Suggested Areas',
-  description = 'Use a neighborhood, district, or route coverage label.',
+  title,
+  description,
 }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
+
+  const resolvedTitle = title || t('director.agents.suggestedAreas', 'Suggested Areas');
+  const resolvedDescription = description || t('director.agents.suggestedAreasDesc', 'Use a neighborhood, district, or route coverage label.');
 
   const normalizedSuggestions = useMemo(() => {
     const values = [...suggestions];
@@ -40,10 +45,10 @@ const AgentAreaPicker: React.FC<AgentAreaPickerProps> = ({
   return (
     <View style={styles.container}>
       <ThemedText variant="bodySmall" color={theme.colors.textSecondary} style={styles.title}>
-        {title}
+        {resolvedTitle}
       </ThemedText>
       <ThemedText variant="caption" color={theme.colors.textTertiary} style={styles.description}>
-        {description}
+        {resolvedDescription}
       </ThemedText>
 
       {normalizedSuggestions.length === 0 ? (
@@ -58,7 +63,7 @@ const AgentAreaPicker: React.FC<AgentAreaPickerProps> = ({
           ]}
         >
           <ThemedText variant="caption" color={theme.colors.textSecondary}>
-            Save one area and it will appear here as a quick pick for the next agents.
+            {t('director.agents.suggestedAreasEmpty', 'Save one area and it will appear here as a quick pick for the next agents.')}
           </ThemedText>
         </View>
       ) : (

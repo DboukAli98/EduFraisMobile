@@ -433,7 +433,7 @@ const AgentsScreen: React.FC = () => {
               'director.agents.emptyDescription',
               'Create your first collecting agent to start assigning parents.',
             )}
-            actionLabel={t('director.agents.addAgent', 'Add Agent')}
+            actionLabel={t('director.agents.add', 'Add')}
             onAction={() => setIsAddModalVisible(true)}
           />
         ) : (
@@ -450,7 +450,7 @@ const AgentsScreen: React.FC = () => {
       {agents.length > 0 && (
         <View style={styles.fabContainer}>
           <ThemedButton
-            title={t('director.agents.addAgent', 'Add Agent')}
+            title={t('director.agents.add', 'Add')}
             onPress={() => setIsAddModalVisible(true)}
             variant="primary"
             size="lg"
@@ -474,95 +474,97 @@ const AgentsScreen: React.FC = () => {
             ]}
             onPress={(event) => event.stopPropagation()}
           >
-            <ThemedText variant="subtitle" style={styles.modalTitle}>
-              {t('director.agents.addAgent', 'Add Agent')}
-            </ThemedText>
-            <ThemedText
-              variant="caption"
-              color={theme.colors.textSecondary}
-              style={styles.modalDescription}
-            >
-              {t(
-                'director.agents.addAgentDescription',
-                'Create a collecting agent account for this school.',
-              )}
-            </ThemedText>
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <ThemedText variant="subtitle" style={styles.modalTitle}>
+                {t('director.agents.addAgent', 'Add Agent')}
+              </ThemedText>
+              <ThemedText
+                variant="caption"
+                color={theme.colors.textSecondary}
+                style={styles.modalDescription}
+              >
+                {t(
+                  'director.agents.addAgentDescription',
+                  'Create a collecting agent account for this school.',
+                )}
+              </ThemedText>
 
-            <ThemedInput
-              label={t('auth.firstName', 'First Name')}
-              value={agentForm.firstName}
-              onChangeText={(value) => updateAgentForm('firstName', value)}
-              placeholder={t('auth.firstName', 'First Name')}
-            />
-            <ThemedInput
-              label={t('auth.lastName', 'Last Name')}
-              value={agentForm.lastName}
-              onChangeText={(value) => updateAgentForm('lastName', value)}
-              placeholder={t('auth.lastName', 'Last Name')}
-            />
-            <ThemedInput
-              label={t('auth.phone', 'Phone Number')}
-              value={agentForm.phoneNumber}
-              onChangeText={(value) =>
-                updateAgentForm('phoneNumber', value.replace(/[^\d]/g, ''))
-              }
-              placeholder="812345678"
-              keyboardType="phone-pad"
-              leftIcon={
-                <ThemedText variant="bodySmall" color={theme.colors.textSecondary}>
-                  +{COUNTRY_CODE}
-                </ThemedText>
-              }
-            />
-            <ThemedInput
-              label={t('auth.email', 'Email')}
-              value={agentForm.email}
-              onChangeText={(value) => updateAgentForm('email', value)}
-              placeholder="email@example.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            <ThemedInput
-              label={t('director.agents.area', 'Assigned Area')}
-              value={agentForm.assignedArea}
-              onChangeText={(value) => updateAgentForm('assignedArea', value)}
-              placeholder={t(
-                'director.agents.areaPlaceholder',
-                'Neighborhood, district, or route',
-              )}
-            />
-            <AgentAreaPicker
-              selectedArea={agentForm.assignedArea}
-              suggestions={areaSuggestions}
-              onSelectArea={(value) => updateAgentForm('assignedArea', value)}
-            />
-            <ThemedInput
-              label={t('director.agents.commission', 'Commission Percentage')}
-              value={agentForm.commissionPercentage}
-              onChangeText={(value) =>
-                updateAgentForm('commissionPercentage', value.replace(/[^\d.]/g, ''))
-              }
-              placeholder="10"
-              keyboardType="decimal-pad"
-            />
+              <ThemedInput
+                label={t('auth.firstName', 'First Name')}
+                value={agentForm.firstName}
+                onChangeText={(value) => updateAgentForm('firstName', value)}
+                placeholder={t('auth.firstName', 'First Name')}
+              />
+              <ThemedInput
+                label={t('auth.lastName', 'Last Name')}
+                value={agentForm.lastName}
+                onChangeText={(value) => updateAgentForm('lastName', value)}
+                placeholder={t('auth.lastName', 'Last Name')}
+              />
+              <ThemedInput
+                label={t('auth.phone', 'Phone Number')}
+                value={agentForm.phoneNumber}
+                onChangeText={(value) =>
+                  updateAgentForm('phoneNumber', value.replace(/[^\d]/g, ''))
+                }
+                placeholder="812345678"
+                keyboardType="phone-pad"
+                leftIcon={
+                  <ThemedText variant="bodySmall" color={theme.colors.textSecondary}>
+                    {COUNTRY_CODE}
+                  </ThemedText>
+                }
+              />
+              <ThemedInput
+                label={t('auth.email', 'Email')}
+                value={agentForm.email}
+                onChangeText={(value) => updateAgentForm('email', value)}
+                placeholder="email@example.com"
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+              <ThemedInput
+                label={t('director.agents.area', 'Assigned Area')}
+                value={agentForm.assignedArea}
+                onChangeText={(value) => updateAgentForm('assignedArea', value)}
+                placeholder={t(
+                  'director.agents.areaPlaceholder',
+                  'Neighborhood, district, or route',
+                )}
+              />
+              <AgentAreaPicker
+                selectedArea={agentForm.assignedArea}
+                suggestions={areaSuggestions}
+                onSelectArea={(value) => updateAgentForm('assignedArea', value)}
+              />
+              <ThemedInput
+                label={t('director.agents.commission', 'Commission Percentage')}
+                value={agentForm.commissionPercentage}
+                onChangeText={(value) =>
+                  updateAgentForm('commissionPercentage', value.replace(/[^\d.]/g, ''))
+                }
+                placeholder="10"
+                keyboardType="decimal-pad"
+              />
 
-            <View style={styles.modalActions}>
-              <ThemedButton
-                title={t('common.cancel', 'Cancel')}
-                onPress={closeAddModal}
-                variant="ghost"
-                size="md"
-                style={styles.modalButton}
-              />
-              <ThemedButton
-                title={t('director.agents.addAgent', 'Add Agent')}
-                onPress={handleAddAgent}
-                variant="primary"
-                size="md"
-                style={styles.modalButton}
-                loading={isAddingAgent}
-              />
-            </View>
+              <View style={styles.modalActions}>
+                <ThemedButton
+                  title={t('common.cancel', 'Cancel')}
+                  onPress={closeAddModal}
+                  variant="ghost"
+                  size="md"
+                  style={styles.modalButton}
+                />
+                <ThemedButton
+                  title={t('director.agents.addAgent', 'Add Agent')}
+                  onPress={handleAddAgent}
+                  variant="primary"
+                  size="md"
+                  style={styles.modalButton}
+                  loading={isAddingAgent}
+                />
+              </View>
+            </ScrollView>
           </Pressable>
         </Pressable>
       </Modal>

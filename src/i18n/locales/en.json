@@ -572,7 +572,14 @@
       "title": "Agents",
       "totalAgents": "Total Agents",
       "avgCommission": "Avg Commission",
-      "addAgent": "Add Agent"
+      "addAgent": "Add Agent",
+      "add": "Add",
+      "area": "Assigned Area",
+      "areaPlaceholder": "Neighborhood, district, or route",
+      "commission": "Commission Percentage",
+      "suggestedAreas": "Suggested Areas",
+      "suggestedAreasDesc": "Use a neighborhood, district, or route coverage label.",
+      "suggestedAreasEmpty": "Save one area and it will appear here as a quick pick for the next agents."
     },
     "agentRequests": {
       "title": "Agent Requests",

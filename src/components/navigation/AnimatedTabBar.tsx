@@ -1,5 +1,6 @@
 import React, { useRef, useCallback } from 'react';
-import { View, Pressable, StyleSheet, Platform, ScrollView, useWindowDimensions } from 'react-native';
+import { View, Pressable, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useAnimatedStyle,
   withTiming,
@@ -21,6 +22,7 @@ const AnimatedTabBar: React.FC<BottomTabBarProps> = ({
 }) => {
   const { theme } = useTheme();
   const { width: screenWidth } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
 
   // Build visible tabs
@@ -112,6 +114,7 @@ const AnimatedTabBar: React.FC<BottomTabBarProps> = ({
             backgroundColor: theme.colors.tabBar,
             borderTopLeftRadius: theme.borderRadius.xl,
             borderTopRightRadius: theme.borderRadius.xl,
+            paddingBottom: Math.max(insets.bottom, 8),
             ...theme.shadows.lg,
           },
         ]}
@@ -219,7 +222,6 @@ const TabItem: React.FC<TabItemProps> = ({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    paddingBottom: Platform.OS === 'ios' ? 20 : 8,
     paddingTop: 8,
   },
   scrollContent: {

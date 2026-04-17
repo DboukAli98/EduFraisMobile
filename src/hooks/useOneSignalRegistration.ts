@@ -47,6 +47,10 @@ function mapRole(role: UserRole | undefined): string | null {
 }
 
 let oneSignalInitialized = false;
+// Guards the cold-launch permission prompt so it only fires once per
+// process — hot reloads, re-renders, and logout/login cycles all reuse
+// this flag so we never harass the user with repeat OS dialogs.
+let coldLaunchPromptFired = false;
 
 /**
  * Initialise OneSignal once per process. Does NOT request permission —
@@ -71,21 +75,26 @@ function ensureOneSignalReady() {
  * Read the current OneSignal player id (subscription id). Returns
  * null if the SDK isn't ready or the user denied permission.
  *
- * Across the v5 SDK there have been a few accessor names; try them
- * in order so we work whether you're on 5.0.x or 5.2+.
+ * Across the v5 SDK there have been a few accessor names. We
+ * intentionally skip the deprecated sync `getPushSubscriptionId()` —
+ * it prints a yellow-box warning on every call in v5.2+ telling us
+ * to use `getIdAsync()` instead. The property `sub.id` and the
+ * legacy `getId()` method are both still valid and sync, so we
+ * prefer them here and rely on the `pushSubscription.change` event
+ * listener below to pick up the id asynchronously when it arrives
+ * later on first launch (APNS/FCM handshake).
  */
 function readPlayerId(): string | null {
   if (!OneSignal) return null;
   try {
     const sub = OneSignal.User?.pushSubscription;
     if (!sub) return null;
-    if (typeof sub.getPushSubscriptionId === 'function') {
-      return sub.getPushSubscriptionId() ?? null;
-    }
+    // Primary: the `id` property on the subscription object (v5+).
+    if (typeof sub.id === 'string' && sub.id) return sub.id;
+    // Legacy sync accessor — still present and NOT deprecated.
     if (typeof sub.getId === 'function') {
       return sub.getId() ?? null;
     }
-    if (sub.id) return sub.id;
     return null;
   } catch {
     return null;
@@ -243,6 +252,63 @@ export function useOneSignalRegistration() {
   // ── 1) Init OneSignal once ────────────────────────────────────
   useEffect(() => {
     ensureOneSignalReady();
+  }, []);
+
+  // ── 1b) Request OS permission at first cold launch ────────────
+  //   Fires BEFORE the user logs in so Android 13+ shows the native
+  //   POST_NOTIFICATIONS dialog the first time the app opens, which
+  //   is what most users expect. We guard with a module-level flag
+  //   so hot reloads / navigations don't re-fire the prompt, and
+  //   we skip entirely if the user has explicitly turned push OFF
+  //   in our own settings (respects their stated intent over a
+  //   best-practice nudge).
+  useEffect(() => {
+    if (!OneSignal || isExpoGo) return;
+    if (coldLaunchPromptFired) return;
+    if (pushEnabled === false) {
+      // User turned it off in our settings — don't re-prompt.
+      coldLaunchPromptFired = true;
+      return;
+    }
+    coldLaunchPromptFired = true;
+    // Small delay so OneSignal has finished initialize() before we
+    // call into its permission API. requestPermission resolves
+    // instantly (no dialog) if the OS already has a cached answer,
+    // so repeat opens don't harass the user.
+    const t = setTimeout(() => {
+      ensureOneSignalReady();
+      try {
+        OneSignal.Notifications.requestPermission(true)
+          .then((granted: boolean | undefined) => {
+            // Mirror the answer in our settings slice so the toggle
+            // and the post-login flow are consistent with reality.
+            if (granted === false) {
+              dispatch(setPushNotificationsEnabled(false));
+            } else {
+              // `undefined` and `true` both count as "allowed" here —
+              // iOS Simulator returns undefined when it can't tell.
+              try {
+                OneSignal.User?.pushSubscription?.optIn?.();
+              } catch {
+                // optIn isn't always required — some SDK builds opt in
+                // implicitly once permission is granted.
+              }
+              dispatch(setPushNotificationsEnabled(true));
+            }
+          })
+          .catch(() => {
+            // Swallow — the post-login popup is still a safety net.
+          });
+      } catch {
+        // SDK shape mismatch — ignore, rely on the post-login popup.
+      }
+    }, 500);
+
+    return () => clearTimeout(t);
+    // We intentionally don't react to pushEnabled flips — this effect
+    // fires once per process on mount. Settings-toggle flips are
+    // handled by enableOneSignalPush / disableOneSignalPush directly.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── 2) Register player id when both user and id are available ─

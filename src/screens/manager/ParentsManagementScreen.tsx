@@ -128,8 +128,8 @@ export default function ParentsManagementScreen() {
       Alert.alert(
         t('common.error', 'Error'),
         error?.data?.message ||
-          error?.data?.error ||
-          t('manager.parentAddError', 'Failed to add parent.'),
+        error?.data?.error ||
+        t('manager.parentAddError', 'Failed to add parent.'),
       );
     }
   };
@@ -292,7 +292,7 @@ export default function ParentsManagementScreen() {
               keyboardType="phone-pad"
               leftIcon={
                 <ThemedText variant="bodySmall" color={theme.colors.textSecondary}>
-                  +{COUNTRY_CODE}
+                  {COUNTRY_CODE}
                 </ThemedText>
               }
             />

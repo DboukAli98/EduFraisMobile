@@ -251,7 +251,7 @@ export default function SettingsScreen() {
                 {
                   text: t('push.openSettings', 'Open Settings'),
                   onPress: () => {
-                    Linking.openSettings().catch(() => {});
+                    Linking.openSettings().catch(() => { });
                   },
                 },
               ],
@@ -296,7 +296,7 @@ export default function SettingsScreen() {
                     ),
                     type: 'General',
                     isRead: false,
-                  }).catch(() => {});
+                  }).catch(() => { });
                   Alert.alert(
                     t('common.success', 'Success'),
                     t(
@@ -356,47 +356,55 @@ export default function SettingsScreen() {
   );
 
   // ── Biometric Toggle ──
+  const [biometricLoading, setBiometricLoading] = useState(false);
   const handleBiometricToggle = useCallback(
     async (value: boolean) => {
       if (value) {
         // Enabling: check hardware, then prompt to confirm identity
-        const available = await isBiometricAvailable();
-        if (!available) {
-          Alert.alert(
-            t('settings.biometricUnavailable', 'Biometric Unavailable'),
-            t('settings.biometricUnavailableDesc', 'Your device does not support biometric authentication or has no biometric enrolled.'),
+        setBiometricLoading(true);
+        try {
+          const available = await isBiometricAvailable();
+          if (!available) {
+            Alert.alert(
+              t('settings.biometricUnavailable', 'Biometric Unavailable'),
+              t('settings.biometricUnavailableDesc', 'Your device does not support biometric authentication or has no biometric enrolled.'),
+            );
+            return;
+          }
+          const success = await authenticateWithBiometric(
+            t('settings.biometricConfirm', 'Confirm your identity to enable biometric login'),
           );
-          return;
-        }
-        const success = await authenticateWithBiometric(
-          t('settings.biometricConfirm', 'Confirm your identity to enable biometric login'),
-        );
-        if (!success) return;
-        // Save current credentials — prompt for password
-        Alert.prompt
-          ? Alert.prompt(
-            t('settings.biometricEnterPassword', 'Enter Password'),
-            t('settings.biometricEnterPasswordDesc', 'Enter your password to save it for biometric login.'),
-            async (pw: string) => {
-              if (!pw) return;
-              await saveCredentials({
-                countryCode: '242',
-                mobileNumber: user?.phoneNumber || '',
-                password: pw,
-              });
-              dispatch(setBiometricEnabled(true));
-              Alert.alert(t('common.success', 'Success'), t('settings.biometricEnabled', 'Biometric login enabled! You can now sign in with your fingerprint or face.'));
-            },
-            'secure-text',
-          )
-          : (() => {
-            // Android fallback: save with a simple confirm (credentials will be saved on next password login)
-            dispatch(setBiometricEnabled(true));
+          if (!success) return;
+
+          // Enable biometric in state first so the toggle reflects immediately
+          dispatch(setBiometricEnabled(true));
+
+          // On iOS we can prompt for password inline; on Android credentials
+          // will be saved automatically on the next password sign-in.
+          if (typeof Alert.prompt === 'function') {
+            Alert.prompt(
+              t('settings.biometricEnterPassword', 'Enter Password'),
+              t('settings.biometricEnterPasswordDesc', 'Enter your password to save it for biometric login.'),
+              async (pw: string) => {
+                if (!pw) return;
+                await saveCredentials({
+                  countryCode: '242',
+                  mobileNumber: user?.phoneNumber || '',
+                  password: pw,
+                });
+                Alert.alert(t('common.success', 'Success'), t('settings.biometricEnabled', 'Biometric login enabled! You can now sign in with your fingerprint or face.'));
+              },
+              'secure-text',
+            );
+          } else {
             Alert.alert(
               t('common.success', 'Success'),
               t('settings.biometricEnabledNextLogin', 'Biometric login enabled! Your credentials will be saved on your next password sign-in.'),
             );
-          })();
+          }
+        } finally {
+          setBiometricLoading(false);
+        }
       } else {
         // Disabling: clear stored credentials
         await clearStoredCredentials();
@@ -661,6 +669,7 @@ export default function SettingsScreen() {
               <Switch
                 value={biometricLogin}
                 onValueChange={handleBiometricToggle}
+                disabled={biometricLoading}
                 trackColor={{
                   false: theme.colors.disabled,
                   true: theme.colors.primary + '80',

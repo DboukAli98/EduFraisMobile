@@ -295,7 +295,7 @@ const DirectorParentsScreen: React.FC = () => {
               keyboardType="phone-pad"
               leftIcon={
                 <ThemedText variant="caption" color={theme.colors.textSecondary}>
-                  +{COUNTRY_CODE}
+                  {COUNTRY_CODE}
                 </ThemedText>
               }
             />

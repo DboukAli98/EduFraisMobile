@@ -572,7 +572,14 @@
       "title": "Agents",
       "totalAgents": "Total agents",
       "avgCommission": "Commission moy.",
-      "addAgent": "Ajouter un agent"
+      "addAgent": "Ajouter",
+      "add": "Ajouter",
+      "area": "Zone assignée",
+      "areaPlaceholder": "Quartier, district ou itinéraire",
+      "commission": "Pourcentage de commission",
+      "suggestedAreas": "Zones suggérées",
+      "suggestedAreasDesc": "Utilisez un nom de quartier, district ou zone de couverture.",
+      "suggestedAreasEmpty": "Enregistrez une zone et elle apparaîtra ici comme sélection rapide pour les prochains agents."
     },
     "agentRequests": {
       "title": "Demandes d'agent",
@@ -694,8 +701,8 @@
     },
     "parents": {
       "title": "Parents",
-      "addParent": "Ajouter un parent",
-      "editParent": "Modifier le parent",
+      "addParent": "Ajouter",
+      "editParent": "Modifier",
       "detailTitle": "Détails du parent",
       "contact": "Informations de contact",
       "children": "Enfants",

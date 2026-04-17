@@ -74,7 +74,7 @@ export default function SplashRedirect() {
         <Animated.Text style={styles.logoText}>EduFrais</Animated.Text>
       </Animated.View>
       <Animated.Text style={[styles.subtitle, subtitleAnimatedStyle]}>
-        School Fees Management
+        Simple. Fiable. Sécurisé.
       </Animated.Text>
     </View>
   );
