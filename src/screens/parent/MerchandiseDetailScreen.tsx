@@ -146,7 +146,7 @@ export default function MerchandiseDetailScreen() {
     );
   }
 
-  const isParent = user?.role === 'parent' || user?.role === 'Parent';
+  const isParent = user?.role === 'parent';
 
   return (
     <ScreenContainer scrollable={false} padding={false}>

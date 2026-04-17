@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '../../src/store/store';
 import { AnimatedTabBar, ThemedText } from '../../src/components';
 import { useTheme } from '../../src/theme';
-import { useNotificationHub } from '../../src/hooks';
+import { useOneSignalRegistration } from '../../src/hooks';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -54,8 +54,11 @@ export default function AppLayout() {
   const { theme } = useTheme();
   const { t } = useTranslation();
 
-  // Start SignalR notification hub
-  useNotificationHub();
+  // Initialise OneSignal and register the device's player id with the
+  // backend whenever a user is authenticated. This is the only push
+  // channel — both background and foreground notifications go through
+  // OneSignal.
+  useOneSignalRegistration();
 
   return (
     <Tabs
@@ -166,6 +169,16 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
+        name="my-agents"
+        options={{
+          title: t('parent.agents.title', 'My Agents'),
+          tabBarIcon: ({ color, size }) => (
+            <TabIcon name="person-add-outline" color={color} size={size} />
+          ),
+          href: role === 'parent' ? undefined : null,
+        }}
+      />
+      <Tabs.Screen
         name="notifications"
         options={{
           title: t('notifications.title'),
@@ -232,6 +245,30 @@ export default function AppLayout() {
       />
       <Tabs.Screen
         name="agent-activities"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="parent-agent-detail"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="request-agent"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="agent-requests"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="director-parents"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="director-parent-detail"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="director-child-detail"
         options={{ href: null }}
       />
     </Tabs>

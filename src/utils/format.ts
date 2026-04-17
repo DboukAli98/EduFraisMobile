@@ -39,6 +39,46 @@ export const formatPhone = (phone: string, countryCode = '242'): string => {
   return phone;
 };
 
+/**
+ * Normalize a free-form phone input to a single canonical form with the
+ * country-code prefix baked in exactly once.
+ *
+ *   "812345678"           → "242812345678"
+ *   "242812345678"        → "242812345678"
+ *   "+242 812 345 678"    → "242812345678"
+ *   "0812345678"          → "242812345678"
+ *   "00242812345678"      → "242812345678"
+ *   "242242812345678"     → "242812345678"   (collapses accidental double-prefix)
+ *   ""                    → ""               (caller should treat as "no phone")
+ *   "242"                 → ""               (only the prefix, no local number)
+ */
+export const normalizePhoneToE164 = (input: string, countryCode = '242'): string => {
+  let digits = (input || '').replace(/\D/g, '').replace(/^0+/, '');
+  // Strip every leading copy of the country code so "242242…" collapses.
+  while (digits.startsWith(countryCode)) {
+    digits = digits.slice(countryCode.length);
+  }
+  if (!digits) return '';
+  return `${countryCode}${digits}`;
+};
+
+/**
+ * Inverse of normalizePhoneToE164 — returns just the local digits with no
+ * country-code prefix and no leading zeros, suitable for prefilling an
+ * input that displays the prefix as a separate label.
+ *
+ *   "242812345678"        → "812345678"
+ *   "812345678"           → "812345678"
+ *   "0812345678"          → "812345678"
+ */
+export const extractLocalDigits = (input: string, countryCode = '242'): string => {
+  let digits = (input || '').replace(/\D/g, '').replace(/^0+/, '');
+  while (digits.startsWith(countryCode)) {
+    digits = digits.slice(countryCode.length);
+  }
+  return digits;
+};
+
 // Format percentage
 export const formatPercentage = (value: number): string => {
   return `${Math.round(value * 100) / 100}%`;

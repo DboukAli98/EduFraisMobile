@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { View, StyleSheet, Pressable, SectionList } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { View, StyleSheet, Pressable, SectionList, Alert, RefreshControl } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -18,6 +18,7 @@ import { useAnimatedEntry, staggerDelay, useAppSelector } from '../../hooks';
 import {
   useGetParentsCollectingAgentsQuery,
   useGetMyAgentRequestsQuery,
+  useCancelAgentRequestMutation,
 } from '../../services/api/apiSlice';
 import type { CollectingAgentParents } from '../../types';
 
@@ -40,10 +41,11 @@ const getStatus = (row: CollectingAgentParents): AgentStatus => {
 interface AgentRowProps {
   row: CollectingAgentParents;
   index: number;
+  parentId: number;
   onPress: () => void;
 }
 
-const AgentRow: React.FC<AgentRowProps> = ({ row, index, onPress }) => {
+const AgentRow: React.FC<AgentRowProps> = ({ row, index, parentId, onPress }) => {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const anim = useAnimatedEntry({ type: 'slideUp', delay: staggerDelay(index + 1) });
@@ -68,6 +70,31 @@ const AgentRow: React.FC<AgentRowProps> = ({ row, index, onPress }) => {
     },
   };
   const sc = statusConfig[status];
+  const [cancelRequest, { isLoading: cancelling }] = useCancelAgentRequestMutation();
+
+  const handleCancel = () => {
+    Alert.alert(
+      t('parent.agents.cancelTitle', 'Cancel Request'),
+      t('parent.agents.cancelMsg', 'Are you sure you want to cancel this request?'),
+      [
+        { text: t('common.no', 'No'), style: 'cancel' },
+        {
+          text: t('common.yes', 'Yes'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await cancelRequest({
+                collectingAgentParentId: row.collectingAgentParentId,
+                parentId,
+              }).unwrap();
+            } catch (e: any) {
+              Alert.alert(t('common.error', 'Error'), e?.data?.error || t('common.genericError', 'Something went wrong'));
+            }
+          },
+        },
+      ],
+    );
+  };
 
   return (
     <Animated.View style={anim}>
@@ -94,6 +121,13 @@ const AgentRow: React.FC<AgentRowProps> = ({ row, index, onPress }) => {
                   {sc.label}
                 </ThemedText>
               </View>
+              {status === 'pending' && (
+                <Pressable onPress={handleCancel} disabled={cancelling}>
+                  <ThemedText variant="caption" color={theme.colors.error} style={styles.cancelTxt}>
+                    {t('parent.agents.cancel', 'Cancel')}
+                  </ThemedText>
+                </Pressable>
+              )}
             </View>
           </View>
           <Ionicons name="chevron-forward" size={20} color={theme.colors.textTertiary} />
@@ -118,6 +152,7 @@ const ParentMyAgentsScreen: React.FC = () => {
   const {
     data: approvedData,
     isLoading: approvedLoading,
+    refetch: refetchApproved,
   } = useGetParentsCollectingAgentsQuery(
     { parentId, pageNumber: 1, pageSize: 50 },
     { skip: !parentId },
@@ -126,10 +161,18 @@ const ParentMyAgentsScreen: React.FC = () => {
   const {
     data: requestsData,
     isLoading: requestsLoading,
+    refetch: refetchRequests,
   } = useGetMyAgentRequestsQuery(
     { parentId, pageNumber: 1, pageSize: 50 },
     { skip: !parentId },
   );
+
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([refetchApproved(), refetchRequests()]);
+    setRefreshing(false);
+  }, [refetchApproved, refetchRequests]);
 
   const approved = useMemo(() => approvedData?.data ?? [], [approvedData]);
   const pendingRejected = useMemo(() => requestsData?.data ?? [], [requestsData]);
@@ -209,6 +252,7 @@ const ParentMyAgentsScreen: React.FC = () => {
             <AgentRow
               row={item}
               index={index}
+              parentId={parentId}
               onPress={() => router.push({
                 pathname: '/(app)/parent-agent-detail',
                 params: { collectingAgentParentId: String(item.collectingAgentParentId) },
@@ -218,6 +262,9 @@ const ParentMyAgentsScreen: React.FC = () => {
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
           stickySectionHeadersEnabled={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />
+          }
         />
       )}
     </ScreenContainer>
@@ -276,6 +323,11 @@ const styles = StyleSheet.create({
   statusTxt: {
     fontWeight: '600',
     fontSize: 11,
+  },
+  cancelTxt: {
+    fontWeight: '600',
+    fontSize: 12,
+    textDecorationLine: 'underline',
   },
 });
 

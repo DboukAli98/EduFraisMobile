@@ -18,7 +18,18 @@
     "success": "Succès",
     "currency": "CDF",
     "or": "ou",
-    "ok": "OK"
+    "ok": "OK",
+    "notNow": "Plus tard",
+    "enable": "Activer",
+    "disable": "Désactiver",
+    "active": "Actif",
+    "inactive": "Inactif",
+    "actions": "Actions",
+    "chooseAction": "Choisissez une action",
+    "statusChanged": "Statut mis à jour avec succès.",
+    "confirmEnable": "Voulez-vous vraiment activer cet élément ?",
+    "confirmDisable": "Voulez-vous vraiment désactiver cet élément ?",
+    "confirmDelete": "Cet élément sera supprimé définitivement. Continuer ?"
   },
   "auth": {
     "signIn": "Se connecter",
@@ -43,6 +54,8 @@
     "lastName": "Nom de famille",
     "email": "E-mail",
     "phoneRequired": "Le numéro de téléphone est requis",
+    "phoneMinLength": "Le numéro de téléphone doit contenir au moins 8 chiffres",
+    "passwordRequired": "Le mot de passe est requis",
     "passwordMinLength": "Le mot de passe doit contenir au moins 6 caractères",
     "passwordMismatch": "Les mots de passe ne correspondent pas",
     "invalidCredentials": "Identifiants invalides",
@@ -53,6 +66,7 @@
     "roleRequired": "Veuillez sélectionner un rôle",
     "firstNameRequired": "Le prénom est requis",
     "lastNameRequired": "Le nom de famille est requis",
+    "emailRequired": "L'adresse e-mail est requise",
     "emailInvalid": "Veuillez entrer un e-mail valide",
     "civilIdRequired": "Le numéro d'identité est requis",
     "civilIdPlaceholder": "Entrez votre numéro d'identité",
@@ -62,8 +76,21 @@
     "resetSent": "Vérifiez votre téléphone",
     "resetSentDesc": "Nous avons envoyé un lien de réinitialisation à votre numéro de téléphone. Veuillez vérifier vos messages.",
     "backToSignIn": "Retour à la connexion",
-    "resetPasswordDesc": "Entrez votre numéro de téléphone et nous vous enverrons un lien pour réinitialiser votre mot de passe.",
+    "resetPasswordDesc": "Choisissez un canal, puis entrez votre téléphone ou votre e-mail. Nous vous enverrons un code de vérification.",
     "rememberPassword": "Vous vous souvenez de votre mot de passe ?",
+    "otpChannelLabel": "Envoyer le code via",
+    "channelWhatsApp": "WhatsApp",
+    "channelEmail": "E-mail",
+    "sendOtpCode": "Envoyer le code",
+    "otpVerifyTitle": "Entrez le code reçu",
+    "otpVerifyDesc": "Saisissez le code à 6 chiffres que vous avez reçu et choisissez un nouveau mot de passe.",
+    "otpCodeLabel": "Code de vérification",
+    "otpInvalid": "Le code doit contenir 6 chiffres.",
+    "otpVerifyAndReset": "Réinitialiser le mot de passe",
+    "otpResendPrompt": "Vous n'avez pas reçu le code ?",
+    "otpResend": "Renvoyer",
+    "otpResetDoneTitle": "Mot de passe mis à jour",
+    "otpResetDoneDesc": "Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter.",
     "registrationSuccess": "Inscription réussie ! Veuillez vous connecter.",
     "changePasswordRequired": {
       "title": "Mettez à jour votre mot de passe",
@@ -338,6 +365,7 @@
     "emailEnabledDesc": "Vous recevrez des notifications par e-mail pour les paiements, approbations et rappels à : {email}",
     "enabled": "Activé",
     "disabled": "Désactivé",
+    "pushNotRegistered": "Non enregistré — activer le bouton",
     "about": "À propos",
     "version": "Version",
     "termsOfService": "Conditions d'utilisation",
@@ -353,6 +381,17 @@
     "email": "E-mail",
     "civilId": "Numéro d'identité",
     "fullName": "Nom complet"
+  },
+  "push": {
+    "enableTitle": "Activer les notifications push",
+    "enableMessage": "Votre appareil n'est pas enregistré pour recevoir les notifications push. Activez-les maintenant pour recevoir les mises à jour en temps réel sur les paiements et les approbations.",
+    "enableAction": "Activer",
+    "deniedTitle": "Permission refusée",
+    "deniedMessage": "Vous pouvez activer les notifications push plus tard depuis les Paramètres.",
+    "deniedMessageOpenSettings": "Les notifications push sont bloquées. Ouvrez les Paramètres pour les autoriser.",
+    "openSettings": "Ouvrir les Paramètres",
+    "unavailableTitle": "Push non disponible",
+    "unavailableMessage": "Cette version ne prend pas en charge les notifications push. Installez la version de développement pour les tester sur un appareil réel."
   },
   "extensions": {
     "title": "Demandes de prolongation",
@@ -391,7 +430,8 @@
       "history": "Historique",
       "support": "Assistance",
       "upcomingDues": "Échéances à venir",
-      "recentPayments": "Paiements récents"
+      "recentPayments": "Paiements récents",
+      "myAgents": "Mes agents"
     },
     "payments": {
       "title": "Paiements",
@@ -409,6 +449,44 @@
       "emptyTitle": "Aucun enfant",
       "emptyDesc": "Ajoutez votre premier enfant pour commencer à gérer les frais scolaires.",
       "addChild": "Ajouter un enfant"
+    },
+    "agents": {
+      "title": "Mes agents",
+      "requestTitle": "Demander un agent",
+      "requestIntro": "Sélectionnez un agent collecteur. Le directeur doit approuver votre demande avant que l'agent ne vous soit assigné.",
+      "availableAgents": "Agents disponibles",
+      "selectAgentFirst": "Veuillez d'abord sélectionner un agent",
+      "requestSentMessage": "Votre demande a été envoyée au directeur pour approbation.",
+      "sendRequest": "Envoyer la demande",
+      "notesLabel": "Notes (facultatif)",
+      "notesPlaceholder": "Expliquez au directeur pourquoi vous avez besoin de cet agent",
+      "noneAvailableTitle": "Aucun agent disponible",
+      "noneAvailableDesc": "Tous les agents disponibles vous sont déjà attribués ou en attente d'approbation.",
+      "emptyTitle": "Aucun agent",
+      "emptyDesc": "Demandez un agent collecteur pour vous aider avec les paiements. Votre demande nécessitera l'approbation du directeur.",
+      "requestAgent": "Demander un agent",
+      "pendingTitle": "Demandes en attente",
+      "approvedTitle": "Mes agents",
+      "rejectedTitle": "Demandes refusées",
+      "statusApproved": "Actif",
+      "statusPending": "En attente",
+      "statusRejected": "Refusé",
+      "detailTitle": "Détails de l'agent",
+      "notFound": "Agent non trouvé",
+      "contact": "Contact",
+      "phone": "Téléphone",
+      "email": "E-mail",
+      "assignment": "Affectation",
+      "requestedOn": "Demandé le",
+      "rejectedOn": "Refusé le",
+      "assignedOn": "Assigné le",
+      "notes": "Notes",
+      "directorNote": "Note du directeur",
+      "callFailed": "Impossible de lancer l'appel",
+      "emailFailed": "Impossible d'ouvrir l'e-mail",
+      "cancel": "Annuler",
+      "cancelTitle": "Annuler la demande",
+      "cancelMsg": "Êtes-vous sûr de vouloir annuler cette demande ?"
     },
     "paymentDetail": {
       "notFound": "Paiement non trouvé",
@@ -483,9 +561,11 @@
         "pendingcount": "Nombre en attente"
       },
       "qa": {
-        "0": "Ajouter un élève",
+        "0": "Voir les élèves",
         "1": "Gérer les agents",
-        "2": "Voir les rapports"
+        "2": "Demandes d'agents",
+        "3": "Gérer les parents",
+        "4": "Voir les rapports"
       }
     },
     "agents": {
@@ -493,6 +573,20 @@
       "totalAgents": "Total agents",
       "avgCommission": "Commission moy.",
       "addAgent": "Ajouter un agent"
+    },
+    "agentRequests": {
+      "title": "Demandes d'agent",
+      "emptyTitle": "Aucune demande en attente",
+      "emptyDesc": "Toutes les demandes d'affectation d'agent ont été traitées.",
+      "requestsAgent": "Demande l'agent",
+      "parentNote": "Note du parent",
+      "addNote": "Ajouter une note (facultatif)",
+      "approve": "Approuver",
+      "reject": "Refuser",
+      "approveConfirmTitle": "Approuver la demande",
+      "approveConfirmMsg": "Affecter cet agent au parent ?",
+      "rejectConfirmTitle": "Refuser la demande",
+      "rejectConfirmMsg": "Refuser cette affectation d'agent ?"
     },
     "reports": {
       "title": "Rapports",
@@ -554,6 +648,20 @@
       "rejectSuccess": "Inscription refusée.",
       "rejectFailed": "Échec du refus."
     },
+    "children": {
+      "detailTitle": "Détails de l'élève",
+      "notFound": "Élève introuvable.",
+      "profile": "Profil",
+      "father": "Père",
+      "parent": "Parent",
+      "grade": "Classe",
+      "noGrade": "Non encore attribuée",
+      "editChild": "Modifier l'élève",
+      "updated": "Élève mis à jour.",
+      "requiredFields": "Le prénom, le nom et la date de naissance sont requis.",
+      "invalidDate": "Le format de la date doit être AAAA-MM-JJ.",
+      "dateOfBirth": "Date de naissance (AAAA-MM-JJ)"
+    },
     "merchandise": {
       "title": "Articles",
       "items": "Articles",
@@ -583,6 +691,28 @@
       "noCategoriesWarning": "Créez d'abord une catégorie avant d'ajouter des articles.",
       "image": "Image (facultatif)",
       "tapToAddImage": "Appuyez pour ajouter une image"
+    },
+    "parents": {
+      "title": "Parents",
+      "addParent": "Ajouter un parent",
+      "editParent": "Modifier le parent",
+      "detailTitle": "Détails du parent",
+      "contact": "Informations de contact",
+      "children": "Enfants",
+      "fatherName": "Père",
+      "addChild": "Ajouter un enfant",
+      "addChildDesc": "Inscrire un nouvel enfant pour ce parent",
+      "dateOfBirth": "Date de naissance",
+      "requiredFields": "Le prénom, le nom et le téléphone sont obligatoires.",
+      "childRequiredFields": "Le prénom, le nom et la date de naissance sont obligatoires.",
+      "invalidDate": "La date doit être au format AAAA-MM-JJ.",
+      "added": "Parent ajouté avec succès.",
+      "updated": "Parent mis à jour avec succès.",
+      "childAdded": "Enfant ajouté avec succès.",
+      "notFound": "Parent introuvable.",
+      "emptyTitle": "Aucun parent",
+      "emptyDesc": "Ajoutez le premier parent de cette école.",
+      "noChildren": "Aucun enfant inscrit"
     }
   },
   "cycles": {

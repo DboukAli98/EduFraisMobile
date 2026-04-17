@@ -4,11 +4,20 @@ import { AppNotification } from '../../types';
 interface NotificationState {
   notifications: AppNotification[];
   unreadCount: number;
+  /**
+   * Whether the device has successfully registered an OneSignal player id
+   * with the backend for the *currently signed-in user*. Cleared on
+   * logout. Lives here (not in `app`) because it's runtime-only — we
+   * don't want it persisted across app reinstalls or device wipes
+   * where the player id is no longer valid.
+   */
+  pushRegistered: boolean;
 }
 
 const initialState: NotificationState = {
   notifications: [],
   unreadCount: 0,
+  pushRegistered: false,
 };
 
 const notificationSlice = createSlice({
@@ -42,6 +51,9 @@ const notificationSlice = createSlice({
       state.notifications = [];
       state.unreadCount = 0;
     },
+    setPushRegistered(state, action: PayloadAction<boolean>) {
+      state.pushRegistered = action.payload;
+    },
   },
 });
 
@@ -51,5 +63,6 @@ export const {
   markAsRead,
   markAllRead,
   clearNotifications,
+  setPushRegistered,
 } = notificationSlice.actions;
 export default notificationSlice.reducer;

@@ -101,13 +101,19 @@ const SignUpScreen: React.FC = () => {
     if (!selectedRole) e.role = t('auth.roleRequired');
     if (!firstName.trim()) e.firstName = t('auth.firstNameRequired');
     if (!lastName.trim()) e.lastName = t('auth.lastNameRequired');
-    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!email.trim()) {
+      e.email = t('auth.emailRequired');
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       e.email = t('auth.emailInvalid');
     }
-    if (!phone.trim() || phone.replace(/\D/g, '').length < 9) {
+    if (!phone.trim()) {
       e.phone = t('auth.phoneRequired');
+    } else if (phone.replace(/\D/g, '').length < 8) {
+      e.phone = t('auth.phoneMinLength');
     }
-    if (!password.trim() || password.length < 6) {
+    if (!password.trim()) {
+      e.password = t('auth.passwordRequired');
+    } else if (password.length < 6) {
       e.password = t('auth.passwordMinLength');
     }
     if (password !== confirmPassword) {
@@ -356,7 +362,7 @@ const SignUpScreen: React.FC = () => {
           leftIcon={
             <View style={styles.countryCodeInline}>
               <ThemedText variant="bodySmall" color={theme.colors.textSecondary}>
-                +{countryCode}
+                {countryCode}
               </ThemedText>
               <View style={[styles.codeDivider, { backgroundColor: theme.colors.border }]} />
             </View>

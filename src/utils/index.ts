@@ -20,6 +20,8 @@ export {
   formatPercentage,
   getInitials,
   truncate,
+  normalizePhoneToE164,
+  extractLocalDigits,
 } from './format';
 
 export {
@@ -27,3 +29,5 @@ export {
   extractUserFromToken,
   isTokenExpired,
 } from './jwt';
+
+export { resolveNotificationRoute } from './notificationRouting';

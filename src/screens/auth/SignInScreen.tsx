@@ -123,10 +123,14 @@ const SignInScreen: React.FC = () => {
 
   const validate = useCallback((): boolean => {
     const newErrors: typeof errors = {};
-    if (!phone.trim() || phone.length < 6) {
+    if (!phone.trim()) {
       newErrors.phone = t('auth.phoneRequired');
+    } else if (phone.replace(/\D/g, '').length < 8) {
+      newErrors.phone = t('auth.phoneMinLength');
     }
-    if (!password.trim() || password.length < 6) {
+    if (!password.trim()) {
+      newErrors.password = t('auth.passwordRequired');
+    } else if (password.length < 6) {
       newErrors.password = t('auth.passwordMinLength');
     }
     setErrors(newErrors);

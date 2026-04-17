@@ -143,7 +143,7 @@ const PaymentHistoryScreen: React.FC = () => {
   const router = useRouter();
 
   const user = useAppSelector((state) => state.auth.user);
-  const userId = user?.userId || '';
+  const userId = user?.id || '';
 
   // -- State
   const [activeTab, setActiveTab] = useState<ActiveTab>('fees');

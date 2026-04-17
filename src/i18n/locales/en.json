@@ -18,7 +18,18 @@
     "success": "Success",
     "currency": "CDF",
     "or": "or",
-    "ok": "OK"
+    "ok": "OK",
+    "notNow": "Not now",
+    "enable": "Enable",
+    "disable": "Disable",
+    "active": "Active",
+    "inactive": "Inactive",
+    "actions": "Actions",
+    "chooseAction": "Choose an action",
+    "statusChanged": "Status updated successfully.",
+    "confirmEnable": "Are you sure you want to enable this item?",
+    "confirmDisable": "Are you sure you want to disable this item?",
+    "confirmDelete": "This will permanently remove the item. Continue?"
   },
   "auth": {
     "signIn": "Sign In",
@@ -43,6 +54,8 @@
     "lastName": "Last Name",
     "email": "Email",
     "phoneRequired": "Phone number is required",
+    "phoneMinLength": "Phone number must be at least 8 digits",
+    "passwordRequired": "Password is required",
     "passwordMinLength": "Password must be at least 6 characters",
     "passwordMismatch": "Passwords do not match",
     "invalidCredentials": "Invalid credentials",
@@ -53,6 +66,7 @@
     "roleRequired": "Please select a role",
     "firstNameRequired": "First name is required",
     "lastNameRequired": "Last name is required",
+    "emailRequired": "Email is required",
     "emailInvalid": "Please enter a valid email",
     "civilIdRequired": "Civil ID is required",
     "civilIdPlaceholder": "Enter your civil ID",
@@ -62,8 +76,21 @@
     "resetSent": "Check Your Phone",
     "resetSentDesc": "We've sent a password reset link to your phone number. Please check your messages.",
     "backToSignIn": "Back to Sign In",
-    "resetPasswordDesc": "Enter your phone number and we'll send you a link to reset your password.",
+    "resetPasswordDesc": "Pick a delivery channel, then enter your phone or email. We'll send you a verification code.",
     "rememberPassword": "Remember your password?",
+    "otpChannelLabel": "Send code via",
+    "channelWhatsApp": "WhatsApp",
+    "channelEmail": "Email",
+    "sendOtpCode": "Send code",
+    "otpVerifyTitle": "Enter the code",
+    "otpVerifyDesc": "Type the 6-digit code you received and choose a new password.",
+    "otpCodeLabel": "Verification code",
+    "otpInvalid": "The code must be 6 digits.",
+    "otpVerifyAndReset": "Reset password",
+    "otpResendPrompt": "Didn't receive the code?",
+    "otpResend": "Resend",
+    "otpResetDoneTitle": "Password updated",
+    "otpResetDoneDesc": "Your password has been reset successfully. You can now sign in.",
     "registrationSuccess": "Registration successful! Please sign in.",
     "changePasswordRequired": {
       "title": "Update your password",
@@ -338,6 +365,7 @@
     "emailEnabledDesc": "You will receive email notifications for payments, approvals, and reminders at: {email}",
     "enabled": "Enabled",
     "disabled": "Disabled",
+    "pushNotRegistered": "Not registered — toggle to enable",
     "about": "About",
     "version": "Version",
     "termsOfService": "Terms of Service",
@@ -353,6 +381,17 @@
     "email": "Email",
     "civilId": "Civil ID",
     "fullName": "Full Name"
+  },
+  "push": {
+    "enableTitle": "Enable Push Notifications",
+    "enableMessage": "Your device is not registered to receive push notifications. Enable them now to get real-time updates on payments and approvals.",
+    "enableAction": "Enable",
+    "deniedTitle": "Permission denied",
+    "deniedMessage": "You can enable push notifications later from Settings.",
+    "deniedMessageOpenSettings": "Push notifications are blocked. Open Settings to allow them.",
+    "openSettings": "Open Settings",
+    "unavailableTitle": "Push not available",
+    "unavailableMessage": "This build doesn't support push notifications. Install the development build to test them on a real device."
   },
   "extensions": {
     "title": "Extension Requests",
@@ -391,7 +430,8 @@
       "history": "History",
       "support": "Support",
       "upcomingDues": "Upcoming Dues",
-      "recentPayments": "Recent Payments"
+      "recentPayments": "Recent Payments",
+      "myAgents": "My Agents"
     },
     "payments": {
       "title": "Payments",
@@ -409,6 +449,44 @@
       "emptyTitle": "No Children Yet",
       "emptyDesc": "Add your first child to get started with fee management.",
       "addChild": "Add Child"
+    },
+    "agents": {
+      "title": "My Agents",
+      "requestTitle": "Request Agent",
+      "requestIntro": "Pick a collecting agent to request. The director must approve your request before the agent is assigned to you.",
+      "availableAgents": "Available Agents",
+      "selectAgentFirst": "Please select an agent first",
+      "requestSentMessage": "Your request has been sent to the director for approval.",
+      "sendRequest": "Send Request",
+      "notesLabel": "Notes (optional)",
+      "notesPlaceholder": "Tell the director why you need this agent",
+      "noneAvailableTitle": "No Agents Available",
+      "noneAvailableDesc": "All available agents are already linked to you or pending approval.",
+      "emptyTitle": "No Agents Yet",
+      "emptyDesc": "Request a collecting agent to help you with payments. Your request will need director approval.",
+      "requestAgent": "Request Agent",
+      "pendingTitle": "Pending Requests",
+      "approvedTitle": "My Agents",
+      "rejectedTitle": "Rejected Requests",
+      "statusApproved": "Active",
+      "statusPending": "Pending",
+      "statusRejected": "Rejected",
+      "detailTitle": "Agent Details",
+      "notFound": "Agent not found",
+      "contact": "Contact",
+      "phone": "Phone",
+      "email": "Email",
+      "assignment": "Assignment",
+      "requestedOn": "Requested on",
+      "rejectedOn": "Rejected on",
+      "assignedOn": "Assigned on",
+      "notes": "Notes",
+      "directorNote": "Director note",
+      "callFailed": "Unable to start the call",
+      "emailFailed": "Unable to open email",
+      "cancel": "Cancel",
+      "cancelTitle": "Cancel Request",
+      "cancelMsg": "Are you sure you want to cancel this request?"
     },
     "paymentDetail": {
       "notFound": "Payment not found",
@@ -483,9 +561,11 @@
         "pendingcount": "Pending Count"
       },
       "qa": {
-        "0": "Add Student",
+        "0": "Review Students",
         "1": "Manage Agents",
-        "2": "View Reports"
+        "2": "Agent Requests",
+        "3": "Manage Parents",
+        "4": "Open Reports"
       }
     },
     "agents": {
@@ -493,6 +573,20 @@
       "totalAgents": "Total Agents",
       "avgCommission": "Avg Commission",
       "addAgent": "Add Agent"
+    },
+    "agentRequests": {
+      "title": "Agent Requests",
+      "emptyTitle": "No Pending Requests",
+      "emptyDesc": "All agent assignment requests have been processed.",
+      "requestsAgent": "Requests agent",
+      "parentNote": "Parent note",
+      "addNote": "Add a note (optional)",
+      "approve": "Approve",
+      "reject": "Reject",
+      "approveConfirmTitle": "Approve Request",
+      "approveConfirmMsg": "Assign this agent to the parent?",
+      "rejectConfirmTitle": "Reject Request",
+      "rejectConfirmMsg": "Refuse this agent assignment?"
     },
     "reports": {
       "title": "Reports",
@@ -554,6 +648,20 @@
       "rejectSuccess": "Child registration rejected.",
       "rejectFailed": "Failed to reject child."
     },
+    "children": {
+      "detailTitle": "Student Details",
+      "notFound": "Student not found.",
+      "profile": "Profile",
+      "father": "Father",
+      "parent": "Parent",
+      "grade": "Grade",
+      "noGrade": "Not yet assigned",
+      "editChild": "Edit Student",
+      "updated": "Student updated.",
+      "requiredFields": "First name, last name and date of birth are required.",
+      "invalidDate": "Date format must be YYYY-MM-DD.",
+      "dateOfBirth": "Date of Birth (YYYY-MM-DD)"
+    },
     "merchandise": {
       "title": "Merchandise",
       "items": "Items",
@@ -583,6 +691,28 @@
       "noCategoriesWarning": "Create a category first before adding items.",
       "image": "Image (optional)",
       "tapToAddImage": "Tap to add image"
+    },
+    "parents": {
+      "title": "Parents",
+      "addParent": "Add Parent",
+      "editParent": "Edit Parent",
+      "detailTitle": "Parent Details",
+      "contact": "Contact Information",
+      "children": "Children",
+      "fatherName": "Father",
+      "addChild": "Add Child",
+      "addChildDesc": "Register a new child for this parent",
+      "dateOfBirth": "Date of Birth",
+      "requiredFields": "First name, last name and phone are required.",
+      "childRequiredFields": "First name, last name and date of birth are required.",
+      "invalidDate": "Date must be in YYYY-MM-DD format.",
+      "added": "Parent added successfully.",
+      "updated": "Parent updated successfully.",
+      "childAdded": "Child added successfully.",
+      "notFound": "Parent not found.",
+      "emptyTitle": "No Parents Yet",
+      "emptyDesc": "Add the first parent to this school.",
+      "noChildren": "No children registered yet"
     }
   },
   "cycles": {

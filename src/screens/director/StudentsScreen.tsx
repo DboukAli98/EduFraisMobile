@@ -11,6 +11,7 @@ import {
 import Animated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { useRouter } from 'expo-router';
 
 import {
   ScreenContainer,
@@ -123,6 +124,7 @@ const PendingChildCard: React.FC<{
 const StudentsScreen: React.FC = () => {
   const { theme } = useTheme();
   const { t } = useTranslation();
+  const router = useRouter();
 
   const user = useAppSelector((state) => state.auth.user);
   const schoolId = parseInt(user?.schoolId || '0');
@@ -243,9 +245,23 @@ const StudentsScreen: React.FC = () => {
 
   const isLoading = activeTab === 'students' ? studentsLoading : pendingLoading;
 
+  const openChildDetail = useCallback(
+    (childId: number) => {
+      router.push({
+        pathname: '/(app)/director-child-detail',
+        params: { childId: String(childId) },
+      });
+    },
+    [router],
+  );
+
   // ─── Student card ────────────────────────────────────────────
   const renderStudent = ({ item }: { item: Child }) => (
-    <ThemedCard variant="elevated" style={styles.studentCard}>
+    <ThemedCard
+      variant="elevated"
+      style={styles.studentCard}
+      onPress={() => openChildDetail(item.childId)}
+    >
       <View style={styles.studentRow}>
         <Avatar firstName={item.firstName} lastName={item.lastName} size="lg" />
         <View style={styles.studentInfo}>
@@ -256,6 +272,7 @@ const StudentsScreen: React.FC = () => {
             {t('director.students.parent', 'Parent')}: {item.fatherName}
           </ThemedText>
         </View>
+        <Ionicons name="chevron-forward" size={20} color={theme.colors.textTertiary} />
       </View>
     </ThemedCard>
   );

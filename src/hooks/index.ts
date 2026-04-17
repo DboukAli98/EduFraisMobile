@@ -1,4 +1,8 @@
-export { useNotificationHub } from './useNotificationHub';
+export {
+  useOneSignalRegistration,
+  enableOneSignalPush,
+  disableOneSignalPush,
+} from './useOneSignalRegistration';
 export { useResponsive } from './useResponsive';
 export { useAnimatedEntry, staggerDelay } from './useAnimatedEntry';
 

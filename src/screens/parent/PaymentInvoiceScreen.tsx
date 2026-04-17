@@ -66,7 +66,7 @@ const PaymentInvoiceScreen: React.FC = () => {
 
   const user = useAppSelector((state) => state.auth.user);
   const parentId = parseInt(user?.entityUserId || '0');
-  const userId = user?.userId || '';
+  const userId = user?.id || '';
 
   // -------------------------------------------------------------------------
   // Data fetching – leverage cached RTK Query data
@@ -200,7 +200,7 @@ const PaymentInvoiceScreen: React.FC = () => {
 
     lines.push('---');
     lines.push(
-      `${t('parent.invoice.payer', 'Payer')}: ${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
+      `${t('parent.invoice.payer', 'Payer')}: ${user?.name ?? ''}`.trim(),
     );
     if (user?.phoneNumber) lines.push(`${t('parent.invoice.phone', 'Phone')}: ${user.phoneNumber}`);
 
@@ -416,7 +416,7 @@ const PaymentInvoiceScreen: React.FC = () => {
           </ThemedText>
           <DetailRow
             label={t('parent.invoice.name', 'Name')}
-            value={`${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() || '---'}
+            value={(user?.name ?? '---')}
           />
           {user?.phoneNumber ? (
             <DetailRow

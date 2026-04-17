@@ -183,7 +183,9 @@ export default function ChildDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ childId: string; schoolName?: string }>();
   const childId = parseInt(params.childId || '0');
-  const schoolName = params.schoolName || '';
+  // Prefer the route param if the caller passed it (cheap, no wait),
+  // otherwise fall back to whatever the API resolves below.
+  const paramSchoolName = params.schoolName || '';
 
   const [selectedGradeId, setSelectedGradeId] = useState<number | null>(null);
   const [selectedCycleId, setSelectedCycleId] = useState<number | null>(null);
@@ -386,7 +388,7 @@ export default function ChildDetailScreen() {
             <InfoRow
               icon="school-outline"
               label={t('children.school', 'School')}
-              value={schoolName || t('common.unknown', 'Unknown')}
+              value={paramSchoolName || child?.schoolName || t('common.unknown', 'Unknown')}
             />
             {currentGrade && (
               <InfoRow

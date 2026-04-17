@@ -18,6 +18,7 @@ import {
   useMarkAllNotificationsAsReadMutation,
 } from '../../services/api/apiSlice';
 import { setNotifications, markAllRead } from '../../store/slices/notificationSlice';
+import { resolveNotificationRoute } from '../../utils';
 import type { AppNotification } from '../../types';
 
 const AnimatedSection: React.FC<{
@@ -42,6 +43,7 @@ export default function NotificationsScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const userId = useAppSelector((state) => state.auth.user?.id) ?? '';
+  const userRole = useAppSelector((state) => state.auth.user?.role);
 
   const {
     data: notificationsData,
@@ -93,17 +95,18 @@ export default function NotificationsScreen() {
 
   const handleNotificationPress = useCallback(
     (notification: AppNotification) => {
-      const type = notification.type?.toLowerCase() || '';
-      if (type === 'payment') {
-        router.push('/(app)/payments');
-      } else if (type === 'approval') {
-        router.push('/(app)/children');
-      } else if (type === 'reminder') {
-        router.push('/(app)/payments');
+      // Centralised, role-aware, locale-tolerant resolver. When the
+      // backend later adds relatedEntityId/relatedEntityType, deep-links
+      // to specific entity detail screens light up automatically.
+      const route = resolveNotificationRoute(notification, userRole);
+      if (route) {
+        router.push(route);
       }
-      // For other types, just show the notification (no navigation)
+      // No match → leave the row inert rather than navigating somewhere
+      // arbitrary. The notification still gets visually marked as tapped
+      // by the parent NotificationItem component.
     },
-    [router],
+    [router, userRole],
   );
 
   const hasNotifications = notifications.length > 0;

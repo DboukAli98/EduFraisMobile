@@ -26,7 +26,11 @@
         "backgroundColor": "#4B49AC"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.edufrais.app"
+      "package": "com.edufrais.app",
+      "permissions": [
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -42,7 +46,36 @@
         {
           "faceIDPermission": "EduFrais utilise Face ID pour vous connecter en toute sécurité."
         }
+      ],
+      [
+        "onesignal-expo-plugin",
+        {
+          "mode": "development"
+        }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "OneSignalNotificationServiceExtension",
+                  "bundleIdentifier": "com.edufrais.app.OneSignalNotificationServiceExtension",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.edufrais.app.onesignal"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "4029a34e-82d4-42c6-97a8-1edd7e6c0609"
+      }
+    }
   }
 }

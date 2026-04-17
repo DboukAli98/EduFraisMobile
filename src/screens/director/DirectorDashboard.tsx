@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -23,6 +23,7 @@ import {
   useGetSchoolDetailsQuery,
   useGetSchoolPaymentTrendQuery,
   useGetPendingChildrenQuery,
+  useGetPendingAgentRequestsQuery,
 } from '../../services/api/apiSlice';
 import { formatCurrency, formatDate } from '../../utils';
 
@@ -38,6 +39,18 @@ const QUICK_ACTIONS = [
     label: 'Manage Agents',
     icon: 'people-outline' as const,
     route: '/(app)/agents',
+  },
+  {
+    key: 'agentRequests',
+    label: 'Agent Requests',
+    icon: 'hand-left-outline' as const,
+    route: '/(app)/agent-requests',
+  },
+  {
+    key: 'parents',
+    label: 'Manage Parents',
+    icon: 'people-circle-outline' as const,
+    route: '/(app)/director-parents',
   },
   {
     key: 'reports',
@@ -72,6 +85,8 @@ const DirectorDashboard: React.FC = () => {
   );
   const { data: pendingChildrenRes, isLoading: pendingChildrenLoading } =
     useGetPendingChildrenQuery({ schoolId, pageNumber: 1, pageSize: 4 }, { skip: !schoolId });
+  const { data: pendingAgentReqRes } =
+    useGetPendingAgentRequestsQuery({ schoolId, pageNumber: 1, pageSize: 1 }, { skip: !schoolId });
 
   const isLoading =
     schoolLoading ||
@@ -84,11 +99,11 @@ const DirectorDashboard: React.FC = () => {
   const schoolName = schoolRes?.data?.schoolName || '';
   const schoolInitial = schoolName
     ? schoolName
-        .split(' ')
-        .map((word: string) => word[0])
-        .join('')
-        .slice(0, 2)
-        .toUpperCase()
+      .split(' ')
+      .map((word: string) => word[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase()
     : '';
 
   const kpiData = [
@@ -128,6 +143,7 @@ const DirectorDashboard: React.FC = () => {
     [trendPoints],
   );
   const pendingChildren = pendingChildrenRes?.data ?? [];
+  const pendingAgentRequestCount = pendingAgentReqRes?.totalCount ?? 0;
 
   const headerAnim = useAnimatedEntry({ type: 'slideUp', delay: staggerDelay(0) });
   const chartAnim = useAnimatedEntry({ type: 'slideUp', delay: staggerDelay(5) });
@@ -336,7 +352,11 @@ const DirectorDashboard: React.FC = () => {
           title={t('director.dashboard.quickActions', 'Quick Actions')}
           style={styles.qaSection}
         />
-        <View style={styles.qaRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.qaRow}
+        >
           {QUICK_ACTIONS.map((action, index) => (
             <ThemedCard
               key={action.key}
@@ -355,12 +375,21 @@ const DirectorDashboard: React.FC = () => {
               >
                 <Ionicons name={action.icon} size={22} color={theme.colors.primary} />
               </View>
-              <ThemedText variant="caption" align="center" style={styles.qaLabel}>
-                {t(`director.dashboard.qa.${index}`, action.label)}
-              </ThemedText>
+              <View style={styles.qaLabelRow}>
+                <ThemedText variant="caption" align="center" style={styles.qaLabel}>
+                  {t(`director.dashboard.qa.${index}`, action.label)}
+                </ThemedText>
+                {action.key === 'agentRequests' && pendingAgentRequestCount > 0 && (
+                  <View style={styles.qaBadge}>
+                    <ThemedText variant="caption" color="#fff" style={styles.qaBadgeText}>
+                      {pendingAgentRequestCount}
+                    </ThemedText>
+                  </View>
+                )}
+              </View>
             </ThemedCard>
           ))}
-        </View>
+        </ScrollView>
       </Animated.View>
     </ScreenContainer>
   );
@@ -467,12 +496,12 @@ const styles = StyleSheet.create({
   },
   qaRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+    gap: 10,
     marginBottom: 24,
   },
   qaCard: {
-    flex: 1,
-    marginHorizontal: 4,
+    width: 120,
     alignItems: 'center',
     paddingVertical: 16,
   },
@@ -485,6 +514,25 @@ const styles = StyleSheet.create({
   },
   qaLabel: {
     fontWeight: '600',
+  },
+  qaLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  qaBadge: {
+    backgroundColor: '#EF4444',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  qaBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    lineHeight: 14,
   },
   emptyState: {
     alignItems: 'center',

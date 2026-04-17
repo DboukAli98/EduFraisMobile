@@ -1,11 +1,19 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, StyleSheet, Pressable, Switch, Modal, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, StyleSheet, Pressable, Switch, Modal, Alert, ScrollView, KeyboardAvoidingView, Platform, Linking } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../theme';
-import { useAnimatedEntry, staggerDelay, useAuth, useAppSelector, useAppDispatch } from '../../hooks';
+import {
+  useAnimatedEntry,
+  staggerDelay,
+  useAuth,
+  useAppSelector,
+  useAppDispatch,
+  enableOneSignalPush,
+  disableOneSignalPush,
+} from '../../hooks';
 import {
   ScreenContainer,
   ThemedText,
@@ -118,8 +126,27 @@ export default function SettingsScreen() {
   const { logout } = useAuth();
   const user = useAppSelector((state) => state.auth.user);
   const pushNotifications = useAppSelector((state) => state.app.pushNotificationsEnabled);
+  const pushRegistered = useAppSelector((state) => state.notifications.pushRegistered);
   const emailNotifications = useAppSelector((state) => state.app.emailNotificationsEnabled);
   const biometricLogin = useAppSelector((state) => state.app.biometricEnabled);
+
+  // The "true" toggle state is the AND of user intent (pushNotifications)
+  // and reality (the device actually has a player id registered with the
+  // backend). If reality says no, the toggle must read OFF so the user
+  // sees they need to enable it.
+  const pushToggleValue = pushNotifications && pushRegistered;
+
+  // If the persisted intent says ON but the device isn't registered,
+  // sync the intent down to OFF once on mount so other screens (and
+  // the post-login popup) see consistent state.
+  useEffect(() => {
+    if (pushNotifications && !pushRegistered) {
+      dispatch(setPushNotificationsEnabled(false));
+    }
+    // Intentionally only on mount — we don't want to fight the user
+    // mid-toggle while OneSignal is mid-handshake.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Extract name parts from full name
   const nameParts = (user?.name || '').split(' ');
@@ -198,32 +225,99 @@ export default function SettingsScreen() {
 
   // ── Toggle handlers with test popup ──
   const handlePushToggle = useCallback(
-    (value: boolean) => {
-      dispatch(setPushNotificationsEnabled(value));
-      if (value && user) {
-        Alert.alert(
-          t('settings.pushEnabled', 'Push Notifications Enabled'),
-          t('settings.pushEnabledDesc', 'You will now receive real-time notifications. Sending a test notification...'),
-          [
-            {
-              text: t('settings.sendTest', 'Send Test'),
-              onPress: () => {
-                sendNotification({
-                  userId: user.id,
-                  title: t('settings.testNotification', 'Test Notification'),
-                  message: t('settings.testNotificationMsg', 'Push notifications are working correctly!'),
-                  type: 'General',
-                  isRead: false,
-                }).catch(() => { });
-                Alert.alert(t('common.success', 'Success'), t('settings.testSent', 'Test notification sent! Check the notifications tab.'));
+    async (value: boolean) => {
+      if (value) {
+        // User wants push ON. Two cases:
+        //   a) Already registered → just flip intent and offer test.
+        //   b) Not registered → ask the OS for permission (this is a
+        //      user gesture, so the prompt is allowed). When OneSignal
+        //      hands us back a player id, the registration hook POSTs
+        //      it to the backend and flips pushRegistered to true.
+        if (!pushRegistered) {
+          const result = await enableOneSignalPush();
+          if (result.status === 'denied') {
+            // iOS remembers a previous "Don't Allow" and resolves
+            // immediately as denied without re-prompting. The only way
+            // out is system Settings, so offer that directly.
+            dispatch(setPushNotificationsEnabled(false));
+            Alert.alert(
+              t('push.deniedTitle', 'Permission denied'),
+              t(
+                'push.deniedMessageOpenSettings',
+                'Push notifications are blocked. Open Settings to allow them.',
+              ),
+              [
+                { text: t('common.cancel', 'Cancel'), style: 'cancel' },
+                {
+                  text: t('push.openSettings', 'Open Settings'),
+                  onPress: () => {
+                    Linking.openSettings().catch(() => {});
+                  },
+                },
+              ],
+            );
+            return;
+          }
+          if (result.status === 'unavailable') {
+            // Expo Go or SDK init failure — push isn't available in
+            // this build. Tell the user instead of silently failing.
+            dispatch(setPushNotificationsEnabled(false));
+            Alert.alert(
+              t('push.unavailableTitle', 'Push not available'),
+              t(
+                'push.unavailableMessage',
+                "This build doesn't support push notifications. Install the development build to test them on a real device.",
+              ),
+            );
+            return;
+          }
+          // status === 'granted'. result.playerId may still be null on
+          // first launch — that's fine, the registration hook's change
+          // listener will catch it within a few seconds and POST it.
+        }
+        dispatch(setPushNotificationsEnabled(true));
+        if (user) {
+          Alert.alert(
+            t('settings.pushEnabled', 'Push Notifications Enabled'),
+            t(
+              'settings.pushEnabledDesc',
+              'You will now receive real-time notifications. Sending a test notification...',
+            ),
+            [
+              {
+                text: t('settings.sendTest', 'Send Test'),
+                onPress: () => {
+                  sendNotification({
+                    userId: user.id,
+                    title: t('settings.testNotification', 'Test Notification'),
+                    message: t(
+                      'settings.testNotificationMsg',
+                      'Push notifications are working correctly!',
+                    ),
+                    type: 'General',
+                    isRead: false,
+                  }).catch(() => {});
+                  Alert.alert(
+                    t('common.success', 'Success'),
+                    t(
+                      'settings.testSent',
+                      'Test notification sent! Check the notifications tab.',
+                    ),
+                  );
+                },
               },
-            },
-            { text: t('common.cancel', 'Cancel'), style: 'cancel' },
-          ],
-        );
+              { text: t('common.cancel', 'Cancel'), style: 'cancel' },
+            ],
+          );
+        }
+      } else {
+        // User wants push OFF. Opt out at the SDK level so the device
+        // actually stops receiving native pushes, then flip intent.
+        disableOneSignalPush();
+        dispatch(setPushNotificationsEnabled(false));
       }
     },
-    [dispatch, user, sendNotification, t],
+    [dispatch, user, sendNotification, t, pushRegistered],
   );
 
   const handleEmailToggle = useCallback(
@@ -488,19 +582,25 @@ export default function SettingsScreen() {
           <SettingsRow
             icon="notifications-outline"
             label={t('settings.pushNotifications', 'Push Notifications')}
-            subtitle={pushNotifications ? t('settings.enabled', 'Enabled') : t('settings.disabled', 'Disabled')}
+            subtitle={
+              pushToggleValue
+                ? t('settings.enabled', 'Enabled')
+                : pushNotifications && !pushRegistered
+                  ? t('settings.pushNotRegistered', 'Not registered — toggle to enable')
+                  : t('settings.disabled', 'Disabled')
+            }
             showChevron={false}
             iconColor={theme.colors.primary}
             rightElement={
               <Switch
-                value={pushNotifications}
+                value={pushToggleValue}
                 onValueChange={handlePushToggle}
                 trackColor={{
                   false: theme.colors.disabled,
                   true: theme.colors.primary + '80',
                 }}
                 thumbColor={
-                  pushNotifications ? theme.colors.primary : theme.colors.textTertiary
+                  pushToggleValue ? theme.colors.primary : theme.colors.textTertiary
                 }
               />
             }

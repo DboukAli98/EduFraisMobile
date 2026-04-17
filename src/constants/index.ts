@@ -1,5 +1,11 @@
 // Update this to your actual API URL (e.g. local dev, staging, production)
-export const API_BASE_URL = "http://192.168.10.230:5149/api";
+export const API_BASE_URL =
+  "https://edufrais-cnatavfte0fhdfe2.francecentral-01.azurewebsites.net/api";
+
+// OneSignal app id (must match the AppId in the backend's
+// appsettings.json → OneSignalCredentials, since the backend pushes
+// to this app's player ids).
+export const ONESIGNAL_APP_ID = "7a7bb505-d9c7-4366-9e85-7051fbfd2b90";
 
 // Congo Brazzaville
 export const COUNTRY_CODE = "242";

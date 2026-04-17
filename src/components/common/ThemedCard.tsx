@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { View, Pressable, ViewStyle, StyleSheet } from 'react-native';
+import { View, Pressable, ViewStyle, StyleProp, StyleSheet } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -11,7 +11,7 @@ type CardVariant = 'default' | 'elevated' | 'outlined';
 
 interface ThemedCardProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   onPress?: () => void;
   variant?: CardVariant;
   padding?: number;

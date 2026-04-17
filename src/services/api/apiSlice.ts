@@ -1,6 +1,13 @@
 import { createApi, fetchBaseQuery, type BaseQueryFn, type FetchArgs, type FetchBaseQueryError } from '@reduxjs/toolkit/query/react';
+import { router } from 'expo-router';
+import i18n from 'i18next';
 import type { RootState } from '../../store/store';
+import { logout } from '../../store/slices/authSlice';
 import { API_BASE_URL } from '../../constants';
+
+// Guard so we don't trigger multiple navigations / dispatches if many
+// requests fail with 401 in quick succession.
+let isHandling401 = false;
 
 // ─── Request/response logger ────────────────────────────────────
 // Wraps fetchBaseQuery so every outbound request is logged, and every
@@ -14,6 +21,10 @@ const rawBaseQuery = fetchBaseQuery({
       headers.set('Authorization', `Bearer ${token}`);
     }
     headers.set('Content-Type', 'application/json');
+    // Tell the backend which language to localize error/success messages
+    // in. Backend AuthMessages.cs reads the primary tag (fr / en) and
+    // falls back to French. Defaults to 'fr' before i18n initializes.
+    headers.set('Accept-Language', (i18n.language || 'fr').split('-')[0]);
     return headers;
   },
 });
@@ -48,15 +59,40 @@ const loggingBaseQuery: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryE
 
   // ── Response
   if ('error' in result && result.error) {
+    const status = (result.error as any).status;
     console.log(
       `${tag} ✖ ${method} ${url} (${ms}ms)`,
       '\n  status:',
-      (result.error as any).status,
+      status,
       '\n  data:',
       JSON.stringify((result.error as any).data, null, 2),
       '\n  error:',
       (result.error as any).error,
     );
+
+    // ── Global 401 handler: token is invalid/expired — log the user
+    // out and bounce them back to the sign-in screen. The guard
+    // prevents multiple in-flight 401s from triggering N navigations.
+    //
+    // Skip this for endpoints where a 401 is an expected outcome that
+    // the UI needs to surface as an error message (wrong credentials,
+    // reset-password flow, etc.). Otherwise the sign-in screen's
+    // "Invalid credentials" toast never fires because we force-redirect
+    // back to sign-in and swallow the error data.
+    const isAuthEndpoint = /\/authentication\//i.test(url);
+    if (status === 401 && !isHandling401 && !isAuthEndpoint) {
+      isHandling401 = true;
+      try {
+        api.dispatch(logout());
+        router.replace('/(auth)/sign-in');
+      } finally {
+        // Release the guard on the next tick so subsequent (legitimate)
+        // 401s after the user signs back in can still fire.
+        setTimeout(() => {
+          isHandling401 = false;
+        }, 1000);
+      }
+    }
   } else if (isPayment) {
     console.log(
       `${tag} ✓ ${method} ${url} (${ms}ms)`,
@@ -98,6 +134,7 @@ import type {
   InitiatePaymentResponse,
   SchoolFeesPaymentHistoryDto,
   MerchandisePaymentHistoryDto,
+  InvoiceHistoryDto,
   CollectingAgent,
   CollectingAgentActivity,
   AgentCommission,
@@ -123,6 +160,7 @@ export const apiSlice = createApi({
   tagTypes: [
     'Auth', 'Parents', 'Children', 'Schools', 'Payments',
     'Agents', 'Support', 'Notifications', 'Reports', 'Merchandise',
+    'Invoices',
   ],
   endpoints: (builder) => ({
     // ═══════════════════════════════════════════════════════════
@@ -471,6 +509,39 @@ export const apiSlice = createApi({
     }),
 
     // ═══════════════════════════════════════════════════════════
+    // INVOICES
+    // Receipts (PDFs) generated when a payment transaction is
+    // processed (status 8). Paged list + manual regeneration.
+    // Direct downloads go through getInvoicePdfUrl() below — the
+    // static URL is simpler than streaming binary through RTK.
+    // ═══════════════════════════════════════════════════════════
+    getInvoiceHistory: builder.query<
+      PagedResponse<InvoiceHistoryDto>,
+      { invoiceType?: 'SCHOOLFEE' | 'MERCHANDISEFEE' } & PaginationRequest
+    >({
+      query: (params) => ({ url: '/invoice/history', params }),
+      providesTags: ['Invoices'],
+    }),
+    generateInvoice: builder.mutation<
+      {
+        invoiceId: number;
+        invoiceNumber: string;
+        filePath: string;
+        fileName: string;
+        invoiceType: string;
+        totalAmount: number;
+        generatedOn: string;
+      },
+      { paymentTransactionId: number }
+    >({
+      query: ({ paymentTransactionId }) => ({
+        url: `/invoice/generate/${paymentTransactionId}`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Invoices'],
+    }),
+
+    // ═══════════════════════════════════════════════════════════
     // COLLECTING AGENTS
     // ═══════════════════════════════════════════════════════════
     getAllAgents: builder.query<PagedResponse<CollectingAgent>, { schoolId?: number } & PaginationRequest>({
@@ -550,6 +621,12 @@ export const apiSlice = createApi({
     }>({
       query: (data) => ({ url: '/collectingagent/RejectAgentRequest', method: 'POST', body: data }),
       invalidatesTags: ['Agents', 'Parents'],
+    }),
+    cancelAgentRequest: builder.mutation<BaseResponse, {
+      collectingAgentParentId: number; parentId: number;
+    }>({
+      query: (data) => ({ url: '/collectingagent/CancelAgentRequest', method: 'POST', body: data }),
+      invalidatesTags: ['Agents'],
     }),
     getMyActivities: builder.query<
       PagedResponse<CollectingAgentActivity>,
@@ -739,10 +816,18 @@ export const apiSlice = createApi({
     // COMMON
     // ═══════════════════════════════════════════════════════════
     alterModuleStatus: builder.mutation<BaseResponse, {
-      moduleName: string; actionType: string; moduleItemsIds: string;
+      moduleName:
+        | 'schools'
+        | 'schoolgradesection'
+        | 'schoolparentssection'
+        | 'schoolchildrensection'
+        | 'schoolagentssection'
+        | 'schoolmerchandisessection';
+      actionType: 'enable' | 'disable' | 'deleted';
+      moduleItemsIds: string;
     }>({
       query: (data) => ({ url: '/common/AlterModuleStatus', method: 'POST', body: data }),
-      invalidatesTags: ['Schools', 'Children', 'Parents'],
+      invalidatesTags: ['Schools', 'Children', 'Parents', 'Agents', 'Merchandise'],
     }),
   }),
 });
@@ -808,6 +893,9 @@ export const {
   useLazyCheckPaymentStatusQuery,
   useGetSchoolFeesPaymentHistoryQuery,
   useGetMerchandisePaymentHistoryQuery,
+  // Invoices
+  useGetInvoiceHistoryQuery,
+  useGenerateInvoiceMutation,
   // Agents
   useGetAllAgentsQuery,
   useGetAgentDetailsQuery,
@@ -822,6 +910,7 @@ export const {
   useGetMyAgentRequestsQuery,
   useApproveAgentRequestMutation,
   useRejectAgentRequestMutation,
+  useCancelAgentRequestMutation,
   useGetMyActivitiesQuery,
   useLogMyActivityMutation,
   useGetMyCommissionsQuery,
@@ -858,3 +947,32 @@ export const {
   // Common
   useAlterModuleStatusMutation,
 } = apiSlice;
+
+// ─── Invoice URL helpers ────────────────────────────────────────
+// The PDF itself is served as a static file under wwwroot, NOT
+// through /api. API_BASE_URL ends with "/api" so we strip that
+// suffix to build the static origin.
+const STATIC_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, '');
+
+/**
+ * Full public URL for an invoice PDF, given its stored `filePath`
+ * (e.g. "/invoices/2026/04/INV-2026-000123.pdf"). Use this for
+ * in-app WebView / Linking open. No auth required — files are
+ * obscure by InvoiceNumber but not protected at the static layer.
+ */
+export const getInvoicePdfUrl = (filePath: string): string => {
+  if (!filePath) return '';
+  const normalized = filePath.startsWith('/') ? filePath : `/${filePath}`;
+  return `${STATIC_ORIGIN}${normalized}`;
+};
+
+/**
+ * Full URL for the authenticated download endpoint. Use this when
+ * you want the backend to enforce ownership (parent can only pull
+ * their own invoices) — the request needs the Bearer token set by
+ * the RTK base query, so prefer calling through `fetch` with the
+ * auth header or trigger a download via a library that supports
+ * custom headers (e.g. expo-file-system.downloadAsync).
+ */
+export const getInvoiceDownloadUrl = (invoiceId: number): string =>
+  `${API_BASE_URL}/invoice/download/${invoiceId}`;

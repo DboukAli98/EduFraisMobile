@@ -32,6 +32,7 @@ import {
   useGetAgentDetailsQuery,
   useGetAgentParentsQuery,
   useGetAllAgentsQuery,
+  useAlterModuleStatusMutation,
 } from '../../services/api/apiSlice';
 import { formatCurrency, formatDate, formatPhone } from '../../utils';
 import { COUNTRY_CODE } from '../../constants';
@@ -132,6 +133,73 @@ const AgentDetailScreen: React.FC = () => {
   );
 
   const [editAgent, { isLoading: isSavingAgent }] = useEditAgentMutation();
+  const [alterStatus, { isLoading: isAlteringStatus }] = useAlterModuleStatusMutation();
+
+  const performAgentStatus = async (action: 'enable' | 'disable' | 'deleted') => {
+    if (!numericAgentId) return;
+    try {
+      await alterStatus({
+        moduleName: 'schoolagentssection',
+        actionType: action,
+        moduleItemsIds: String(numericAgentId),
+      }).unwrap();
+      Alert.alert(t('common.success', 'Success'), t('common.statusChanged', 'Status updated.'));
+      if (action === 'deleted') {
+        router.back();
+      }
+    } catch (err: any) {
+      Alert.alert(
+        t('common.error', 'Error'),
+        err?.data?.error || err?.data?.message || t('common.error', 'Something went wrong'),
+      );
+    }
+  };
+
+  const showAgentActions = () => {
+    if (!agent) return;
+    const isActive = agent.fK_StatusId === 1;
+    Alert.alert(
+      t('common.actions', 'Actions'),
+      t('common.chooseAction', 'Choose an action'),
+      [
+        { text: t('common.cancel', 'Cancel'), style: 'cancel' },
+        {
+          text: isActive ? t('common.disable', 'Disable') : t('common.enable', 'Enable'),
+          onPress: () =>
+            Alert.alert(
+              t('common.actions', 'Actions'),
+              isActive
+                ? t('common.confirmDisable', 'Disable this item?')
+                : t('common.confirmEnable', 'Enable this item?'),
+              [
+                { text: t('common.cancel', 'Cancel'), style: 'cancel' },
+                {
+                  text: t('common.confirm', 'Confirm'),
+                  onPress: () => performAgentStatus(isActive ? 'disable' : 'enable'),
+                },
+              ],
+            ),
+        },
+        {
+          text: t('common.delete', 'Delete'),
+          style: 'destructive',
+          onPress: () =>
+            Alert.alert(
+              t('common.delete', 'Delete'),
+              t('common.confirmDelete', 'This will permanently remove the item. Continue?'),
+              [
+                { text: t('common.cancel', 'Cancel'), style: 'cancel' },
+                {
+                  text: t('common.delete', 'Delete'),
+                  style: 'destructive',
+                  onPress: () => performAgentStatus('deleted'),
+                },
+              ],
+            ),
+        },
+      ],
+    );
+  };
 
   const agent = agentRes?.data;
   const parents = parentsRes?.data ?? [];
@@ -411,6 +479,16 @@ const AgentDetailScreen: React.FC = () => {
           style={styles.actionButton}
           icon={<Ionicons name="create-outline" size={18} color="#FFFFFF" />}
         />
+        <Pressable
+          onPress={showAgentActions}
+          disabled={isAlteringStatus}
+          style={[
+            styles.moreActionBtn,
+            { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.md },
+          ]}
+        >
+          <Ionicons name="ellipsis-vertical" size={20} color={theme.colors.text} />
+        </Pressable>
       </View>
 
       <SectionHeader
@@ -687,6 +765,11 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
+  },
+  moreActionBtn: {
+    width: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyCard: {
     marginBottom: 16,

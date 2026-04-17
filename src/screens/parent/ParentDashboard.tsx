@@ -222,7 +222,8 @@ const ParentDashboard: React.FC = () => {
       <Animated.View style={[styles.qaRow, qaAnim]}>
         <QuickAction icon="wallet-outline" label={t('parent.dashboard.payNow', 'Pay Now')} color={theme.colors.primary} onPress={() => router.push('/(app)/payments')} index={0} />
         <QuickAction icon="time-outline" label={t('parent.dashboard.history', 'History')} color={theme.colors.secondary} onPress={() => router.push('/(app)/payment-history')} index={1} />
-        <QuickAction icon="help-circle-outline" label={t('parent.dashboard.support', 'Support')} color={theme.colors.accent} onPress={() => router.push('/(app)/support')} index={2} />
+        <QuickAction icon="person-add-outline" label={t('parent.dashboard.myAgents', 'My Agents')} color="#8B5CF6" onPress={() => router.push('/(app)/my-agents')} index={2} />
+        <QuickAction icon="help-circle-outline" label={t('parent.dashboard.support', 'Support')} color={theme.colors.accent} onPress={() => router.push('/(app)/support')} index={3} />
       </Animated.View>
 
       {/* Upcoming Dues */}

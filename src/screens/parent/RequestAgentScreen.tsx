@@ -12,7 +12,7 @@ import {
   Avatar,
   EmptyState,
   ScreenSkeleton,
-  PrimaryButton,
+  ThemedButton,
   SectionHeader,
 } from '../../components';
 import { useTheme } from '../../theme';
@@ -132,10 +132,10 @@ const RequestAgentScreen: React.FC = () => {
         <Pressable onPress={() => setSelectedId(item.collectingAgentId)}>
           <ThemedCard
             variant={isSelected ? 'elevated' : 'outlined'}
-            style={[
-              styles.card,
-              isSelected && { borderColor: theme.colors.primary, borderWidth: 2 },
-            ]}
+            style={{
+              ...styles.card,
+              ...(isSelected ? { borderColor: theme.colors.primary, borderWidth: 2 } : {}),
+            }}
           >
             <View style={styles.row}>
               <Avatar firstName={item.firstName} lastName={item.lastName} size="md" />
@@ -218,8 +218,9 @@ const RequestAgentScreen: React.FC = () => {
               },
             ]}
           />
-          <PrimaryButton
-            label={t('parent.agents.sendRequest', 'Send Request')}
+          <ThemedButton
+            title={t('parent.agents.sendRequest', 'Send Request')}
+            variant="primary"
             onPress={handleSubmit}
             loading={submitting}
             style={styles.submitBtn}
