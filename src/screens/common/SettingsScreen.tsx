@@ -130,23 +130,14 @@ export default function SettingsScreen() {
   const emailNotifications = useAppSelector((state) => state.app.emailNotificationsEnabled);
   const biometricLogin = useAppSelector((state) => state.app.biometricEnabled);
 
-  // The "true" toggle state is the AND of user intent (pushNotifications)
-  // and reality (the device actually has a player id registered with the
-  // backend). If reality says no, the toggle must read OFF so the user
-  // sees they need to enable it.
-  const pushToggleValue = pushNotifications && pushRegistered;
-
-  // If the persisted intent says ON but the device isn't registered,
-  // sync the intent down to OFF once on mount so other screens (and
-  // the post-login popup) see consistent state.
-  useEffect(() => {
-    if (pushNotifications && !pushRegistered) {
-      dispatch(setPushNotificationsEnabled(false));
-    }
-    // Intentionally only on mount — we don't want to fight the user
-    // mid-toggle while OneSignal is mid-handshake.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // The toggle reflects the user's *intent*. `pushRegistered` is a
+  // diagnostic (did the backend hear about the player id yet?) and
+  // lags by seconds on a cold start while FCM does its handshake —
+  // gating the toggle on it was flipping it OFF right after the user
+  // had tapped "Enable", which looked to them like the setting never
+  // took. If the registration later fails we show that as a status
+  // line under the toggle rather than moving the toggle itself.
+  const pushToggleValue = pushNotifications;
 
   // Extract name parts from full name
   const nameParts = (user?.name || '').split(' ');
@@ -591,11 +582,11 @@ export default function SettingsScreen() {
             icon="notifications-outline"
             label={t('settings.pushNotifications', 'Push Notifications')}
             subtitle={
-              pushToggleValue
-                ? t('settings.enabled', 'Enabled')
-                : pushNotifications && !pushRegistered
-                  ? t('settings.pushNotRegistered', 'Not registered — toggle to enable')
-                  : t('settings.disabled', 'Disabled')
+              pushNotifications
+                ? pushRegistered
+                  ? t('settings.enabled', 'Enabled')
+                  : t('settings.pushActivating', 'Enabled — finalizing device registration…')
+                : t('settings.disabled', 'Disabled')
             }
             showChevron={false}
             iconColor={theme.colors.primary}

@@ -350,6 +350,22 @@ export function useOneSignalRegistration() {
     } else {
       // Make sure stale "registered" state from a previous session is cleared.
       dispatch(setPushRegistered(false));
+      // Diagnostic: if permission is granted but the id is null, FCM
+      // is failing to return a token — usually a OneSignal dashboard
+      // FCM Service Account misconfiguration. Surface that so it
+      // stops looking like a client-side bug.
+      try {
+        const sub = OneSignal.User?.pushSubscription;
+        // eslint-disable-next-line no-console
+        console.log('[OneSignal] No playerId yet.', {
+          permission: OneSignal.Notifications?.permission,
+          optedIn: sub?.optedIn,
+          id: sub?.id,
+          token: sub?.token,
+        });
+      } catch {
+        // ignore
+      }
     }
 
     // Subscribe to subscription changes so we catch the first id (or
@@ -401,18 +417,56 @@ export function useOneSignalRegistration() {
     }
   }, [isAuthenticated, dispatch]);
 
-  // ── 4) Post-login: if the device has no player id (permission
-  //       never granted, or this is a brand-new install), prompt the
-  //       user once to enable push notifications. We give the SDK a
-  //       short delay to publish a cached id before deciding to ask.
+  // ── 4) Post-login: if the device has no player id AND the OS has
+  //       not yet granted permission, prompt the user once to enable
+  //       push notifications. We give the SDK a short delay to
+  //       publish a cached id before deciding to ask.
   useEffect(() => {
     if (!isAuthenticated || !user?.id) return;
     if (!OneSignal || isExpoGo) return;
     if (promptedFor.current === user.id) return;
 
-    const t = setTimeout(() => {
+    const t = setTimeout(async () => {
       // If we already got a player id by now there's nothing to ask.
-      if (readPlayerId()) return;
+      if (readPlayerId()) {
+        promptedFor.current = user.id;
+        if (!pushEnabled) dispatch(setPushNotificationsEnabled(true));
+        return;
+      }
+      // Critical: if the OS already granted permission we must NOT
+      // re-prompt. The player id may just be slow to arrive (FCM
+      // handshake can take seconds on a cold start) — the
+      // pushSubscription `change` listener in effect #2 will pick it
+      // up when it lands. Re-asking a user who already said yes is
+      // the #1 source of notification fatigue and is what was
+      // causing the popup on every login.
+      let osGranted: boolean | null = null;
+      try {
+        const syncPerm = OneSignal.Notifications?.permission;
+        if (typeof syncPerm === 'boolean') {
+          osGranted = syncPerm;
+        } else if (
+          typeof OneSignal.Notifications?.getPermissionAsync === 'function'
+        ) {
+          osGranted = await OneSignal.Notifications.getPermissionAsync();
+        }
+      } catch {
+        osGranted = null;
+      }
+      if (osGranted === true) {
+        promptedFor.current = user.id;
+        if (!pushEnabled) dispatch(setPushNotificationsEnabled(true));
+        // Some SDK builds don't auto-opt-in even after permission is
+        // granted, which is exactly what causes OneSignal to return
+        // `recipients: 0` — accepted the POST but won't deliver.
+        // Force optIn so the subscription is active.
+        try {
+          OneSignal.User?.pushSubscription?.optIn?.();
+        } catch {
+          // ignore — older SDKs opt in implicitly
+        }
+        return;
+      }
       // Don't prompt if the user has explicitly turned push off in
       // settings — respect their choice.
       if (!pushEnabled) return;
