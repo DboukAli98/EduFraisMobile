@@ -325,9 +325,9 @@ const DirectorChildDetailScreen: React.FC = () => {
         {/* Profile card */}
         <ThemedCard variant="elevated" style={styles.profileCard}>
           <View style={styles.profileRow}>
-            <Avatar firstName={child.firstName} lastName={child.lastName} size="xl" />
+            <Avatar firstName={child.firstName} lastName={child.lastName} size="lg" />
             <View style={styles.profileInfo}>
-              <ThemedText variant="h2">
+              <ThemedText variant="title">
                 {child.firstName} {child.lastName}
               </ThemedText>
               {child.fatherName ? (
@@ -340,7 +340,7 @@ const DirectorChildDetailScreen: React.FC = () => {
                 <ThemedText
                   variant="caption"
                   color={statusColors[status]}
-                  style={{ fontWeight: '600' }}
+                  style={{ fontWeight: '500', fontSize: 11 }}
                 >
                   {statusLabels[status]}
                 </ThemedText>
@@ -567,7 +567,7 @@ const styles = StyleSheet.create({
   section: { paddingHorizontal: 16, marginTop: 12 },
   infoCard: { marginHorizontal: 16, padding: 0, overflow: 'hidden', marginBottom: 4 },
   statusInline: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
-  dot: { width: 8, height: 8, borderRadius: 4 },
+  dot: { width: 6, height: 6, borderRadius: 3 },
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',

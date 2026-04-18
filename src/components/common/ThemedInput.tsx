@@ -86,7 +86,7 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
           styles.inputContainer,
           {
             backgroundColor: theme.colors.inputBackground,
-            borderRadius: theme.borderRadius.md,
+            borderRadius: theme.borderRadius.lg,
           },
           animatedBorderStyle,
           multiline && styles.multiline,
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    height: 52,
+    height: 44,
     paddingVertical: 0,
   },
   input: {
@@ -150,6 +150,7 @@ const styles = StyleSheet.create({
     margin: 0,
     includeFontPadding: false,
     textAlignVertical: 'center',
+    fontSize: 14,
   },
   multiline: {
     height: undefined,

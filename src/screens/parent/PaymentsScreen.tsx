@@ -293,9 +293,8 @@ const PaymentsScreen: React.FC = () => {
           style={[
             styles.searchBar,
             {
-              backgroundColor: theme.colors.surface,
-              borderColor: theme.colors.borderLight,
-              borderRadius: theme.borderRadius.md,
+              backgroundColor: theme.colors.inputBackground,
+              borderRadius: theme.borderRadius.full,
             },
           ]}
         >
@@ -440,16 +439,16 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    height: 42,
+    borderWidth: 0,
+    paddingHorizontal: 14,
+    height: 38,
   },
   searchIcon: {
     marginRight: 8,
   },
   searchInput: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 13,
     paddingVertical: 0,
   },
   clearBtn: {

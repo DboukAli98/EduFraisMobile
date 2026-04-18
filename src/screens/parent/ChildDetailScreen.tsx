@@ -349,9 +349,9 @@ export default function ChildDetailScreen() {
         <Animated.View style={profileAnim}>
           <ThemedCard style={styles.profileCard}>
             <View style={styles.profileRow}>
-              <Avatar firstName={child.firstName} lastName={child.lastName} size="xl" />
+              <Avatar firstName={child.firstName} lastName={child.lastName} size="lg" />
               <View style={styles.profileInfo}>
-                <ThemedText variant="h2">
+                <ThemedText variant="title">
                   {child.firstName} {child.lastName}
                 </ThemedText>
                 {child.fatherName ? (
@@ -365,7 +365,7 @@ export default function ChildDetailScreen() {
                     { backgroundColor: statusConfig.bg, borderRadius: theme.borderRadius.full },
                   ]}
                 >
-                  <ThemedText variant="caption" color="#FFFFFF" style={{ fontWeight: '600' }}>
+                  <ThemedText variant="caption" color="#FFFFFF" style={{ fontWeight: '500', fontSize: 11 }}>
                     {statusConfig.label}
                   </ThemedText>
                 </View>
@@ -558,9 +558,9 @@ const styles = StyleSheet.create({
   },
   statusBadge: {
     alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    marginTop: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginTop: 6,
   },
   sectionCard: {
     marginBottom: 12,

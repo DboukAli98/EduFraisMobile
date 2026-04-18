@@ -26,6 +26,55 @@ import {
 import type { CollectingAgent } from '../../types';
 
 // ---------------------------------------------------------------------------
+// AgentCard (extracted so hooks are valid)
+// ---------------------------------------------------------------------------
+
+interface AgentCardProps {
+  agent: CollectingAgent;
+  index: number;
+  isSelected: boolean;
+  onSelect: () => void;
+}
+
+const AgentCard: React.FC<AgentCardProps> = ({ agent, index, isSelected, onSelect }) => {
+  const { theme } = useTheme();
+  const anim = useAnimatedEntry({ type: 'slideUp', delay: staggerDelay(index + 1) });
+
+  return (
+    <Animated.View style={anim}>
+      <Pressable onPress={onSelect}>
+        <ThemedCard
+          variant={isSelected ? 'elevated' : 'outlined'}
+          style={{
+            ...styles.card,
+            ...(isSelected ? { borderColor: theme.colors.primary, borderWidth: 2 } : {}),
+          }}
+        >
+          <View style={styles.row}>
+            <Avatar firstName={agent.firstName} lastName={agent.lastName} size="md" />
+            <View style={styles.info}>
+              <ThemedText variant="body" style={{ fontWeight: '600' }}>
+                {agent.firstName} {agent.lastName}
+              </ThemedText>
+              {agent.assignedArea ? (
+                <ThemedText variant="caption" color={theme.colors.textSecondary}>
+                  {agent.assignedArea}
+                </ThemedText>
+              ) : null}
+            </View>
+            {isSelected ? (
+              <Ionicons name="checkmark-circle" size={24} color={theme.colors.primary} />
+            ) : (
+              <Ionicons name="ellipse-outline" size={24} color={theme.colors.textTertiary} />
+            )}
+          </View>
+        </ThemedCard>
+      </Pressable>
+    </Animated.View>
+  );
+};
+
+// ---------------------------------------------------------------------------
 // Screen
 // ---------------------------------------------------------------------------
 
@@ -97,10 +146,10 @@ const RequestAgentScreen: React.FC = () => {
         Alert.alert(
           t('common.success', 'Success'),
           result.message ||
-            t(
-              'parent.agents.requestSentMessage',
-              'Your request has been sent to the director for approval.',
-            ),
+          t(
+            'parent.agents.requestSentMessage',
+            'Your request has been sent to the director for approval.',
+          ),
           [
             {
               text: t('common.ok', 'OK'),
@@ -125,41 +174,14 @@ const RequestAgentScreen: React.FC = () => {
     );
   }
 
-  const renderAgent = ({ item, index }: { item: CollectingAgent; index: number }) => {
-    const isSelected = item.collectingAgentId === selectedId;
-    return (
-      <Animated.View style={useAnimatedEntry({ type: 'slideUp', delay: staggerDelay(index + 1) })}>
-        <Pressable onPress={() => setSelectedId(item.collectingAgentId)}>
-          <ThemedCard
-            variant={isSelected ? 'elevated' : 'outlined'}
-            style={{
-              ...styles.card,
-              ...(isSelected ? { borderColor: theme.colors.primary, borderWidth: 2 } : {}),
-            }}
-          >
-            <View style={styles.row}>
-              <Avatar firstName={item.firstName} lastName={item.lastName} size="md" />
-              <View style={styles.info}>
-                <ThemedText variant="subtitle">
-                  {item.firstName} {item.lastName}
-                </ThemedText>
-                {item.assignedArea ? (
-                  <ThemedText variant="caption" color={theme.colors.textSecondary}>
-                    {item.assignedArea}
-                  </ThemedText>
-                ) : null}
-              </View>
-              {isSelected ? (
-                <Ionicons name="checkmark-circle" size={24} color={theme.colors.primary} />
-              ) : (
-                <Ionicons name="ellipse-outline" size={24} color={theme.colors.textTertiary} />
-              )}
-            </View>
-          </ThemedCard>
-        </Pressable>
-      </Animated.View>
-    );
-  };
+  const renderAgent = ({ item, index }: { item: CollectingAgent; index: number }) => (
+    <AgentCard
+      agent={item}
+      index={index}
+      isSelected={item.collectingAgentId === selectedId}
+      onSelect={() => setSelectedId(item.collectingAgentId)}
+    />
+  );
 
   return (
     <ScreenContainer scrollable={false}>

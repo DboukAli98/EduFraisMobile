@@ -33,9 +33,9 @@ interface ThemedButtonProps {
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const SIZE_CONFIG: Record<ButtonSize, { height: number; paddingHorizontal: number; fontSize: number }> = {
-  sm: { height: 40, paddingHorizontal: 16, fontSize: 14 },
-  md: { height: 48, paddingHorizontal: 20, fontSize: 16 },
-  lg: { height: 56, paddingHorizontal: 24, fontSize: 16 },
+  sm: { height: 34, paddingHorizontal: 14, fontSize: 12 },
+  md: { height: 42, paddingHorizontal: 18, fontSize: 13 },
+  lg: { height: 48, paddingHorizontal: 22, fontSize: 14 },
 };
 
 const ThemedButton: React.FC<ThemedButtonProps> = ({

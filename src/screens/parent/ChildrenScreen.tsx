@@ -95,9 +95,9 @@ const ChildCard: React.FC<ChildCardProps> = ({ child, index, onPress }) => {
     <Animated.View style={anim}>
       <ThemedCard variant="elevated" onPress={onPress} style={styles.childCard}>
         <View style={styles.childRow}>
-          <Avatar firstName={child.firstName} lastName={child.lastName} size="lg" />
+          <Avatar firstName={child.firstName} lastName={child.lastName} size="md" />
           <View style={styles.childInfo}>
-            <ThemedText variant="subtitle">
+            <ThemedText variant="body" style={{ fontWeight: '600' }}>
               {child.firstName} {child.lastName}
             </ThemedText>
             {child.schoolName ? (
@@ -125,7 +125,7 @@ const ChildCard: React.FC<ChildCardProps> = ({ child, index, onPress }) => {
                   { backgroundColor: sc.bg, borderRadius: theme.borderRadius.full },
                 ]}
               >
-                <ThemedText variant="caption" color="#FFFFFF" style={styles.approvalTxt}>
+                <ThemedText variant="caption" color="#FFFFFF" style={styles.approvalTxt} numberOfLines={1}>
                   {sc.label}
                 </ThemedText>
               </View>
@@ -322,19 +322,20 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   gradeBadge: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 2,
   },
   gradeTxt: {
-    fontWeight: '600',
+    fontWeight: '500',
+    fontSize: 10,
   },
   approvalBadge: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 2,
   },
   approvalTxt: {
-    fontWeight: '600',
-    fontSize: 11,
+    fontWeight: '500',
+    fontSize: 10,
   },
 });
 
