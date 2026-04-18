@@ -218,54 +218,53 @@ export default function SettingsScreen() {
   const handlePushToggle = useCallback(
     async (value: boolean) => {
       if (value) {
-        // User wants push ON. Two cases:
-        //   a) Already registered → just flip intent and offer test.
-        //   b) Not registered → ask the OS for permission (this is a
-        //      user gesture, so the prompt is allowed). When OneSignal
-        //      hands us back a player id, the registration hook POSTs
-        //      it to the backend and flips pushRegistered to true.
-        if (!pushRegistered) {
-          const result = await enableOneSignalPush();
-          if (result.status === 'denied') {
-            // iOS remembers a previous "Don't Allow" and resolves
-            // immediately as denied without re-prompting. The only way
-            // out is system Settings, so offer that directly.
-            dispatch(setPushNotificationsEnabled(false));
-            Alert.alert(
-              t('push.deniedTitle', 'Permission denied'),
-              t(
-                'push.deniedMessageOpenSettings',
-                'Push notifications are blocked. Open Settings to allow them.',
-              ),
-              [
-                { text: t('common.cancel', 'Cancel'), style: 'cancel' },
-                {
-                  text: t('push.openSettings', 'Open Settings'),
-                  onPress: () => {
-                    Linking.openSettings().catch(() => { });
-                  },
+        // User wants push ON. Always call enableOneSignalPush — it's
+        // idempotent (requestPermission returns the cached OS answer
+        // instantly if already granted) and the `optIn()` it fires is
+        // what actually flips a stuck "Opted Out" subscription back
+        // to "Subscribed". Skipping this call when pushRegistered was
+        // true (from a prior session's backend POST) was the reason a
+        // toggle OFF→ON cycle couldn't recover an opted-out device.
+        const result = await enableOneSignalPush();
+        if (result.status === 'denied') {
+          // iOS remembers a previous "Don't Allow" and resolves
+          // immediately as denied without re-prompting. The only way
+          // out is system Settings, so offer that directly.
+          dispatch(setPushNotificationsEnabled(false));
+          Alert.alert(
+            t('push.deniedTitle', 'Permission denied'),
+            t(
+              'push.deniedMessageOpenSettings',
+              'Push notifications are blocked. Open Settings to allow them.',
+            ),
+            [
+              { text: t('common.cancel', 'Cancel'), style: 'cancel' },
+              {
+                text: t('push.openSettings', 'Open Settings'),
+                onPress: () => {
+                  Linking.openSettings().catch(() => { });
                 },
-              ],
-            );
-            return;
-          }
-          if (result.status === 'unavailable') {
-            // Expo Go or SDK init failure — push isn't available in
-            // this build. Tell the user instead of silently failing.
-            dispatch(setPushNotificationsEnabled(false));
-            Alert.alert(
-              t('push.unavailableTitle', 'Push not available'),
-              t(
-                'push.unavailableMessage',
-                "This build doesn't support push notifications. Install the development build to test them on a real device.",
-              ),
-            );
-            return;
-          }
-          // status === 'granted'. result.playerId may still be null on
-          // first launch — that's fine, the registration hook's change
-          // listener will catch it within a few seconds and POST it.
+              },
+            ],
+          );
+          return;
         }
+        if (result.status === 'unavailable') {
+          // Expo Go or SDK init failure — push isn't available in
+          // this build. Tell the user instead of silently failing.
+          dispatch(setPushNotificationsEnabled(false));
+          Alert.alert(
+            t('push.unavailableTitle', 'Push not available'),
+            t(
+              'push.unavailableMessage',
+              "This build doesn't support push notifications. Install the development build to test them on a real device.",
+            ),
+          );
+          return;
+        }
+        // status === 'granted'. result.playerId may still be null on
+        // first launch — that's fine, the registration hook's change
+        // listener will catch it within a few seconds and POST it.
         dispatch(setPushNotificationsEnabled(true));
         if (user) {
           Alert.alert(
@@ -308,7 +307,7 @@ export default function SettingsScreen() {
         dispatch(setPushNotificationsEnabled(false));
       }
     },
-    [dispatch, user, sendNotification, t, pushRegistered],
+    [dispatch, user, sendNotification, t],
   );
 
   const handleEmailToggle = useCallback(
@@ -1128,12 +1127,13 @@ const styles = StyleSheet.create({
   },
   modalActions: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
     gap: 8,
     marginTop: 20,
     paddingBottom: 8,
   },
   modalBtn: {
+    flex: 1,
     minWidth: 110,
   },
   passwordHint: {

@@ -13,6 +13,7 @@
     "search": "Rechercher",
     "retry": "Réessayer",
     "seeAll": "Tout voir",
+    "viewAll": "Voir tout",
     "noResults": "Aucun résultat trouvé",
     "error": "Une erreur est survenue",
     "success": "Succès",
@@ -98,7 +99,7 @@
       "currentLabel": "Mot de passe temporaire",
       "newLabel": "Nouveau mot de passe",
       "confirmLabel": "Confirmer le nouveau mot de passe",
-      "submit": "Mettre à jour le mot de passe",
+      "submit": "Mettre à jour",
       "currentRequired": "Saisissez votre mot de passe temporaire.",
       "tooShort": "Le nouveau mot de passe doit comporter au moins 6 caractères.",
       "mismatch": "Le nouveau mot de passe et sa confirmation ne correspondent pas.",
@@ -331,7 +332,7 @@
     "changePasswordDesc": "Entrez votre mot de passe actuel et choisissez-en un nouveau",
     "currentPassword": "Mot de passe actuel",
     "newPassword": "Nouveau mot de passe",
-    "updatePassword": "Mettre à jour le mot de passe",
+    "updatePassword": "Mettre à jour",
     "passwordHint": "Le mot de passe doit contenir au moins 6 caractères",
     "passwordChanged": "Mot de passe changé avec succès",
     "passwordChangeFailed": "Échec du changement de mot de passe. Vérifiez votre mot de passe actuel.",
@@ -566,7 +567,9 @@
         "2": "Demandes d'agents",
         "3": "Gérer les parents",
         "4": "Voir les rapports"
-      }
+      },
+      "pendingApprovals": "Approbations en attente",
+      "noPendingApprovals": "Aucune approbation d'enfant en attente."
     },
     "agents": {
       "title": "Agents",
@@ -579,7 +582,9 @@
       "commission": "Pourcentage de commission",
       "suggestedAreas": "Zones suggérées",
       "suggestedAreasDesc": "Utilisez un nom de quartier, district ou zone de couverture.",
-      "suggestedAreasEmpty": "Enregistrez une zone et elle apparaîtra ici comme sélection rapide pour les prochains agents."
+      "suggestedAreasEmpty": "Enregistrez une zone et elle apparaîtra ici comme sélection rapide pour les prochains agents.",
+      "viewDetails": "Voir détails",
+      "assignParent": "Affecter parent"
     },
     "agentRequests": {
       "title": "Demandes d'agent",
@@ -702,7 +707,7 @@
     "parents": {
       "title": "Parents",
       "addParent": "Ajouter",
-      "editParent": "Modifier",
+      "editParent": "Modifiernn",
       "detailTitle": "Détails du parent",
       "contact": "Informations de contact",
       "children": "Enfants",

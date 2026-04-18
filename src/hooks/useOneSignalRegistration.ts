@@ -318,6 +318,42 @@ export function useOneSignalRegistration() {
     const role = mapRole(user.role);
     if (!role) return;
 
+    // Recovery pass: if the OS granted permission but the OneSignal
+    // subscription is stuck in "Opted Out" (happens when initialize()
+    // ran before POST_NOTIFICATIONS was granted on the first install),
+    // force an explicit optIn so the dashboard flips to "Subscribed".
+    // Without this, OneSignal accepts the API call but never delivers.
+    // v5 API: permission is `hasPermission()` or `getPermissionAsync()`,
+    // NOT a `.permission` property. Same for `optedIn` — read the
+    // async getter when the sync cache isn't populated yet.
+    (async () => {
+      try {
+        const notifs = OneSignal.Notifications;
+        let perm: boolean | undefined;
+        if (typeof notifs?.hasPermission === 'function') {
+          perm = notifs.hasPermission();
+        } else if (typeof notifs?.getPermissionAsync === 'function') {
+          perm = await notifs.getPermissionAsync();
+        }
+        if (perm !== true) return;
+        const sub = OneSignal.User?.pushSubscription;
+        if (!sub) return;
+        let optedIn: boolean | undefined = sub.optedIn;
+        if (typeof optedIn !== 'boolean' && typeof sub.getOptedInAsync === 'function') {
+          optedIn = await sub.getOptedInAsync();
+        }
+        if (optedIn === false) {
+          // eslint-disable-next-line no-console
+          console.log(
+            '[OneSignal] Permission granted but subscription opted out — forcing optIn',
+          );
+          sub.optIn?.();
+        }
+      } catch {
+        // SDK shape mismatch — ignore
+      }
+    })();
+
     const sendToBackend = async (playerId: string) => {
       // Skip if the same pair was already registered this session.
       if (
@@ -353,19 +389,39 @@ export function useOneSignalRegistration() {
       // Diagnostic: if permission is granted but the id is null, FCM
       // is failing to return a token — usually a OneSignal dashboard
       // FCM Service Account misconfiguration. Surface that so it
-      // stops looking like a client-side bug.
-      try {
-        const sub = OneSignal.User?.pushSubscription;
-        // eslint-disable-next-line no-console
-        console.log('[OneSignal] No playerId yet.', {
-          permission: OneSignal.Notifications?.permission,
-          optedIn: sub?.optedIn,
-          id: sub?.id,
-          token: sub?.token,
-        });
-      } catch {
-        // ignore
-      }
+      // stops looking like a client-side bug. v5 requires async
+      // getters to see the real state — the sync cached properties
+      // are undefined until the native bridge pushes values up.
+      (async () => {
+        try {
+          const notifs = OneSignal.Notifications;
+          const sub = OneSignal.User?.pushSubscription;
+          const perm =
+            typeof notifs?.hasPermission === 'function'
+              ? notifs.hasPermission()
+              : typeof notifs?.getPermissionAsync === 'function'
+                ? await notifs.getPermissionAsync()
+                : undefined;
+          const optedIn =
+            typeof sub?.optedIn === 'boolean'
+              ? sub.optedIn
+              : typeof sub?.getOptedInAsync === 'function'
+                ? await sub.getOptedInAsync()
+                : undefined;
+          const id =
+            sub?.id ??
+            (typeof sub?.getIdAsync === 'function' ? await sub.getIdAsync() : undefined);
+          const token =
+            sub?.token ??
+            (typeof sub?.getTokenAsync === 'function'
+              ? await sub.getTokenAsync()
+              : undefined);
+          // eslint-disable-next-line no-console
+          console.log('[OneSignal] No playerId yet.', { perm, optedIn, id, token });
+        } catch {
+          // ignore
+        }
+      })();
     }
 
     // Subscribe to subscription changes so we catch the first id (or

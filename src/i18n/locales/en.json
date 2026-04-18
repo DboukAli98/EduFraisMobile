@@ -13,6 +13,7 @@
     "search": "Search",
     "retry": "Retry",
     "seeAll": "See All",
+    "viewAll": "View All",
     "noResults": "No results found",
     "error": "Something went wrong",
     "success": "Success",
@@ -566,7 +567,9 @@
         "2": "Agent Requests",
         "3": "Manage Parents",
         "4": "Open Reports"
-      }
+      },
+      "pendingApprovals": "Pending Approvals",
+      "noPendingApprovals": "No child approvals are waiting right now."
     },
     "agents": {
       "title": "Agents",
@@ -579,7 +582,9 @@
       "commission": "Commission Percentage",
       "suggestedAreas": "Suggested Areas",
       "suggestedAreasDesc": "Use a neighborhood, district, or route coverage label.",
-      "suggestedAreasEmpty": "Save one area and it will appear here as a quick pick for the next agents."
+      "suggestedAreasEmpty": "Save one area and it will appear here as a quick pick for the next agents.",
+      "viewDetails": "View Details",
+      "assignParent": "Assign Parent"
     },
     "agentRequests": {
       "title": "Agent Requests",
