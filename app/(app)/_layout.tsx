@@ -248,6 +248,14 @@ export default function AppLayout() {
         options={{ href: null }}
       />
       <Tabs.Screen
+        name="my-activities"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="log-activity"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
         name="parent-agent-detail"
         options={{ href: null }}
       />

@@ -47,6 +47,8 @@ import {
   useSendNotificationMutation,
 } from '../../services/api/apiSlice';
 import type { UserRole } from '../../types';
+import { COUNTRY_CODE } from '../../constants';
+import { normalizePhoneToE164, extractLocalDigits } from '../../utils';
 
 const AnimatedSection: React.FC<{
   index: number;
@@ -198,19 +200,19 @@ export default function SettingsScreen() {
       setProfileFirstName(p.firstName);
       setProfileLastName(p.lastName);
       setProfileEmail(p.email || '');
-      setProfilePhone(p.phoneNumber || '');
+      setProfilePhone(extractLocalDigits(p.phoneNumber || '', COUNTRY_CODE));
     } else if ((isDirector || isManager) && directorData?.data) {
       const d = directorData.data;
       setProfileFirstName(d.firstName);
       setProfileLastName(d.lastName);
       setProfileEmail(d.email || '');
-      setProfilePhone(d.phoneNumber || '');
+      setProfilePhone(extractLocalDigits(d.phoneNumber || '', COUNTRY_CODE));
     } else if (isAgent && agentData?.data) {
       const a = agentData.data;
       setProfileFirstName(a.firstName);
       setProfileLastName(a.lastName);
       setProfileEmail(a.email || '');
-      setProfilePhone(a.phoneNumber || '');
+      setProfilePhone(extractLocalDigits(a.phoneNumber || '', COUNTRY_CODE));
     }
   }, [parentData, directorData, agentData, isParent, isDirector, isAgent, isManager]);
 
@@ -412,14 +414,15 @@ export default function SettingsScreen() {
     }
 
     try {
+      const fullPhone = normalizePhoneToE164(profilePhone, COUNTRY_CODE);
       if (isParent && parentData?.data) {
         await updateParent({
           parentId: parentData.data.parentId,
           firstName: profileFirstName.trim(),
           lastName: profileLastName.trim(),
           email: profileEmail.trim() || undefined,
-          phoneNumber: profilePhone.trim() || undefined,
-          countryCode: parentData.data.countryCode,
+          phoneNumber: fullPhone || undefined,
+          countryCode: COUNTRY_CODE,
           civilId: parentData.data.civilId,
           statusId: parentData.data.fK_StatusId,
         }).unwrap();
@@ -429,8 +432,8 @@ export default function SettingsScreen() {
           firstname: profileFirstName.trim(),
           lastname: profileLastName.trim(),
           email: profileEmail.trim() || undefined,
-          phoneNumber: profilePhone.trim() || undefined,
-          countryCode: String(directorData.data.countryCode),
+          phoneNumber: fullPhone || undefined,
+          countryCode: COUNTRY_CODE,
           statusId: directorData.data.fK_StatusId,
         }).unwrap();
       } else if (isAgent && agentData?.data) {
@@ -440,8 +443,8 @@ export default function SettingsScreen() {
           firstName: profileFirstName.trim(),
           lastName: profileLastName.trim(),
           email: profileEmail.trim(),
-          phoneNumber: profilePhone.trim() || agentData.data.phoneNumber,
-          countryCode: agentData.data.countryCode,
+          phoneNumber: fullPhone || agentData.data.phoneNumber,
+          countryCode: COUNTRY_CODE,
           assignedArea: agentData.data.assignedArea,
           commissionPercentage: agentData.data.commissionPercentage,
           statusId: agentData.data.fK_StatusId,
@@ -456,7 +459,7 @@ export default function SettingsScreen() {
       dispatch(updateUser({
         name: newName,
         email: profileEmail.trim() || user?.email || '',
-        phoneNumber: profilePhone.trim() || user?.phoneNumber || '',
+        phoneNumber: fullPhone || user?.phoneNumber || '',
       }));
 
       setShowProfileModal(false);
@@ -779,10 +782,14 @@ export default function SettingsScreen() {
                   <ThemedInput
                     label={t('auth.phone', 'Phone')}
                     value={profilePhone}
-                    onChangeText={setProfilePhone}
+                    onChangeText={(v) => setProfilePhone(v.replace(/[^\d]/g, ''))}
                     placeholder="812 345 678"
                     keyboardType="phone-pad"
-                    leftIcon={<Ionicons name="call-outline" size={18} color={theme.colors.textTertiary} />}
+                    leftIcon={
+                      <ThemedText variant="bodySmall" color={theme.colors.textSecondary}>
+                        {COUNTRY_CODE}
+                      </ThemedText>
+                    }
                   />
                 </View>
 

@@ -215,7 +215,15 @@ export default function AgentDashboard() {
       <AnimatedSection index={4}>
         <SectionHeader
           title={t('agent.recentActivity', 'Recent Activity')}
+          action={t('common.viewAll', 'View All')}
+          onAction={() => router.push('/(app)/my-activities')}
           style={styles.sectionSpacing}
+        />
+        <ThemedButton
+          title={t('agent.activities.logNew', 'Log New Activity')}
+          variant="secondary"
+          onPress={() => router.push('/(app)/log-activity')}
+          style={styles.logActivityBtn}
         />
         {loadingActivities ? (
           <>
@@ -320,5 +328,8 @@ const styles = StyleSheet.create({
   },
   activityContent: {
     flex: 1,
+  },
+  logActivityBtn: {
+    marginBottom: 12,
   },
 });

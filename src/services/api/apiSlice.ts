@@ -685,9 +685,16 @@ export const apiSlice = createApi({
     }),
     getAgentActivities: builder.query<
       PagedResponse<CollectingAgentActivity>,
-      { collectingAgentId: number; startDate?: string; endDate?: string } & PaginationRequest
+      { collectingAgentId: number; startDate?: string; endDate?: string; activityType?: string } & PaginationRequest
     >({
       query: (params) => ({ url: '/director/GetAgentActivities', params }),
+      providesTags: ['Agents'],
+    }),
+    getSchoolAgentActivities: builder.query<
+      PagedResponse<CollectingAgentActivity>,
+      { schoolId?: number; collectingAgentId?: number; activityType?: string; startDate?: string; endDate?: string } & PaginationRequest
+    >({
+      query: (params) => ({ url: '/director/GetSchoolAgentActivities', params }),
       providesTags: ['Agents'],
     }),
     logAgentActivity: builder.mutation<BaseResponse, {
@@ -923,6 +930,7 @@ export const {
   useApproveChildMutation,
   useRejectChildMutation,
   useGetAgentActivitiesQuery,
+  useGetSchoolAgentActivitiesQuery,
   useLogAgentActivityMutation,
   useGetAgentCommissionsQuery,
   useAddCommissionMutation,
