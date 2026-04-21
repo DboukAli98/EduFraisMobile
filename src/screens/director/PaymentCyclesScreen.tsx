@@ -4,7 +4,6 @@ import {
   StyleSheet,
   Pressable,
   FlatList,
-  Alert,
   Modal,
   ScrollView,
   RefreshControl,
@@ -16,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
 import {
+  Alert,
   ScreenContainer,
   ThemedText,
   ThemedCard,

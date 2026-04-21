@@ -6,7 +6,6 @@ import {
   Modal,
   Pressable,
   ScrollView,
-  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -22,6 +21,7 @@ import {
   ThemedCard,
   ThemedInput,
   ThemedText,
+  useAlert,
 } from '../../components';
 import { useTheme } from '../../theme';
 import { useAppSelector } from '../../hooks';
@@ -102,6 +102,7 @@ const AgentDetailScreen: React.FC = () => {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const router = useRouter();
+  const { showAlert } = useAlert();
   const { agentId } = useLocalSearchParams<{ agentId: string }>();
 
   const user = useAppSelector((state) => state.auth.user);
@@ -143,51 +144,59 @@ const AgentDetailScreen: React.FC = () => {
         actionType: action,
         moduleItemsIds: String(numericAgentId),
       }).unwrap();
-      Alert.alert(t('common.success', 'Success'), t('common.statusChanged', 'Status updated.'));
+      showAlert({
+        type: 'success',
+        title: t('common.success', 'Success'),
+        message: t('common.statusChanged', 'Status updated.'),
+      });
       if (action === 'deleted') {
         router.back();
       }
     } catch (err: any) {
-      Alert.alert(
-        t('common.error', 'Error'),
-        err?.data?.error || err?.data?.message || t('common.error', 'Something went wrong'),
-      );
+      showAlert({
+        type: 'error',
+        title: t('common.error', 'Error'),
+        message: err?.data?.error || err?.data?.message || t('common.error', 'Something went wrong'),
+      });
     }
   };
 
   const showAgentActions = () => {
     if (!agent) return;
     const isActive = agent.fK_StatusId === 1;
-    Alert.alert(
-      t('common.actions', 'Actions'),
-      t('common.chooseAction', 'Choose an action'),
-      [
+    showAlert({
+      type: 'info',
+      title: t('common.actions', 'Actions'),
+      message: t('common.chooseAction', 'Choose an action'),
+      buttons: [
         { text: t('common.cancel', 'Cancel'), style: 'cancel' },
         {
           text: isActive ? t('common.disable', 'Disable') : t('common.enable', 'Enable'),
           onPress: () =>
-            Alert.alert(
-              t('common.actions', 'Actions'),
-              isActive
+            showAlert({
+              type: 'warning',
+              title: t('common.actions', 'Actions'),
+              message: isActive
                 ? t('common.confirmDisable', 'Disable this item?')
                 : t('common.confirmEnable', 'Enable this item?'),
-              [
+              buttons: [
                 { text: t('common.cancel', 'Cancel'), style: 'cancel' },
                 {
                   text: t('common.confirm', 'Confirm'),
                   onPress: () => performAgentStatus(isActive ? 'disable' : 'enable'),
                 },
               ],
-            ),
+            }),
         },
         {
           text: t('common.delete', 'Delete'),
           style: 'destructive',
           onPress: () =>
-            Alert.alert(
-              t('common.delete', 'Delete'),
-              t('common.confirmDelete', 'This will permanently remove the item. Continue?'),
-              [
+            showAlert({
+              type: 'warning',
+              title: t('common.delete', 'Delete'),
+              message: t('common.confirmDelete', 'This will permanently remove the item. Continue?'),
+              buttons: [
                 { text: t('common.cancel', 'Cancel'), style: 'cancel' },
                 {
                   text: t('common.delete', 'Delete'),
@@ -195,10 +204,10 @@ const AgentDetailScreen: React.FC = () => {
                   onPress: () => performAgentStatus('deleted'),
                 },
               ],
-            ),
+            }),
         },
       ],
-    );
+    });
   };
 
   const agent = agentRes?.data;
@@ -251,13 +260,14 @@ const AgentDetailScreen: React.FC = () => {
       !agentForm.lastName.trim() ||
       !agentForm.phoneNumber.trim()
     ) {
-      Alert.alert(
-        t('common.error', 'Error'),
-        t(
+      showAlert({
+        type: 'warning',
+        title: t('common.error', 'Error'),
+        message: t(
           'director.agents.requiredFields',
           'First name, last name, and phone number are required.',
         ),
-      );
+      });
       return;
     }
 
@@ -287,17 +297,19 @@ const AgentDetailScreen: React.FC = () => {
 
       setIsEditModalVisible(false);
 
-      Alert.alert(
-        t('common.success', 'Success'),
-        t('director.agents.updateSuccess', 'Agent details updated successfully.'),
-      );
+      showAlert({
+        type: 'success',
+        title: t('common.success', 'Success'),
+        message: t('director.agents.updateSuccess', 'Agent details updated successfully.'),
+      });
     } catch (error: any) {
-      Alert.alert(
-        t('common.error', 'Error'),
-        error?.data?.message ||
+      showAlert({
+        type: 'error',
+        title: t('common.error', 'Error'),
+        message: error?.data?.message ||
           error?.data?.error ||
           t('director.agents.updateError', 'Failed to update the agent.'),
-      );
+      });
     }
   };
 

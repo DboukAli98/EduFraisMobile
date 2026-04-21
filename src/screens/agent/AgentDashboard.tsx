@@ -20,7 +20,7 @@ import {
   useGetMyCommissionsQuery,
   useGetMyActivitiesQuery,
 } from '../../services/api/apiSlice';
-import { formatCurrency } from '../../utils';
+import { formatCurrency, formatDateTimeCongo } from '../../utils';
 
 const AnimatedSection: React.FC<{
   index: number;
@@ -227,25 +227,43 @@ export default function AgentDashboard() {
         />
         {loadingActivities ? (
           <>
-            <LoadingSkeleton width="100%" height={40} borderRadius={8} style={{ marginBottom: 8 }} />
-            <LoadingSkeleton width="100%" height={40} borderRadius={8} style={{ marginBottom: 8 }} />
+            <LoadingSkeleton width="100%" height={72} borderRadius={12} style={{ marginBottom: 8 }} />
+            <LoadingSkeleton width="100%" height={72} borderRadius={12} style={{ marginBottom: 8 }} />
           </>
         ) : activities.length > 0 ? (
           activities.slice(0, 5).map((item: any, idx: number) => (
-            <View key={item.activityId ?? idx} style={styles.activityItem}>
-              <View
-                style={[
-                  styles.activityDot,
-                  { backgroundColor: theme.colors.primary },
-                ]}
-              />
-              <View style={styles.activityContent}>
-                <ThemedText variant="bodySmall">{item.activityDescription || ''}</ThemedText>
-                <ThemedText variant="caption" color={theme.colors.textTertiary}>
-                  {item.activityDate || item.createdOn || ''}
-                </ThemedText>
+            <ThemedCard key={item.activityId ?? idx} variant="outlined" style={styles.activityCard}>
+              <View style={styles.activityRow}>
+                <View style={[styles.activityIconWrap, { backgroundColor: theme.colors.primary + '15', borderRadius: theme.borderRadius.md }]}>
+                  <Ionicons name="pulse-outline" size={18} color={theme.colors.primary} />
+                </View>
+                <View style={styles.activityContent}>
+                  <View style={styles.activityTopRow}>
+                    <View style={[styles.activityTypeBadge, { backgroundColor: theme.colors.primary + '18', borderRadius: theme.borderRadius.sm }]}>
+                      <ThemedText variant="caption" color={theme.colors.primary} style={{ fontWeight: '700', fontSize: 10 }}>
+                        {item.activityTypeDisplayName || ''}
+                      </ThemedText>
+                    </View>
+                    <ThemedText variant="caption" color={theme.colors.textTertiary} style={styles.activityTime}>
+                      {item.activityDate || item.createdOn
+                        ? formatDateTimeCongo(item.activityDate || item.createdOn)
+                        : ''}
+                    </ThemedText>
+                  </View>
+                  <ThemedText variant="bodySmall" style={{ fontWeight: '600', marginTop: 4 }}>
+                    {item.activityDescription || ''}
+                  </ThemedText>
+                  {item.parentName ? (
+                    <View style={styles.activityParentRow}>
+                      <Ionicons name="person-outline" size={12} color={theme.colors.textTertiary} />
+                      <ThemedText variant="caption" color={theme.colors.textSecondary} style={{ marginLeft: 4 }}>
+                        {item.parentName}
+                      </ThemedText>
+                    </View>
+                  ) : null}
+                </View>
               </View>
-            </View>
+            </ThemedCard>
           ))
         ) : (
           <ThemedText variant="caption" color={theme.colors.textTertiary}>
@@ -314,20 +332,42 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     marginRight: 8,
   },
-  activityItem: {
+  activityCard: {
+    marginBottom: 8,
+  },
+  activityRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingVertical: 10,
+    gap: 12,
   },
-  activityDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginTop: 6,
-    marginRight: 12,
+  activityIconWrap: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
   activityContent: {
     flex: 1,
+  },
+  activityTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  activityTypeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  activityTime: {
+    flexShrink: 1,
+    textAlign: 'right',
+  },
+  activityParentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
   },
   logActivityBtn: {
     marginBottom: 12,

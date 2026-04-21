@@ -5,7 +5,6 @@ import {
   ScrollView,
   Image,
   Pressable,
-  Alert,
   Dimensions,
   RefreshControl,
   ActivityIndicator,
@@ -16,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
 import {
+  Alert,
   ScreenContainer,
   ThemedText,
   ThemedCard,

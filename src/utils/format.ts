@@ -1,18 +1,42 @@
 // Format currency (XAF - CFA Franc BEAC, Congo Brazzaville)
 export const formatCurrency = (amount: number): string => {
-  return `${new Intl.NumberFormat('fr-CG', {
+  return `${new Intl.NumberFormat("fr-CG", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount)} FCFA`;
 };
 
-// Format date
-export const formatDate = (date: string | Date, locale = 'en'): string => {
+// Congo Brazzaville timezone (WAT = UTC+1)
+export const CONGO_TZ = "Africa/Brazzaville";
+
+/**
+ * Format a UTC date/datetime from the API into a human-readable string
+ * displayed in the Congo Brazzaville local timezone (WAT, UTC+1).
+ * Shows date + time so recent activity timestamps are meaningful.
+ */
+export const formatDateTimeCongo = (
+  date: string | Date,
+  locale = "fr",
+): string => {
   const d = new Date(date);
-  return d.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
+  if (isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat(locale === "fr" ? "fr-FR" : "en-US", {
+    timeZone: CONGO_TZ,
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(d);
+};
+
+// Format date
+export const formatDate = (date: string | Date, locale = "en"): string => {
+  const d = new Date(date);
+  return d.toLocaleDateString(locale === "fr" ? "fr-FR" : "en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
   });
 };
 
@@ -23,16 +47,16 @@ export const formatRelativeDate = (date: string | Date): string => {
   const diffMs = now.getTime() - d.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Yesterday';
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
   if (diffDays < 7) return `${diffDays} days ago`;
   if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
   return formatDate(date);
 };
 
 // Format phone number
-export const formatPhone = (phone: string, countryCode = '242'): string => {
-  const cleaned = phone.replace(/\D/g, '');
+export const formatPhone = (phone: string, countryCode = "242"): string => {
+  const cleaned = phone.replace(/\D/g, "");
   if (cleaned.length >= 9) {
     return `${countryCode} ${cleaned.slice(-9, -6)} ${cleaned.slice(-6, -3)} ${cleaned.slice(-3)}`;
   }
@@ -52,13 +76,16 @@ export const formatPhone = (phone: string, countryCode = '242'): string => {
  *   ""                    → ""               (caller should treat as "no phone")
  *   "242"                 → ""               (only the prefix, no local number)
  */
-export const normalizePhoneToE164 = (input: string, countryCode = '242'): string => {
-  let digits = (input || '').replace(/\D/g, '').replace(/^0+/, '');
+export const normalizePhoneToE164 = (
+  input: string,
+  countryCode = "242",
+): string => {
+  let digits = (input || "").replace(/\D/g, "").replace(/^0+/, "");
   // Strip every leading copy of the country code so "242242…" collapses.
   while (digits.startsWith(countryCode)) {
     digits = digits.slice(countryCode.length);
   }
-  if (!digits) return '';
+  if (!digits) return "";
   return `${countryCode}${digits}`;
 };
 
@@ -71,8 +98,11 @@ export const normalizePhoneToE164 = (input: string, countryCode = '242'): string
  *   "812345678"           → "812345678"
  *   "0812345678"          → "812345678"
  */
-export const extractLocalDigits = (input: string, countryCode = '242'): string => {
-  let digits = (input || '').replace(/\D/g, '').replace(/^0+/, '');
+export const extractLocalDigits = (
+  input: string,
+  countryCode = "242",
+): string => {
+  let digits = (input || "").replace(/\D/g, "").replace(/^0+/, "");
   while (digits.startsWith(countryCode)) {
     digits = digits.slice(countryCode.length);
   }
@@ -86,13 +116,13 @@ export const formatPercentage = (value: number): string => {
 
 // Get initials from name
 export const getInitials = (firstName: string, lastName?: string): string => {
-  const first = firstName?.charAt(0)?.toUpperCase() || '';
-  const last = lastName?.charAt(0)?.toUpperCase() || '';
+  const first = firstName?.charAt(0)?.toUpperCase() || "";
+  const last = lastName?.charAt(0)?.toUpperCase() || "";
   return `${first}${last}`;
 };
 
 // Truncate text
 export const truncate = (text: string, maxLength: number): string => {
   if (text.length <= maxLength) return text;
-  return text.slice(0, maxLength - 3) + '...';
+  return text.slice(0, maxLength - 3) + "...";
 };

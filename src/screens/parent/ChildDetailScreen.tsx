@@ -4,7 +4,6 @@ import {
   StyleSheet,
   Pressable,
   ScrollView,
-  Alert,
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
@@ -14,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
 import {
+  Alert,
   ScreenContainer,
   ThemedText,
   ThemedCard,

@@ -1,11 +1,13 @@
 import React, { useState, useMemo } from 'react';
-import { View, StyleSheet, Pressable, FlatList, TextInput, Alert } from 'react-native';
+import {
+  View, StyleSheet, Pressable, FlatList, TextInput } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
 
 import {
+  Alert,
   ScreenContainer,
   ThemedText,
   ThemedCard,

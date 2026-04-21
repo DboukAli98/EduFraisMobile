@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Pressable, Alert } from 'react-native';
+import {
+  View, StyleSheet, Pressable } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +8,7 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '../../theme';
 import { useAnimatedEntry, staggerDelay, useAppSelector } from '../../hooks';
 import {
+  Alert,
   ScreenContainer,
   ThemedText,
   ThemedButton,

@@ -30,7 +30,8 @@
     "statusChanged": "Status updated successfully.",
     "confirmEnable": "Are you sure you want to enable this item?",
     "confirmDisable": "Are you sure you want to disable this item?",
-    "confirmDelete": "This will permanently remove the item. Continue?"
+    "confirmDelete": "This will permanently remove the item. Continue?",
+    "searchParents": "Search parents..."
   },
   "auth": {
     "signIn": "Sign In",
@@ -823,5 +824,74 @@
     "helpFaq": "Q: I forgot my password?\nA: Use the \"Forgot Password\" option on the sign-in screen to reset your password via your phone number.\n\nQ: How do I add a child?\nA: Go to the \"Children\" tab and tap the add button. Enter the child's information and select their school.\n\nQ: How do I enable biometric login?\nA: Go to Settings > Security and enable \"Biometric Login\". You will need to confirm your identity and enter your password.",
     "helpContactTitle": "Contact Us",
     "helpContact": "If you can't find the answer to your question, contact our support team:\n\n📧 Email: support@edufrais.com\n📞 Phone: +242 06 000 00 00\n🕐 Hours: Monday - Friday, 8am - 6pm"
+  },
+  "agent": {
+    "todaySummary": "Commission Summary",
+    "collections": "Total",
+    "collected": "Earned",
+    "pending": "Pending",
+    "myPortfolio": "My Portfolio",
+    "commissions": "Commissions",
+    "approved": "Approved",
+    "recentCommissions": "Recent Commissions",
+    "recentActivity": "Recent Activity",
+    "noActivity": "No recent activity",
+    "totalEarned": "Total Earned",
+    "pendingApproval": "Pending",
+    "paidOut": "Approved",
+    "commissionHistory": "Commission History",
+    "commissionLabel": "Commission",
+    "transactionId": "Transaction ID",
+    "requestPayout": "Request Payout",
+    "noPending": "No Pending Commissions",
+    "noPendingDesc": "There are no pending commissions to request payout for.",
+    "payoutRequested": "Payout request submitted successfully.",
+    "payoutError": "Failed to submit payout request.",
+    "commissionFilter": {
+      "all": "All",
+      "pending": "Pending",
+      "approved": "Approved"
+    },
+    "logActivity": {
+      "title": "Log Activity",
+      "typeSection": "Activity Type",
+      "parentSection": "Parent",
+      "noParents": "You have no assigned parents yet. Ask your director to assign you before logging activities tied to a parent.",
+      "descriptionSection": "Description",
+      "descriptionPlaceholder": "What happened? (required)",
+      "notesSection": "Notes (optional)",
+      "notesPlaceholder": "Any extra context for your records",
+      "submit": "Save Activity",
+      "forParent": "For",
+      "descriptionRequired": "Please describe the activity",
+      "parentRequired": "Please pick which parent this activity is for",
+      "saved": "Activity saved"
+    },
+    "activities": {
+      "title": "My Activities",
+      "logNew": "Log New Activity",
+      "parentAnonymous": "Parent",
+      "emptyTitle": "No activities yet",
+      "emptyDescription": "Log a phone call, field visit or payment to start tracking your work here.",
+      "types": {
+        "PaymentCollected": "Payment Collected",
+        "PaymentAttempted": "Payment Attempt",
+        "ParentContact": "Parent Contact",
+        "SupportRequestHandled": "Support Handled",
+        "ParentAssigned": "Parent Assigned",
+        "ParentUnassigned": "Parent Unassigned",
+        "FieldVisit": "Field Visit",
+        "PhoneCall": "Phone Call",
+        "Other": "Other"
+      },
+      "filters": {
+        "all": "All",
+        "PaymentCollected": "Payments",
+        "PhoneCall": "Calls",
+        "FieldVisit": "Visits",
+        "ParentContact": "Contacts",
+        "Other": "Other"
+      }
+    }
   }
 }

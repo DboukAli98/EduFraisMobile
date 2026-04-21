@@ -12,6 +12,7 @@ import {
 import * as SplashScreen from 'expo-splash-screen';
 import { store, persistor } from '../src/store/store';
 import { ThemeProvider } from '../src/theme';
+import { AlertProvider } from '../src/components';
 import '../src/i18n';
 
 SplashScreen.preventAutoHideAsync();
@@ -36,12 +37,14 @@ export default function RootLayout() {
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
         <ThemeProvider>
-          <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(onboarding)" />
-            <Stack.Screen name="(app)" />
-          </Stack>
+          <AlertProvider>
+            <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="(auth)" />
+              <Stack.Screen name="(onboarding)" />
+              <Stack.Screen name="(app)" />
+            </Stack>
+          </AlertProvider>
         </ThemeProvider>
       </PersistGate>
     </Provider>

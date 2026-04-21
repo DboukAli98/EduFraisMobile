@@ -14,7 +14,7 @@ import {
 } from '../../components';
 import { useTheme } from '../../theme';
 import { useGetMyActivitiesQuery } from '../../services/api/apiSlice';
-import { formatDate } from '../../utils';
+import { formatDateTimeCongo } from '../../utils';
 import type { CollectingAgentActivity } from '../../types';
 
 // Order matches the backend CollectingAgentActivityType enum so numeric
@@ -121,7 +121,7 @@ const MyActivitiesScreen: React.FC = () => {
                 {t(`agent.activities.types.${key}`, meta.label)}
               </ThemedText>
               <ThemedText variant="caption" color={theme.colors.textTertiary}>
-                {formatDate(item.activityDate || item.createdOn || new Date().toISOString())}
+                {formatDateTimeCongo(item.activityDate || item.createdOn || new Date().toISOString())}
               </ThemedText>
             </View>
 

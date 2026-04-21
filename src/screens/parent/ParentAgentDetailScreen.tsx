@@ -1,11 +1,13 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, Linking, Pressable, Alert } from 'react-native';
+import {
+  View, StyleSheet, Linking, Pressable } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import {
+  Alert,
   ScreenContainer,
   ThemedText,
   ThemedCard,

@@ -2,7 +2,6 @@ import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   StyleSheet,
-  Alert,
   ScrollView,
   Pressable,
   FlatList,
@@ -16,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '../../theme';
 import { useAppSelector } from '../../hooks';
 import {
+  Alert,
   ScreenContainer,
   ThemedText,
   ThemedInput,

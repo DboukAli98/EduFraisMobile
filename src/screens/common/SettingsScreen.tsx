@@ -1,5 +1,8 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, StyleSheet, Pressable, Switch, Modal, Alert, ScrollView, KeyboardAvoidingView, Platform, Linking } from 'react-native';
+import {
+  Alert as NativeAlert,
+  View, StyleSheet, Pressable, Switch, Modal, ScrollView, KeyboardAvoidingView, Platform, Linking
+} from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +18,7 @@ import {
   disableOneSignalPush,
 } from '../../hooks';
 import {
+  Alert,
   ScreenContainer,
   ThemedText,
   ThemedCard,
@@ -373,8 +377,8 @@ export default function SettingsScreen() {
 
           // On iOS we can prompt for password inline; on Android credentials
           // will be saved automatically on the next password sign-in.
-          if (typeof Alert.prompt === 'function') {
-            Alert.prompt(
+          if (typeof NativeAlert.prompt === 'function') {
+            NativeAlert.prompt(
               t('settings.biometricEnterPassword', 'Enter Password'),
               t('settings.biometricEnterPasswordDesc', 'Enter your password to save it for biometric login.'),
               async (pw: string) => {

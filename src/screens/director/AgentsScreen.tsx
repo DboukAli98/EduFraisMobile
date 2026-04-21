@@ -5,7 +5,6 @@ import {
   FlatList,
   Modal,
   Pressable,
-  Alert,
   ScrollView,
 } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -14,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
 
 import {
+  Alert,
   ScreenContainer,
   ThemedText,
   ThemedCard,

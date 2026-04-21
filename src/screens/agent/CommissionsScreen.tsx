@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, StyleSheet, Pressable, Alert } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -14,6 +14,7 @@ import {
   PaymentStatusBadge,
   SectionHeader,
   LoadingSkeleton,
+  useAlert,
 } from '../../components';
 import {
   useGetMyCommissionsQuery,
@@ -48,6 +49,7 @@ export default function CommissionsScreen() {
   const user = useAppSelector((state) => state.auth.user);
   const agentId = parseInt(user?.entityUserId || '0');
   const [activeFilter, setActiveFilter] = useState<CommissionFilter>('all');
+  const { showAlert } = useAlert();
 
   const { data: commissionsData, isLoading } = useGetMyCommissionsQuery({ pageNumber: 1, pageSize: 100 });
   const [requestCommissionApproval, { isLoading: isSubmitting }] = useRequestCommissionApprovalMutation();
@@ -71,15 +73,26 @@ export default function CommissionsScreen() {
   const handleRequestPayout = async () => {
     const pendingCommissions = commissions.filter((c) => !c.isApproved);
     if (pendingCommissions.length === 0) {
-      Alert.alert(t('agent.noPending', 'No Pending Commissions'), t('agent.noPendingDesc', 'There are no pending commissions to request payout for.'));
+      showAlert({
+        type: 'info',
+        title: t('agent.noPending', 'No Pending Commissions'),
+        message: t('agent.noPendingDesc', 'There are no pending commissions to request payout for.'),
+      });
       return;
     }
     try {
-      // Submit pending commissions for approval
       await requestCommissionApproval({ commissionIds: pendingCommissions.map((c) => c.commissionId) }).unwrap();
-      Alert.alert(t('common.success', 'Success'), t('agent.payoutRequested', 'Payout request submitted successfully.'));
+      showAlert({
+        type: 'success',
+        title: t('common.success', 'Success'),
+        message: t('agent.payoutRequested', 'Payout request submitted successfully.'),
+      });
     } catch (error: any) {
-      Alert.alert(t('common.error', 'Error'), error?.data?.message || t('agent.payoutError', 'Failed to submit payout request.'));
+      showAlert({
+        type: 'error',
+        title: t('common.error', 'Error'),
+        message: error?.data?.message || t('agent.payoutError', 'Failed to submit payout request.'),
+      });
     }
   };
 

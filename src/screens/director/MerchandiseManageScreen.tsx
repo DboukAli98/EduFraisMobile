@@ -4,7 +4,6 @@ import {
   StyleSheet,
   Pressable,
   FlatList,
-  Alert,
   Modal,
   RefreshControl,
   Image,
@@ -15,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
 
 import {
+  Alert,
   ScreenContainer,
   ThemedText,
   ThemedCard,

@@ -6,7 +6,6 @@ import {
   Pressable,
   ActivityIndicator,
   RefreshControl,
-  Alert,
   Image,
 } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -16,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '../../theme';
 import { useAppSelector, useAnimatedEntry, staggerDelay } from '../../hooks';
 import {
+  Alert,
   ScreenContainer,
   ThemedText,
   ThemedCard,

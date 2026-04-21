@@ -1,11 +1,13 @@
 import React, { useCallback, useState } from 'react';
-import { View, Pressable, StyleSheet, Alert } from 'react-native';
+import {
+  View, Pressable, StyleSheet } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import {
+  Alert,
   ScreenContainer,
   ThemedText,
   ThemedButton,

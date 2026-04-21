@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, StyleSheet, Pressable, ScrollView, Alert, TextInput } from 'react-native';
+import { View, StyleSheet, Pressable, ScrollView, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
@@ -11,6 +11,7 @@ import {
   Avatar,
   ThemedButton,
   SectionHeader,
+  useAlert,
 } from '../../components';
 import { useTheme } from '../../theme';
 import { useAppSelector } from '../../hooks';
@@ -33,18 +34,19 @@ const TYPE_OPTIONS: {
   icon: keyof typeof Ionicons.glyphMap;
   requiresParent: boolean;
 }[] = [
-  { key: 'PhoneCall', label: 'Phone Call', icon: 'call-outline', requiresParent: true },
-  { key: 'FieldVisit', label: 'Field Visit', icon: 'navigate-outline', requiresParent: true },
-  { key: 'ParentContact', label: 'Parent Contact', icon: 'chatbubble-ellipses-outline', requiresParent: true },
-  { key: 'PaymentAttempted', label: 'Payment Attempt', icon: 'alert-circle-outline', requiresParent: true },
-  { key: 'PaymentCollected', label: 'Payment Collected', icon: 'cash-outline', requiresParent: true },
-  { key: 'Other', label: 'Other', icon: 'ellipse-outline', requiresParent: false },
-];
+    { key: 'PhoneCall', label: 'Phone Call', icon: 'call-outline', requiresParent: true },
+    { key: 'FieldVisit', label: 'Field Visit', icon: 'navigate-outline', requiresParent: true },
+    { key: 'ParentContact', label: 'Parent Contact', icon: 'chatbubble-ellipses-outline', requiresParent: true },
+    { key: 'PaymentAttempted', label: 'Payment Attempt', icon: 'alert-circle-outline', requiresParent: true },
+    { key: 'PaymentCollected', label: 'Payment Collected', icon: 'cash-outline', requiresParent: true },
+    { key: 'Other', label: 'Other', icon: 'ellipse-outline', requiresParent: false },
+  ];
 
 const LogActivityScreen: React.FC = () => {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const router = useRouter();
+  const { showAlert } = useAlert();
 
   const user = useAppSelector((state) => state.auth.user);
   const agentId = parseInt(user?.entityUserId || '0');
@@ -77,18 +79,20 @@ const LogActivityScreen: React.FC = () => {
     const trimmedDescription = description.trim();
 
     if (!trimmedDescription) {
-      Alert.alert(
-        t('common.error', 'Error'),
-        t('agent.logActivity.descriptionRequired', 'Please describe the activity'),
-      );
+      showAlert({
+        type: 'warning',
+        title: t('common.error', 'Error'),
+        message: t('agent.logActivity.descriptionRequired', 'Please describe the activity'),
+      });
       return;
     }
 
     if (selectedTypeMeta.requiresParent && !selectedParentId) {
-      Alert.alert(
-        t('common.error', 'Error'),
-        t('agent.logActivity.parentRequired', 'Please pick which parent this activity is for'),
-      );
+      showAlert({
+        type: 'warning',
+        title: t('common.error', 'Error'),
+        message: t('agent.logActivity.parentRequired', 'Please pick which parent this activity is for'),
+      });
       return;
     }
 
@@ -101,21 +105,26 @@ const LogActivityScreen: React.FC = () => {
       }).unwrap();
 
       if (result.status === 'Success') {
-        Alert.alert(
-          t('common.success', 'Success'),
-          result.message ||
-            t('agent.logActivity.saved', 'Activity saved'),
-          [{ text: t('common.ok', 'OK'), onPress: () => router.back() }],
-        );
+        showAlert({
+          type: 'success',
+          title: t('common.success', 'Success'),
+          message: result.message || t('agent.logActivity.saved', 'Activity saved'),
+          buttons: [{ text: t('common.ok', 'OK'), onPress: () => router.back() }],
+        });
       } else {
-        Alert.alert(
-          t('common.error', 'Error'),
-          result.error || t('common.genericError', 'Something went wrong'),
-        );
+        showAlert({
+          type: 'error',
+          title: t('common.error', 'Error'),
+          message: result.error || t('common.genericError', 'Something went wrong'),
+        });
       }
     } catch (err: any) {
       const msg = err?.data?.error || err?.message || t('common.genericError', 'Something went wrong');
-      Alert.alert(t('common.error', 'Error'), msg);
+      showAlert({
+        type: 'error',
+        title: t('common.error', 'Error'),
+        message: msg,
+      });
     }
   };
 
