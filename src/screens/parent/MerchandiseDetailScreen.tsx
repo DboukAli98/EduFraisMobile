@@ -30,6 +30,7 @@ import {
   useInitiatePaymentMutation,
 } from '../../services/api/apiSlice';
 import { CURRENCY_SYMBOL, API_BASE_URL } from '../../constants';
+import { generatePaymentReference } from '../../utils';
 import type { MerchandiseItemDto } from '../../types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -93,7 +94,9 @@ export default function MerchandiseDetailScreen() {
       quantity,
     }];
 
-    const reference = `MERCH-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    // Airtel ESB validates reference as [A-Za-z0-9]{4,64}; we use a
+    // 4-char alphanumeric generator to match Digipay UAT expectations.
+    const reference = generatePaymentReference();
 
     try {
       const result = await initiatePayment({

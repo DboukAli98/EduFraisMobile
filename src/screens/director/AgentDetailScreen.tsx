@@ -272,13 +272,9 @@ const AgentDetailScreen: React.FC = () => {
     }
 
     try {
-      // Send the full international phone (e.g. "24270156590") so the
-      // CollectingAgent row is stored with the country code baked in.
+      // Send local digits only; country code is provided separately.
       const countryCode = agent.countryCode || COUNTRY_CODE;
-      const localDigits = agentForm.phoneNumber.replace(/\D/g, '').replace(/^0+/, '');
-      const fullPhone = localDigits.startsWith(countryCode)
-        ? localDigits
-        : `${countryCode}${localDigits}`;
+      const localPhone = agentForm.phoneNumber.replace(/\D/g, '').replace(/^0+/, '');
 
       await editAgent({
         collectingAgentId: agent.collectingAgentId,
@@ -287,7 +283,7 @@ const AgentDetailScreen: React.FC = () => {
         lastName: agentForm.lastName.trim(),
         email: agentForm.email.trim(),
         countryCode,
-        phoneNumber: fullPhone,
+        phoneNumber: localPhone,
         assignedArea: agentForm.assignedArea.trim() || undefined,
         commissionPercentage: agentForm.commissionPercentage.trim()
           ? Number(agentForm.commissionPercentage)

@@ -25,7 +25,6 @@ import {
   useGetParentsQuery,
 } from '../../services/api/apiSlice';
 import { COUNTRY_CODE } from '../../constants';
-import { normalizePhoneToE164 } from '../../utils';
 
 const AnimatedSection: React.FC<{
   index: number;
@@ -108,7 +107,7 @@ export default function ParentsManagementScreen() {
     }
 
     try {
-      const fullPhone = normalizePhoneToE164(form.phoneNumber, COUNTRY_CODE);
+      const localPhone = form.phoneNumber.replace(/\D/g, '').replace(/^0+/, '');
       await addParent({
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
@@ -116,7 +115,7 @@ export default function ParentsManagementScreen() {
         schoolId,
         civilId: form.civilId.trim() || undefined,
         countryCode: COUNTRY_CODE,
-        phoneNumber: fullPhone,
+        phoneNumber: localPhone,
         email: form.email.trim() || undefined,
       }).unwrap();
 

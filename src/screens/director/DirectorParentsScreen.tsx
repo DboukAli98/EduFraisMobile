@@ -30,7 +30,6 @@ import {
   useAddParentMutation,
 } from '../../services/api/apiSlice';
 import { COUNTRY_CODE } from '../../constants';
-import { normalizePhoneToE164 } from '../../utils';
 import type { Parent } from '../../types';
 
 // ---------------------------------------------------------------------------
@@ -143,11 +142,8 @@ const DirectorParentsScreen: React.FC = () => {
       );
       return;
     }
-    // Normalize so 242 is included exactly once. Empty input means
-    // there's no local number — bail out before hitting the API since
-    // phoneNumber is required for AddParent.
-    const fullPhone = normalizePhoneToE164(form.phoneNumber, COUNTRY_CODE);
-    if (!fullPhone) {
+    const localPhone = form.phoneNumber.replace(/\D/g, '').replace(/^0+/, '');
+    if (!localPhone) {
       Alert.alert(
         t('common.error', 'Error'),
         t('director.parents.requiredFields', 'First name, last name and phone are required.'),
@@ -162,7 +158,7 @@ const DirectorParentsScreen: React.FC = () => {
         fatherName: form.fatherName.trim() || '',
         schoolId,
         countryCode: COUNTRY_CODE,
-        phoneNumber: fullPhone,
+        phoneNumber: localPhone,
         email: form.email.trim() || '',
         civilId: form.civilId.trim() || '',
       }).unwrap();

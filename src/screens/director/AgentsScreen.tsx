@@ -239,13 +239,8 @@ const AgentsScreen: React.FC = () => {
     }
 
     try {
-      // Send the full international phone so the backend stores e.g.
-      // "24270156590" in the CollectingAgent.PhoneNumber column. The backend
-      // is tolerant of already-prefixed numbers (see AuthenticationService.Register).
-      const localDigits = agentForm.phoneNumber.replace(/\D/g, '').replace(/^0+/, '');
-      const fullPhone = localDigits.startsWith(COUNTRY_CODE)
-        ? localDigits
-        : `${COUNTRY_CODE}${localDigits}`;
+      // Send local digits only; country code is provided separately.
+      const localPhone = agentForm.phoneNumber.replace(/\D/g, '').replace(/^0+/, '');
 
       await addAgent({
         schoolId,
@@ -253,7 +248,7 @@ const AgentsScreen: React.FC = () => {
         lastName: agentForm.lastName.trim(),
         email: agentForm.email.trim() || undefined,
         countryCode: COUNTRY_CODE,
-        phoneNumber: fullPhone,
+        phoneNumber: localPhone,
         assignedArea: agentForm.assignedArea.trim() || undefined,
         commissionPercentage: agentForm.commissionPercentage.trim()
           ? Number(agentForm.commissionPercentage)

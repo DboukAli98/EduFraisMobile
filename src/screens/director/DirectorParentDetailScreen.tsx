@@ -33,7 +33,7 @@ import {
   useAlterModuleStatusMutation,
 } from '../../services/api/apiSlice';
 import { COUNTRY_CODE } from '../../constants';
-import { formatDate, normalizePhoneToE164, extractLocalDigits } from '../../utils';
+import { formatDate, extractLocalDigits } from '../../utils';
 import type { ChildWithGradeDto, Child } from '../../types';
 
 // ---------------------------------------------------------------------------
@@ -243,10 +243,7 @@ const DirectorParentDetailScreen: React.FC = () => {
       Alert.alert(t('common.error', 'Error'), t('director.parents.requiredFields', 'First name and last name are required.'));
       return;
     }
-    // Canonicalise: 242 baked in exactly once. If the input is empty
-    // (or just whitespace / just the prefix) we omit the field rather
-    // than send a bare "242".
-    const fullPhone = normalizePhoneToE164(editForm.phoneNumber, COUNTRY_CODE);
+    const localPhone = editForm.phoneNumber.replace(/\D/g, '').replace(/^0+/, '');
 
     try {
       await updateParent({
@@ -255,7 +252,7 @@ const DirectorParentDetailScreen: React.FC = () => {
         lastName: editForm.lastName.trim(),
         fatherName: editForm.fatherName.trim() || '',
         countryCode: COUNTRY_CODE,
-        phoneNumber: fullPhone || undefined,
+        phoneNumber: localPhone || undefined,
         email: editForm.email.trim() || '',
         civilId: editForm.civilId.trim() || '',
       }).unwrap();

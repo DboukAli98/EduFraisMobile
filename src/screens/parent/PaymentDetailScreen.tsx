@@ -24,7 +24,7 @@ import {
   useInitiatePaymentMutation,
   useLazyCheckPaymentStatusQuery,
 } from '../../services/api/apiSlice';
-import { formatCurrency, formatDate } from '../../utils';
+import { formatCurrency, formatDate, generatePaymentReference } from '../../utils';
 import { API_BASE_URL, COUNTRY_CODE } from '../../constants';
 import type { ParentInstallmentDto } from '../../types';
 
@@ -150,7 +150,8 @@ const PaymentDetailScreen: React.FC = () => {
           text: t('parent.paymentDetail.confirm', 'Confirm'),
           onPress: async () => {
             try {
-              const reference = `SF-${Date.now()}-${installment.installmentId}`;
+              // Airtel ESB reference: 4-char alphanumeric, unique in this app session.
+              const reference = generatePaymentReference();
               const rawPhone = user.phoneNumber || '';
               const subscriberMsisdn = normalizePhone(rawPhone);
 

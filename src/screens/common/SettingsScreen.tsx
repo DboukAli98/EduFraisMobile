@@ -53,7 +53,7 @@ import {
 } from '../../services/api/apiSlice';
 import type { UserRole } from '../../types';
 import { COUNTRY_CODE } from '../../constants';
-import { normalizePhoneToE164, extractLocalDigits } from '../../utils';
+import { extractLocalDigits } from '../../utils';
 
 const AnimatedSection: React.FC<{
   index: number;
@@ -499,14 +499,14 @@ export default function SettingsScreen() {
     }
 
     try {
-      const fullPhone = normalizePhoneToE164(profilePhone, COUNTRY_CODE);
+      const localPhone = profilePhone.replace(/\D/g, '').replace(/^0+/, '');
       if (isParent && parentData?.data) {
         await updateParent({
           parentId: parentData.data.parentId,
           firstName: profileFirstName.trim(),
           lastName: profileLastName.trim(),
           email: profileEmail.trim() || undefined,
-          phoneNumber: fullPhone || undefined,
+          phoneNumber: localPhone || undefined,
           countryCode: COUNTRY_CODE,
           civilId: parentData.data.civilId,
           statusId: parentData.data.fK_StatusId,
@@ -517,7 +517,7 @@ export default function SettingsScreen() {
           firstname: profileFirstName.trim(),
           lastname: profileLastName.trim(),
           email: profileEmail.trim() || undefined,
-          phoneNumber: fullPhone || undefined,
+          phoneNumber: localPhone || undefined,
           countryCode: COUNTRY_CODE,
           statusId: directorData.data.fK_StatusId,
         }).unwrap();
@@ -528,7 +528,7 @@ export default function SettingsScreen() {
           firstName: profileFirstName.trim(),
           lastName: profileLastName.trim(),
           email: profileEmail.trim(),
-          phoneNumber: fullPhone || agentData.data.phoneNumber,
+          phoneNumber: localPhone || agentData.data.phoneNumber,
           countryCode: COUNTRY_CODE,
           assignedArea: agentData.data.assignedArea,
           commissionPercentage: agentData.data.commissionPercentage,
@@ -544,7 +544,7 @@ export default function SettingsScreen() {
       dispatch(updateUser({
         name: newName,
         email: profileEmail.trim() || user?.email || '',
-        phoneNumber: fullPhone || user?.phoneNumber || '',
+        phoneNumber: localPhone || user?.phoneNumber || '',
       }));
 
       setShowProfileModal(false);

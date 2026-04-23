@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
-  View, Pressable, StyleSheet, ScrollView } from 'react-native';
+  View, Pressable, StyleSheet, ScrollView
+} from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -150,8 +151,8 @@ const SignUpScreen: React.FC = () => {
         Password: password,
         SchoolId: needsSchool ? (schoolId ?? 0) : 0,
         CountryCode: COUNTRY_CODE,
-        // Prepend the country code shown in the UI next to the input.
-        PhoneNumber: `${countryCode}${phone}`,
+        // Send local digits only; country code is sent separately in CountryCode.
+        PhoneNumber: phone,
         Email: email,
         // Backend DB column is NOT NULL — always send a string, never undefined.
         CivilId: (civilId || '').trim(),
