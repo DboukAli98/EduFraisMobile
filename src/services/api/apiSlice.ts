@@ -836,6 +836,30 @@ export const apiSlice = createApi({
       query: (data) => ({ url: '/common/AlterModuleStatus', method: 'POST', body: data }),
       invalidatesTags: ['Schools', 'Children', 'Parents', 'Agents', 'Merchandise'],
     }),
+
+    // ─── Commission rates (platform + providers) ───────────────
+    // Read-only snapshot of the currently active platform fee and the
+    // active payment providers. Used everywhere we need to show a fee
+    // breakdown (director fee/merchandise edit, parent payment detail,
+    // agent payment detail, settings "providers" section).
+    getActiveCommissionRates: builder.query<
+      ApiResponse<{
+        status?: string;
+        platformFeePercentage: number;
+        providers: {
+          paymentProviderId: number;
+          name: string;
+          code: string;
+          feePercentage: number;
+          isActive: boolean;
+          displayOrder: number;
+          logoUrl?: string | null;
+        }[];
+      }>,
+      void
+    >({
+      query: () => ({ url: '/common/GetActiveCommissionRates' }),
+    }),
   }),
 });
 
@@ -954,6 +978,7 @@ export const {
   useGetSchoolPaymentMethodBreakdownQuery,
   // Common
   useAlterModuleStatusMutation,
+  useGetActiveCommissionRatesQuery,
 } = apiSlice;
 
 // ─── Invoice URL helpers ────────────────────────────────────────

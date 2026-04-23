@@ -374,7 +374,52 @@
     "privacyPolicy": "Politique de confidentialité",
     "helpCenter": "Centre d'aide",
     "contactSupport": "Contacter le support",
-    "signOut": "Se déconnecter"
+    "signOut": "Se déconnecter",
+    "providers": {
+      "title": "Prestataires de paiement",
+      "subtitle": "Canaux de paiement actifs et frais appliqués",
+      "empty": "Aucun prestataire disponible",
+      "feeLine": "Frais : {{pct}}%",
+      "platformFeeLabel": "Frais plateforme EduFrais",
+      "platformFeeHint": "Déduits de chaque paiement"
+    }
+  },
+  "commission": {
+    "platformFee": "Frais plateforme EduFrais",
+    "providerFallback": "Frais prestataire",
+    "director": {
+      "headline": "Votre école recevra",
+      "subtitle": "Les frais plateforme et prestataire sont déduits du montant que le parent paie.",
+      "netLabel": "Net pour l'école"
+    },
+    "parent": {
+      "headline": "Total à payer",
+      "subtitle": "Frais plateforme et prestataire inclus — rien de plus à payer.",
+      "netLabel": "Reçu par l'école"
+    },
+    "agent": {
+      "headline": "Montant encaissé",
+      "subtitle": "Répartition des frais appliqués à cette transaction.",
+      "netLabel": "Reversé à l'école"
+    }
+  },
+  "payment": {
+    "success": {
+      "title": "Paiement réussi !",
+      "failedTitle": "Paiement échoué",
+      "pendingTitle": "Paiement en cours…",
+      "subtitle": "Merci ! Votre paiement a bien été confirmé.",
+      "subtitleNamed": "Merci ! Votre paiement pour {{name}} a bien été confirmé.",
+      "failedSubtitle": "Nous n'avons pas pu confirmer votre paiement. Vous pouvez réessayer ou contacter le support.",
+      "pendingSubtitle": "Vérifiez votre téléphone pour confirmer la transaction sur Airtel Money.",
+      "amountLabel": "Montant",
+      "referenceLabel": "Référence",
+      "pendingAttempts": "Vérification… ({{attempt}}/40)",
+      "viewReceipt": "Voir le reçu",
+      "backHome": "Retour à l'accueil",
+      "tryAgain": "Réessayer",
+      "continueInBackground": "Continuer en arrière-plan"
+    }
   },
   "profile": {
     "title": "Profil",

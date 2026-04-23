@@ -20,6 +20,7 @@ import {
   ThemedText,
   ThemedCard,
   ThemedButton,
+  CommissionBreakdownCard,
 } from '../../components';
 import { useTheme } from '../../theme';
 import { useAnimatedEntry, staggerDelay, useAppSelector } from '../../hooks';
@@ -105,11 +106,17 @@ export default function MerchandiseDetailScreen() {
       }).unwrap();
 
       if (result.status === 'success' || result.status === 'Success') {
-        Alert.alert(
-          t('common.success', 'Success'),
-          t('payments.processing', 'Payment is being processed. You will receive a prompt on your phone.'),
-        );
         setQuantity(1);
+        // Hand off to the shared sleek payment-success screen, which will
+        // poll CheckPaymentStatus and reveal the final outcome.
+        router.push({
+          pathname: '/payment-success',
+          params: {
+            reference,
+            amount: String(totalPrice),
+            type: 'merchandisefee',
+          },
+        } as any);
       } else {
         Alert.alert(t('common.error', 'Error'), result.message || t('payments.paymentFailed', 'Payment failed'));
       }
@@ -240,6 +247,17 @@ export default function MerchandiseDetailScreen() {
               </View>
             </View>
           </ThemedCard>
+
+          {/* Fee breakdown — parents see the platform + provider cut of what
+              they're charged. Driven by the current quantity so it stays in
+              sync with the Buy button total. */}
+          {isParent && totalPrice > 0 && (
+            <CommissionBreakdownCard
+              grossAmount={totalPrice}
+              providerCode="AirtelMoney"
+              audience="parent"
+            />
+          )}
         </Animated.View>
       </ScrollView>
 

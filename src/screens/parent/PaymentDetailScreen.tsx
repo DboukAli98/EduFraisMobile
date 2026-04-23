@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
-  View, StyleSheet, TouchableOpacity } from 'react-native';
+  View, StyleSheet, TouchableOpacity
+} from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -14,6 +15,7 @@ import {
   ThemedButton,
   PaymentStatusBadge,
   ScreenSkeleton,
+  CommissionBreakdownCard,
 } from '../../components';
 import { useTheme } from '../../theme';
 import { useAnimatedEntry, staggerDelay, useResponsive, useAppSelector } from '../../hooks';
@@ -119,9 +121,10 @@ const PaymentDetailScreen: React.FC = () => {
 
   const statusAnim = useAnimatedEntry({ type: 'scaleIn', delay: staggerDelay(0) });
   const amountAnim = useAnimatedEntry({ type: 'slideUp', delay: staggerDelay(1) });
-  const detailsAnim = useAnimatedEntry({ type: 'slideUp', delay: staggerDelay(2) });
-  const childAnim = useAnimatedEntry({ type: 'slideUp', delay: staggerDelay(3) });
-  const actionAnim = useAnimatedEntry({ type: 'fadeIn', delay: staggerDelay(4) });
+  const breakdownAnim = useAnimatedEntry({ type: 'slideUp', delay: staggerDelay(2) });
+  const detailsAnim = useAnimatedEntry({ type: 'slideUp', delay: staggerDelay(3) });
+  const childAnim = useAnimatedEntry({ type: 'slideUp', delay: staggerDelay(4) });
+  const actionAnim = useAnimatedEntry({ type: 'fadeIn', delay: staggerDelay(5) });
 
   // -------------------------------------------------------------------------
   // Pay Now handler
@@ -231,13 +234,18 @@ const PaymentDetailScreen: React.FC = () => {
 
               setPaymentInitiated(true);
 
-              Alert.alert(
-                t('parent.paymentDetail.paymentInitiated', 'Payment Initiated'),
-                t(
-                  'parent.paymentDetail.paymentInitiatedMessage',
-                  'Payment initiated! Check your phone to confirm via Airtel Money.'
-                )
-              );
+              // Navigate to the sleek success/pending screen, which polls
+              // CheckPaymentStatus until the Airtel Money callback lands.
+              router.push({
+                pathname: '/payment-success',
+                params: {
+                  reference,
+                  amount: String(Math.round(totalAmount)),
+                  type: 'schoolfee',
+                  installmentId: String(installment.installmentId),
+                  childName: installment.childName || '',
+                },
+              } as any);
             } catch (error: any) {
               console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
               console.log('[Payment] ✖ FAILED');
@@ -258,13 +266,13 @@ const PaymentDetailScreen: React.FC = () => {
                 error?.message ||
                 (error?.status === 'FETCH_ERROR'
                   ? t(
-                      'parent.paymentDetail.networkError',
-                      'Network error. Check your connection and ensure the server is reachable.'
-                    )
+                    'parent.paymentDetail.networkError',
+                    'Network error. Check your connection and ensure the server is reachable.'
+                  )
                   : t(
-                      'parent.paymentDetail.paymentError',
-                      'Failed to initiate payment. Please try again.'
-                    ));
+                    'parent.paymentDetail.paymentError',
+                    'Failed to initiate payment. Please try again.'
+                  ));
 
               Alert.alert(
                 t('parent.paymentDetail.paymentFailed', 'Payment Failed'),
@@ -363,9 +371,29 @@ const PaymentDetailScreen: React.FC = () => {
         </ThemedCard>
       </Animated.View>
 
+      {/* Fee breakdown — transparency for the parent: shows that the price
+          they see is what they pay, and how it is split between the school,
+          the platform and the payment provider. Hidden for already-paid
+          installments where the historical breakdown lives on the receipt. */}
+      {!isPaid && (
+        <Animated.View style={breakdownAnim}>
+          <CommissionBreakdownCard
+            grossAmount={installment.amount + installment.lateFee}
+            providerCode="AirtelMoney"
+            audience="parent"
+          />
+        </Animated.View>
+      )}
+
       {/* Details */}
       <Animated.View style={detailsAnim}>
-        <ThemedCard variant="outlined" style={styles.detailsCard}>
+        <ThemedCard
+          variant="outlined"
+          style={[
+            styles.detailsCard,
+            !isPaid && styles.detailsCardWithBreakdown,
+          ]}
+        >
           <DetailRow
             label={t('parent.paymentDetail.dueDate', 'Due Date')}
             value={formatDate(installment.dueDate)}
@@ -496,6 +524,9 @@ const styles = StyleSheet.create({
 
   detailsCard: {
     marginBottom: 16,
+  },
+  detailsCardWithBreakdown: {
+    marginTop: 16,
   },
   detailRow: {
     flexDirection: 'row',

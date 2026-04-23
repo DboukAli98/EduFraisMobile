@@ -374,7 +374,52 @@
     "privacyPolicy": "Privacy Policy",
     "helpCenter": "Help Center",
     "contactSupport": "Contact Support",
-    "signOut": "Sign Out"
+    "signOut": "Sign Out",
+    "providers": {
+      "title": "Payment providers",
+      "subtitle": "Active payment channels and applicable fees",
+      "empty": "No providers available",
+      "feeLine": "Fee: {{pct}}%",
+      "platformFeeLabel": "EduFrais platform fee",
+      "platformFeeHint": "Deducted from every payment"
+    }
+  },
+  "commission": {
+    "platformFee": "EduFrais platform fee",
+    "providerFallback": "Provider fee",
+    "director": {
+      "headline": "Your school will receive",
+      "subtitle": "Platform and provider fees are deducted from what the parent pays.",
+      "netLabel": "Net to school"
+    },
+    "parent": {
+      "headline": "Total to pay",
+      "subtitle": "Platform and provider fees included — nothing extra to pay.",
+      "netLabel": "Received by school"
+    },
+    "agent": {
+      "headline": "Amount collected",
+      "subtitle": "Fee breakdown applied to this transaction.",
+      "netLabel": "Sent to school"
+    }
+  },
+  "payment": {
+    "success": {
+      "title": "Payment successful!",
+      "failedTitle": "Payment failed",
+      "pendingTitle": "Payment in progress…",
+      "subtitle": "Thank you! Your payment has been confirmed.",
+      "subtitleNamed": "Thank you! Your payment for {{name}} has been confirmed.",
+      "failedSubtitle": "We couldn't confirm your payment. You can try again or contact support.",
+      "pendingSubtitle": "Check your phone to confirm the transaction on Airtel Money.",
+      "amountLabel": "Amount",
+      "referenceLabel": "Reference",
+      "pendingAttempts": "Checking… ({{attempt}}/40)",
+      "viewReceipt": "View receipt",
+      "backHome": "Back to home",
+      "tryAgain": "Try again",
+      "continueInBackground": "Continue in background"
+    }
   },
   "profile": {
     "title": "Profile",

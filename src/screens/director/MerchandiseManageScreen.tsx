@@ -22,6 +22,7 @@ import {
   ThemedButton,
   EmptyState,
   ScreenSkeleton,
+  CommissionBreakdownCard,
 } from '../../components';
 import { useTheme } from '../../theme';
 import { useAnimatedEntry, staggerDelay, useAppSelector } from '../../hooks';
@@ -493,6 +494,14 @@ export default function MerchandiseManageScreen() {
               onChangeText={setNewItemPrice}
               placeholder="0"
               keyboardType="numeric"
+            />
+            {/* Live fee breakdown: shows the director what the school keeps
+                once platform + provider fees are deducted from the price
+                the parent is charged. */}
+            <CommissionBreakdownCard
+              grossAmount={parseFloat(newItemPrice) || 0}
+              audience="director"
+              title={t('director.merchandise.feeBreakdown', 'Répartition des frais')}
             />
 
             {/* Image picker */}

@@ -173,66 +173,69 @@ const LogActivityScreen: React.FC = () => {
         })}
       </ScrollView>
 
-      {selectedTypeMeta.requiresParent ? (
-        <>
-          <SectionHeader
-            title={t('agent.logActivity.parentSection', 'Parent')}
-            style={styles.sectionSpacing}
-          />
-          {parentsLoading ? (
-            <ThemedText variant="caption" color={theme.colors.textSecondary}>
-              {t('common.loading', 'Loading…')}
-            </ThemedText>
-          ) : assignedParents.length === 0 ? (
-            <ThemedCard variant="outlined" style={styles.emptyParents}>
-              <ThemedText variant="bodySmall" color={theme.colors.textSecondary}>
-                {t(
+      <>
+        <SectionHeader
+          title={t('agent.logActivity.parentSection', 'Parent')}
+          style={styles.sectionSpacing}
+        />
+        {parentsLoading ? (
+          <ThemedText variant="caption" color={theme.colors.textSecondary}>
+            {t('common.loading', 'Loading…')}
+          </ThemedText>
+        ) : assignedParents.length === 0 ? (
+          <ThemedCard variant="outlined" style={styles.emptyParents}>
+            <ThemedText variant="bodySmall" color={theme.colors.textSecondary}>
+              {selectedTypeMeta.requiresParent
+                ? t(
                   'agent.logActivity.noParents',
                   'You have no assigned parents yet. Ask your director to assign you before logging activities tied to a parent.',
+                )
+                : t(
+                  'agent.logActivity.noParentsOptional',
+                  'You have no assigned parents yet. You can still save this activity without linking it to a parent.',
                 )}
-              </ThemedText>
-            </ThemedCard>
-          ) : (
-            <View style={styles.parentList}>
-              {assignedParents.map((p) => {
-                const selected = selectedParentId === p.parentId;
-                return (
-                  <Pressable key={p.parentId} onPress={() => setSelectedParentId(p.parentId)}>
-                    <ThemedCard
-                      variant={selected ? 'elevated' : 'outlined'}
-                      style={{
-                        ...styles.parentCard,
-                        ...(selected
-                          ? { borderColor: theme.colors.primary, borderWidth: 2 }
-                          : {}),
-                      }}
-                    >
-                      <View style={styles.parentRow}>
-                        <Avatar firstName={p.firstName} lastName={p.lastName} size="sm" />
-                        <View style={styles.parentInfo}>
-                          <ThemedText variant="bodySmall" style={{ fontWeight: '600' }}>
-                            {p.firstName} {p.lastName}
+            </ThemedText>
+          </ThemedCard>
+        ) : (
+          <View style={styles.parentList}>
+            {assignedParents.map((p) => {
+              const selected = selectedParentId === p.parentId;
+              return (
+                <Pressable key={p.parentId} onPress={() => setSelectedParentId(p.parentId)}>
+                  <ThemedCard
+                    variant={selected ? 'elevated' : 'outlined'}
+                    style={{
+                      ...styles.parentCard,
+                      ...(selected
+                        ? { borderColor: theme.colors.primary, borderWidth: 2 }
+                        : {}),
+                    }}
+                  >
+                    <View style={styles.parentRow}>
+                      <Avatar firstName={p.firstName} lastName={p.lastName} size="sm" />
+                      <View style={styles.parentInfo}>
+                        <ThemedText variant="bodySmall" style={{ fontWeight: '600' }}>
+                          {p.firstName} {p.lastName}
+                        </ThemedText>
+                        {p.phoneNumber ? (
+                          <ThemedText variant="caption" color={theme.colors.textSecondary}>
+                            {p.countryCode} {p.phoneNumber}
                           </ThemedText>
-                          {p.phoneNumber ? (
-                            <ThemedText variant="caption" color={theme.colors.textSecondary}>
-                              {p.countryCode} {p.phoneNumber}
-                            </ThemedText>
-                          ) : null}
-                        </View>
-                        <Ionicons
-                          name={selected ? 'checkmark-circle' : 'ellipse-outline'}
-                          size={22}
-                          color={selected ? theme.colors.primary : theme.colors.textTertiary}
-                        />
+                        ) : null}
                       </View>
-                    </ThemedCard>
-                  </Pressable>
-                );
-              })}
-            </View>
-          )}
-        </>
-      ) : null}
+                      <Ionicons
+                        name={selected ? 'checkmark-circle' : 'ellipse-outline'}
+                        size={22}
+                        color={selected ? theme.colors.primary : theme.colors.textTertiary}
+                      />
+                    </View>
+                  </ThemedCard>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
+      </>
 
       <SectionHeader
         title={t('agent.logActivity.descriptionSection', 'Description')}
@@ -316,12 +319,15 @@ const styles = StyleSheet.create({
   },
   typeRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
     paddingVertical: 8,
   },
   typeChip: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'flex-start',
+    minHeight: 38,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderWidth: 1,
@@ -329,6 +335,7 @@ const styles = StyleSheet.create({
   },
   typeLabel: {
     fontWeight: '600',
+    includeFontPadding: false,
   },
   sectionSpacing: {
     marginTop: 16,

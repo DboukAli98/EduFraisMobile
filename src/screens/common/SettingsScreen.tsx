@@ -49,6 +49,7 @@ import {
   useGetSchoolDirectorQuery,
   useGetAgentDetailsQuery,
   useSendNotificationMutation,
+  useGetActiveCommissionRatesQuery,
 } from '../../services/api/apiSlice';
 import type { UserRole } from '../../types';
 import { COUNTRY_CODE } from '../../constants';
@@ -121,6 +122,86 @@ const SettingsRow: React.FC<SettingsRowProps> = ({
         ) : null
       )}
     </Pressable>
+  );
+};
+
+/**
+ * "Prestataires de paiement" — shows parents and collecting agents which
+ * payment gateways are currently active on the platform and the fee
+ * percentage each one charges. Read-only; the admin edits these from the
+ * web panel.
+ */
+const PaymentProvidersSection: React.FC = () => {
+  const { theme } = useTheme();
+  const { t } = useTranslation();
+  const { data, isLoading, isError } = useGetActiveCommissionRatesQuery();
+
+  const providers = (data as any)?.providers ?? [];
+  const platformPct = Number((data as any)?.platformFeePercentage ?? 0);
+
+  return (
+    <AnimatedSection index={35}>
+      <SectionHeader
+        title={t('settings.providers.title', 'Prestataires de paiement')}
+        style={styles.sectionSpacing}
+      />
+      <ThemedText
+        variant="caption"
+        color={theme.colors.textTertiary}
+        style={styles.providersSubtitle}
+      >
+        {t(
+          'settings.providers.subtitle',
+          'Canaux de paiement actifs et frais appliqués',
+        )}
+      </ThemedText>
+      <ThemedCard variant="outlined" style={styles.sectionCard}>
+        {isLoading ? (
+          <SettingsRow
+            icon="hourglass-outline"
+            label={t('common.loading', 'Chargement…')}
+            showChevron={false}
+          />
+        ) : isError || !providers.length ? (
+          <SettingsRow
+            icon="information-circle-outline"
+            label={t('settings.providers.empty', 'Aucun prestataire disponible')}
+            showChevron={false}
+            iconColor={theme.colors.textSecondary}
+          />
+        ) : (
+          providers.map((p: any) => (
+            <SettingsRow
+              key={p.paymentProviderId}
+              icon="card-outline"
+              label={p.name}
+              subtitle={t('settings.providers.feeLine', 'Frais : {{pct}}%', {
+                pct: Number(p.feePercentage).toFixed(2),
+              })}
+              showChevron={false}
+              iconColor={theme.colors.primary}
+              rightElement={
+                <ThemedText variant="caption" color={theme.colors.textTertiary}>
+                  {p.code}
+                </ThemedText>
+              }
+            />
+          ))
+        )}
+        <SettingsRow
+          icon="business-outline"
+          label={t('settings.providers.platformFeeLabel', 'Frais plateforme EduFrais')}
+          subtitle={t('settings.providers.platformFeeHint', 'Déduits de chaque paiement')}
+          showChevron={false}
+          iconColor={theme.colors.secondary}
+          rightElement={
+            <ThemedText variant="caption" color={theme.colors.textSecondary}>
+              {platformPct.toFixed(2)}%
+            </ThemedText>
+          }
+        />
+      </ThemedCard>
+    </AnimatedSection>
   );
 };
 
@@ -681,6 +762,8 @@ export default function SettingsScreen() {
       </AnimatedSection>
 
       {/* About */}
+      {(isParent || isAgent) && <PaymentProvidersSection />}
+
       <AnimatedSection index={4}>
         <SectionHeader
           title={t('settings.about', 'About')}
@@ -1082,6 +1165,11 @@ const styles = StyleSheet.create({
   },
   sectionCard: {
     paddingVertical: 4,
+  },
+  providersSubtitle: {
+    marginTop: -6,
+    marginBottom: 10,
+    paddingHorizontal: 4,
   },
   sectionItemLabel: {
     marginBottom: 8,

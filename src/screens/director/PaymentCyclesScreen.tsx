@@ -23,6 +23,7 @@ import {
   ThemedButton,
   EmptyState,
   ScreenSkeleton,
+  CommissionBreakdownCard,
 } from '../../components';
 import { useTheme } from '../../theme';
 import { useAnimatedEntry, staggerDelay, useAppSelector } from '../../hooks';
@@ -508,6 +509,14 @@ export default function PaymentCyclesScreen() {
                 onChangeText={setGradeFee}
                 placeholder="0"
                 keyboardType="numeric"
+              />
+              {/* Live fee breakdown — shows the director exactly what the
+                  school will net once the platform + Airtel fees are
+                  deducted from the amount the parent is charged. */}
+              <CommissionBreakdownCard
+                grossAmount={parseFloat(gradeFee) || 0}
+                audience="director"
+                title={t('cycles.feeBreakdown', 'Répartition des frais')}
               />
               {/* Term Start Date Picker */}
               <ThemedText

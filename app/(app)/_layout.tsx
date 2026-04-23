@@ -232,6 +232,10 @@ export default function AppLayout() {
         options={{ href: null }}
       />
       <Tabs.Screen
+        name="payment-success"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
         name="support"
         options={{ href: null }}
       />
