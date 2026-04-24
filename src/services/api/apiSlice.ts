@@ -488,8 +488,13 @@ export const apiSlice = createApi({
       query: (data) => ({ url: '/payments/collect', method: 'POST', body: data }),
       invalidatesTags: ['Payments'],
     }),
+    // Polls /payments/CheckPaymentStatus right after InitiatePayment with
+    // the 4-char TransactionReference we generated client-side. The server
+    // resolves the reference to a PaymentTransaction row and returns its
+    // FK_StatusId (6=Pending, 8=Processed, 10=Failed, 11=InProgress). NOT
+    // the Airtel mapId — the mobile never sees that.
     checkPaymentStatus: builder.query<ApiResponse<any>, { transactionId: string }>({
-      query: (params) => ({ url: '/payments/CheckCollectionStatus', params }),
+      query: (params) => ({ url: '/payments/CheckPaymentStatus', params }),
     }),
     getSchoolFeesPaymentHistory: builder.query<
       PagedResponse<SchoolFeesPaymentHistoryDto>,

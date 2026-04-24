@@ -28,18 +28,18 @@ const FILTERS: { key: SupportFilter; label: string }[] = [
   { key: 'resolved', label: 'Resolved' },
 ];
 
-const getStatusLabel = (statusId: number): string => {
+const getStatusLabel = (statusId: number, t: any): string => {
   switch (statusId) {
     case SUPPORT_REQUEST_STATUSES.Pending:
-      return 'Open';
+      return t('support.open', 'Open');
     case SUPPORT_REQUEST_STATUSES.InProgress:
-      return 'In Progress';
+      return t('support.inProgress', 'In Progress');
     case SUPPORT_REQUEST_STATUSES.Resolved:
-      return 'Resolved';
+      return t('support.resolved', 'Resolved');
     case SUPPORT_REQUEST_STATUSES.Cancelled:
-      return 'Cancelled';
+      return t('support.cancelled', 'Cancelled');
     default:
-      return 'Open';
+      return t('support.open', 'Open');
   }
 };
 
@@ -58,19 +58,54 @@ const getStatusColor = (statusId: number, colors: any): string => {
   }
 };
 
-const getPriorityColor = (priority: string, colors: any): string => {
-  switch (priority) {
+const getPriorityColor = (priority: unknown, colors: any): string => {
+  const normalized = String(priority ?? '').toLowerCase();
+
+  if (normalized === '0') return colors.info;
+  if (normalized === '1') return colors.warning;
+  if (normalized === '2') return colors.accent;
+  if (normalized === '3') return colors.error;
+
+  switch (normalized) {
     case 'Low':
+    case 'low':
       return colors.info;
     case 'Medium':
+    case 'medium':
       return colors.warning;
     case 'High':
+    case 'high':
       return colors.accent;
     case 'Urgent':
+    case 'urgent':
       return colors.error;
     default:
       return colors.info;
   }
+};
+
+const translateSupportType = (value: unknown, t: any): string => {
+  const normalized = String(value ?? '').toLowerCase();
+  if (normalized === '0') return t('support.general', 'General');
+  if (normalized === '1') return t('support.payment', 'Payment Issue');
+  if (normalized === '2') return t('support.help', 'Help');
+  if (normalized === 'general') return t('support.general', 'General');
+  if (normalized === 'payment') return t('support.payment', 'Payment Issue');
+  if (normalized === 'help') return t('support.help', 'Help');
+  return String(value ?? '');
+};
+
+const translatePriority = (value: unknown, t: any): string => {
+  const normalized = String(value ?? '').toLowerCase();
+  if (normalized === '0') return t('support.low', 'Low');
+  if (normalized === '1') return t('support.medium', 'Medium');
+  if (normalized === '2') return t('support.high', 'High');
+  if (normalized === '3') return t('support.urgent', 'Urgent');
+  if (normalized === 'low') return t('support.low', 'Low');
+  if (normalized === 'medium') return t('support.medium', 'Medium');
+  if (normalized === 'high') return t('support.high', 'High');
+  if (normalized === 'urgent') return t('support.urgent', 'Urgent');
+  return String(value ?? '');
 };
 
 const AnimatedSection: React.FC<{
@@ -210,7 +245,9 @@ export default function SupportScreen() {
         filteredRequests.map((request: SupportRequest, index: number) => {
           const priorityColor = getPriorityColor(request.priority, theme.colors);
           const statusColor = getStatusColor(request.fK_StatusId, theme.colors);
-          const statusLabel = getStatusLabel(request.fK_StatusId);
+          const statusLabel = getStatusLabel(request.fK_StatusId, t);
+          const requestTypeLabel = translateSupportType(request.supportRequestType, t);
+          const priorityLabel = translatePriority(request.priority, t);
 
           return (
             <AnimatedSection key={request.supportRequestId} index={index + 2}>
@@ -219,37 +256,50 @@ export default function SupportScreen() {
                 style={styles.requestCard}
               >
                 <View style={styles.requestHeader}>
-                  <ThemedText
-                    variant="bodySmall"
-                    style={{ fontWeight: '600', flex: 1 }}
-                    numberOfLines={1}
-                  >
-                    {request.title}
-                  </ThemedText>
-                  <ThemedText
-                    variant="caption"
-                    color={theme.colors.textTertiary}
-                  >
+                  <View style={styles.titleWrap}>
+                    <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+                    <ThemedText
+                      variant="body"
+                      style={styles.requestTitle}
+                      numberOfLines={1}
+                    >
+                      {request.title}
+                    </ThemedText>
+                  </View>
+                  <ThemedText variant="caption" color={theme.colors.textTertiary}>
                     {formatDate(request.createdOn ?? '')}
                   </ThemedText>
                 </View>
+
+                {!!request.description && (
+                  <ThemedText
+                    variant="caption"
+                    color={theme.colors.textSecondary}
+                    style={styles.requestDescription}
+                    numberOfLines={2}
+                  >
+                    {request.description}
+                  </ThemedText>
+                )}
 
                 <View style={styles.badgeRow}>
                   <View
                     style={[
                       styles.badge,
                       {
-                        backgroundColor: theme.colors.primary,
+                        backgroundColor: theme.colors.primary + '15',
+                        borderColor: theme.colors.primary + '35',
+                        borderWidth: 1,
                         borderRadius: theme.borderRadius.full,
                       },
                     ]}
                   >
                     <ThemedText
                       variant="caption"
-                      color="#FFFFFF"
-                      style={{ fontWeight: '600' }}
+                      color={theme.colors.primary}
+                      style={styles.badgeText}
                     >
-                      {request.supportRequestType}
+                      {requestTypeLabel}
                     </ThemedText>
                   </View>
 
@@ -257,17 +307,19 @@ export default function SupportScreen() {
                     style={[
                       styles.badge,
                       {
-                        backgroundColor: priorityColor,
+                        backgroundColor: priorityColor + '15',
+                        borderColor: priorityColor + '35',
+                        borderWidth: 1,
                         borderRadius: theme.borderRadius.full,
                       },
                     ]}
                   >
                     <ThemedText
                       variant="caption"
-                      color="#FFFFFF"
-                      style={{ fontWeight: '600' }}
+                      color={priorityColor}
+                      style={styles.badgeText}
                     >
-                      {request.priority}
+                      {priorityLabel}
                     </ThemedText>
                   </View>
 
@@ -275,15 +327,17 @@ export default function SupportScreen() {
                     style={[
                       styles.badge,
                       {
-                        backgroundColor: statusColor,
+                        backgroundColor: statusColor + '15',
+                        borderColor: statusColor + '35',
+                        borderWidth: 1,
                         borderRadius: theme.borderRadius.full,
                       },
                     ]}
                   >
                     <ThemedText
                       variant="caption"
-                      color="#FFFFFF"
-                      style={{ fontWeight: '600' }}
+                      color={statusColor}
+                      style={styles.badgeText}
                     >
                       {statusLabel}
                     </ThemedText>
@@ -315,12 +369,34 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   requestCard: {
-    marginBottom: 10,
+    marginBottom: 12,
+    paddingVertical: 12,
   },
   requestHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  titleWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 12,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  requestTitle: {
+    fontWeight: '700',
+    flex: 1,
+  },
+  requestDescription: {
     marginBottom: 10,
+    lineHeight: 18,
   },
   badgeRow: {
     flexDirection: 'row',
@@ -329,6 +405,9 @@ const styles = StyleSheet.create({
   },
   badge: {
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
+  },
+  badgeText: {
+    fontWeight: '700',
   },
 });

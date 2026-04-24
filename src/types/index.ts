@@ -248,18 +248,23 @@ export interface AddChildRequest {
 }
 
 // ─── Payment Cycle & Installments ───────────────────────────────
+// Backend enum order: Full=0, Monthly=1, Weekly=2, Quarterly=3, Custom=4.
+// The API serializes this as its numeric value, so consumers must accept
+// both the raw number and the string name they can derive from it.
 export type PaymentCycleType = 'Full' | 'Monthly' | 'Weekly' | 'Quarterly' | 'Custom';
+// Backend IntervalUnit enum: Day=0, Week=1, Month=2, Year=3.
+export type IntervalUnitName = 'Day' | 'Week' | 'Month' | 'Year';
 
 export interface PaymentCycle {
   paymentCycleId: number;
   paymentCycleName: string;
-  paymentCycleDescription?: string;
-  paymentCycleType: PaymentCycleType;
+  paymentCycleDescription?: string | null;
+  paymentCycleType: PaymentCycleType | number;
   fK_SchoolGradeSectionId: number;
   planStartDate: string;
-  intervalCount?: number;
-  intervalUnit?: string;
-  installmentAmounts?: string;
+  intervalCount?: number | null;
+  intervalUnit?: IntervalUnitName | number | null;
+  installmentAmounts?: string | null;
   createdOn?: string;
   modifiedOn?: string;
 }

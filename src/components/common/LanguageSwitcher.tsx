@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import { useTheme } from '../../theme';
 import { useAppDispatch, useAppSelector } from '../../hooks';
@@ -10,7 +10,7 @@ interface LanguageSwitcherProps {
   compact?: boolean;
 }
 
-const LANGUAGES = ['en', 'fr'] as const;
+const LANGUAGES = ['fr', 'en'] as const;
 const LABELS: Record<(typeof LANGUAGES)[number], string> = {
   en: 'EN',
   fr: 'FR',
@@ -22,6 +22,12 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
   const { theme } = useTheme();
   const dispatch = useAppDispatch();
   const currentLanguage = useAppSelector((state) => state.app.language);
+
+  useEffect(() => {
+    if (i18n.language !== currentLanguage) {
+      i18n.changeLanguage(currentLanguage);
+    }
+  }, [currentLanguage]);
 
   const handleLanguageChange = useCallback(
     (lang: 'en' | 'fr') => {

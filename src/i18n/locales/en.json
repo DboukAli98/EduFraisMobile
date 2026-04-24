@@ -275,9 +275,20 @@
     "title": "Support",
     "newRequest": "New Request",
     "myRequests": "My Requests",
+    "noRequests": "No Support Requests",
+    "noRequestsDescription": "You have no support requests matching this filter.",
+    "unsupportedRole": "Support request tracking is currently available for parent and agent accounts.",
+    "missingIdentity": "Your account is missing the required support request details.",
+    "missingDirector": "No director is configured for this school yet.",
+    "requestSubmitted": "Your support request has been submitted.",
+    "submitError": "Failed to submit support request.",
+    "submitRequest": "Submit Request",
+    "subject": "Title",
+    "subjectPlaceholder": "Briefly describe your issue",
     "requestType": "Request Type",
     "priority": "Priority",
     "description": "Description",
+    "descriptionPlaceholder": "Provide details about your issue...",
     "general": "General",
     "payment": "Payment Issue",
     "help": "Help",
@@ -285,6 +296,13 @@
     "medium": "Medium",
     "high": "High",
     "urgent": "Urgent",
+    "cancelled": "Cancelled",
+    "filter": {
+      "all": "All",
+      "open": "Open",
+      "inProgress": "In Progress",
+      "resolved": "Resolved"
+    },
     "open": "Open",
     "inProgress": "In Progress",
     "resolved": "Resolved"
@@ -478,6 +496,7 @@
       "history": "History",
       "support": "Support",
       "upcomingDues": "Upcoming Dues",
+      "noUpcomingDues": "No upcoming dues. You're all caught up!",
       "recentPayments": "Recent Payments",
       "noRecentPayments": "No recent payments. Your successful payments will appear here.",
       "myAgents": "My Agents"
@@ -486,6 +505,17 @@
       "title": "Payments",
       "installment": "Installment",
       "makePayment": "Make Payment",
+      "allPaidTitle": "All Paid",
+      "allPaidMessage": "All installments have been paid. No pending payments.",
+      "viewHistory": "View Payment History",
+      "searchPlaceholder": "Search by child, school, or cycle...",
+      "totalDue": "Due",
+      "totalPaid": "Paid",
+      "overdue": "Overdue",
+      "noSearchResults": "No matching installments",
+      "noInstallments": "No installments found",
+      "tryDifferentSearch": "Try adjusting your search or filter criteria.",
+      "noInstallmentsHint": "Your installments will appear here once available.",
       "filter": {
         "all": "All",
         "pending": "Pending",
@@ -584,6 +614,10 @@
       "downloadReceipt": "Download Receipt",
       "viewHistory": "View Payment History",
       "payNow": "Pay Now",
+      "confirmPayment": "Confirm Payment",
+      "confirmPaymentMessage": "You are about to pay {{amount}} via Airtel Money. A prompt will be sent to your phone to confirm.",
+      "confirm": "Confirm",
+      "paymentPending": "Payment Pending...",
       "paymentFailed": "Payment Failed",
       "invalidPhone": "Your phone number is invalid. Please update it in Settings before paying.",
       "missingUserId": "Your session is missing a user ID. Please log out and sign in again.",
@@ -628,7 +662,12 @@
     "category": "Category",
     "status": "Status",
     "available": "Available",
-    "buyNow": "Buy Now"
+    "buyNow": "Buy Now",
+    "quantity": "Qty",
+    "total": "Total",
+    "confirmPurchaseTitle": "Confirm purchase",
+    "confirmPurchaseMessage": "Buy {{quantity}} item(s) for {{amount}} via Airtel Money?",
+    "confirmPurchase": "Buy"
   },
   "childDetail": {
     "title": "Child Details",
@@ -649,7 +688,29 @@
     "enrollmentComplete": "Enrollment Complete",
     "enrollmentCompleteDesc": "Grade and payment plan are set. Installments are visible in the Payments tab.",
     "pendingApproval": "Pending Approval",
-    "pendingDesc": "The school director must approve this registration before you can select a grade and payment plan."
+    "pendingDesc": "The school director must approve this registration before you can select a grade and payment plan.",
+    "cycleType": {
+      "Full": "One-time payment",
+      "Monthly": "Monthly",
+      "Weekly": "Weekly",
+      "Quarterly": "Quarterly",
+      "Custom": "Custom"
+    },
+    "intervalUnit": {
+      "Day": "day(s)",
+      "Week": "week(s)",
+      "Month": "month(s)",
+      "Year": "year(s)"
+    },
+    "cycleSummary": {
+      "installments_one": "{{count}} installment",
+      "installments_other": "{{count}} installments",
+      "every": "every {{count}} {{unit}}",
+      "startsOn": "starts on {{date}}"
+    },
+    "cycleTotal": "Total to pay",
+    "cycleScheduleEstimated": "Estimated preview — the exact amount per installment is set by the school.",
+    "installmentLabel": "Installment {{num}}"
   },
   "time": {
     "today": "Today",

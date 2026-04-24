@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
-  View, StyleSheet, Pressable, FlatList, TextInput } from 'react-native';
+  View, StyleSheet, Pressable, FlatList, TextInput
+} from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -431,7 +432,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   historyLinkText: {
-    fontWeight: '600',
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: '500',
   },
 
   searchContainer: {

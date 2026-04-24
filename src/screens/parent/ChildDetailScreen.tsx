@@ -32,7 +32,42 @@ import {
   useAddChildGradeMutation,
 } from '../../services/api/apiSlice';
 import { CURRENCY_SYMBOL } from '../../constants';
-import type { SchoolGradeSection, PaymentCycle } from '../../types';
+import type { SchoolGradeSection, PaymentCycle, PaymentCycleType, IntervalUnitName } from '../../types';
+
+// ─── Payment-cycle helpers ───────────────────────────────────────
+// The backend serializes these enums as numbers; map them to names the
+// rest of the UI (and i18n keys) can reason about. Everything is
+// defensive — we fall back to the raw string when it *is* already a
+// string, and to a neutral "Custom" / "Month" when it's unknown.
+const PAYMENT_CYCLE_TYPE_BY_INDEX: PaymentCycleType[] = [
+  'Full',
+  'Monthly',
+  'Weekly',
+  'Quarterly',
+  'Custom',
+];
+const INTERVAL_UNIT_BY_INDEX: IntervalUnitName[] = ['Day', 'Week', 'Month', 'Year'];
+
+const resolveCycleTypeName = (raw: PaymentCycleType | number | undefined): PaymentCycleType => {
+  if (typeof raw === 'number') {
+    return PAYMENT_CYCLE_TYPE_BY_INDEX[raw] ?? 'Custom';
+  }
+  if (typeof raw === 'string' && (PAYMENT_CYCLE_TYPE_BY_INDEX as string[]).includes(raw)) {
+    return raw as PaymentCycleType;
+  }
+  return 'Custom';
+};
+
+const resolveIntervalUnitName = (
+  raw: IntervalUnitName | number | null | undefined,
+): IntervalUnitName | null => {
+  if (raw == null) return null;
+  if (typeof raw === 'number') return INTERVAL_UNIT_BY_INDEX[raw] ?? null;
+  if ((INTERVAL_UNIT_BY_INDEX as string[]).includes(raw as string)) {
+    return raw as IntervalUnitName;
+  }
+  return null;
+};
 
 const formatCurrency = (amount: number) =>
   `${amount.toLocaleString()} ${CURRENCY_SYMBOL}`;
@@ -119,12 +154,100 @@ const CycleCard: React.FC<{
   cycle: PaymentCycle;
   isSelected: boolean;
   onPress: () => void;
-}> = ({ cycle, isSelected, onPress }) => {
+  // Grade is used to derive the total fee and, when the backend didn't
+  // provide an explicit installment schedule, to synthesize a preview
+  // (e.g. "12 × 12 500 XAF" for a monthly plan against a yearly fee).
+  grade?: SchoolGradeSection;
+}> = ({ cycle, isSelected, onPress, grade }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
 
-  const installments = cycle.installmentAmounts
-    ? cycle.installmentAmounts.split(',').map(Number)
+  const cycleTypeName = resolveCycleTypeName(cycle.paymentCycleType);
+  const intervalUnitName = resolveIntervalUnitName(cycle.intervalUnit);
+
+  // Human labels for the chip + summary line. Falls back to the i18n default
+  // string so nothing ever shows as just "0" again.
+  const typeLabel = t(
+    `childDetail.cycleType.${cycleTypeName}`,
+    {
+      Full: 'Paiement unique',
+      Monthly: 'Mensuel',
+      Weekly: 'Hebdomadaire',
+      Quarterly: 'Trimestriel',
+      Custom: 'Personnalisé',
+    }[cycleTypeName],
+  );
+
+  // Derive the installment breakdown. Priority order:
+  //   1. explicit `installmentAmounts` from the director
+  //   2. synthesized split from the grade fee when the type implies a
+  //      fixed number of installments (Full=1, Monthly=12, Weekly=52,
+  //      Quarterly=4); Custom + no data → no breakdown.
+  const explicitInstallments = cycle.installmentAmounts
+    ? cycle.installmentAmounts
+        .split(',')
+        .map((v) => Number(v.trim()))
+        .filter((n) => !Number.isNaN(n) && n > 0)
     : [];
+
+  const impliedCount: number | null = (() => {
+    if (explicitInstallments.length > 0) return null;
+    if (cycleTypeName === 'Full') return 1;
+    if (cycleTypeName === 'Monthly') return 12;
+    if (cycleTypeName === 'Weekly') return 52;
+    if (cycleTypeName === 'Quarterly') return 4;
+    // Custom: we could compute from intervalCount + intervalUnit + term
+    // dates, but the wire data is ambiguous, so keep it as a summary line
+    // and let the parent see "Personnalisé" without a fake schedule.
+    return null;
+  })();
+
+  const impliedInstallments: number[] =
+    impliedCount && grade?.schoolGradeFee
+      ? Array.from({ length: impliedCount }, () =>
+          Math.round((grade.schoolGradeFee / impliedCount) * 100) / 100,
+        )
+      : [];
+
+  const installments = explicitInstallments.length > 0 ? explicitInstallments : impliedInstallments;
+  const isSynthesized = explicitInstallments.length === 0 && impliedInstallments.length > 0;
+
+  const total =
+    explicitInstallments.length > 0
+      ? explicitInstallments.reduce((s, n) => s + n, 0)
+      : grade?.schoolGradeFee ?? 0;
+
+  // Summary line shown under the title: "12 versements mensuels · démarre le …"
+  const summaryParts: string[] = [];
+  if (installments.length > 0) {
+    summaryParts.push(
+      t('childDetail.cycleSummary.installments', {
+        count: installments.length,
+        defaultValue_one: '{{count}} versement',
+        defaultValue_other: '{{count}} versements',
+      }),
+    );
+  }
+  if (cycleTypeName === 'Custom' && cycle.intervalCount && intervalUnitName) {
+    const unitLabel = t(
+      `childDetail.intervalUnit.${intervalUnitName}`,
+      { Day: 'jour(s)', Week: 'semaine(s)', Month: 'mois', Year: 'an(s)' }[intervalUnitName],
+    );
+    summaryParts.push(
+      t('childDetail.cycleSummary.every', 'tous les {{count}} {{unit}}', {
+        count: cycle.intervalCount,
+        unit: unitLabel,
+      }),
+    );
+  }
+  if (cycle.planStartDate) {
+    summaryParts.push(
+      t('childDetail.cycleSummary.startsOn', 'démarre le {{date}}', {
+        date: formatDate(cycle.planStartDate),
+      }),
+    );
+  }
+  const summary = summaryParts.join(' · ');
 
   return (
     <Pressable
@@ -143,9 +266,14 @@ const CycleCard: React.FC<{
           <ThemedText variant="subtitle" color={isSelected ? theme.colors.primary : theme.colors.text}>
             {cycle.paymentCycleName}
           </ThemedText>
-          <View style={[styles.typeBadge, { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.sm }]}>
+          <View
+            style={[
+              styles.typeBadge,
+              { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.sm },
+            ]}
+          >
             <ThemedText variant="caption" color="#FFFFFF" style={{ fontWeight: '600' }}>
-              {cycle.paymentCycleType}
+              {typeLabel}
             </ThemedText>
           </View>
         </View>
@@ -153,17 +281,48 @@ const CycleCard: React.FC<{
           <Ionicons name="checkmark-circle" size={22} color={theme.colors.primary} />
         )}
       </View>
+
+      {summary ? (
+        <ThemedText variant="caption" color={theme.colors.textSecondary} style={{ marginTop: 6 }}>
+          {summary}
+        </ThemedText>
+      ) : null}
+
       {cycle.paymentCycleDescription ? (
         <ThemedText variant="caption" color={theme.colors.textSecondary} style={{ marginTop: 4 }}>
           {cycle.paymentCycleDescription}
         </ThemedText>
       ) : null}
+
+      {total > 0 && (
+        <View style={styles.totalRow}>
+          <ThemedText variant="caption" color={theme.colors.textSecondary}>
+            {t('childDetail.cycleTotal', 'Total à payer')}
+          </ThemedText>
+          <ThemedText variant="subtitle" color={theme.colors.primary}>
+            {formatCurrency(total)}
+          </ThemedText>
+        </View>
+      )}
+
       {installments.length > 0 && (
         <View style={styles.installmentList}>
+          {isSynthesized && (
+            <ThemedText
+              variant="caption"
+              color={theme.colors.textTertiary}
+              style={{ marginBottom: 4, fontStyle: 'italic' }}
+            >
+              {t(
+                'childDetail.cycleScheduleEstimated',
+                'Aperçu indicatif — le montant exact de chaque versement est fixé par l’école.',
+              )}
+            </ThemedText>
+          )}
           {installments.map((amt, i) => (
             <View key={i} style={styles.installmentRow}>
               <ThemedText variant="caption" color={theme.colors.textSecondary}>
-                {i + 1}. Installment
+                {t('childDetail.installmentLabel', 'Versement {{num}}', { num: i + 1 })}
               </ThemedText>
               <ThemedText variant="caption" color={theme.colors.text} style={{ fontWeight: '600' }}>
                 {formatCurrency(amt)}
@@ -468,6 +627,7 @@ export default function ChildDetailScreen() {
                   cycle={cycle}
                   isSelected={selectedCycleId === cycle.paymentCycleId}
                   onPress={() => setSelectedCycleId(cycle.paymentCycleId)}
+                  grade={currentGrade}
                 />
               ))
             )}
@@ -621,6 +781,15 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingHorizontal: 8,
     paddingVertical: 2,
+  },
+  totalRow: {
+    marginTop: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(128,128,128,0.2)',
   },
   installmentList: {
     marginTop: 10,

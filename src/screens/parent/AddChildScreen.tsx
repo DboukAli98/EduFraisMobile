@@ -7,6 +7,7 @@ import {
   FlatList,
   Modal,
   Platform,
+  StatusBar,
 } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
@@ -54,6 +55,7 @@ export default function AddChildScreen() {
   // School picker state
   const [showSchoolPicker, setShowSchoolPicker] = useState(false);
   const [schoolSearch, setSchoolSearch] = useState('');
+  const modalTopInset = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0;
 
   const filteredSchools = useMemo(() => {
     if (!schoolSearch.trim()) return schools;
@@ -112,8 +114,8 @@ export default function AddChildScreen() {
         (err?.status === 401
           ? t('children.authError', 'You are not authorized. Please sign out and sign in again.')
           : err?.status === 'FETCH_ERROR'
-          ? t('common.networkError', 'Network error. Check your connection.')
-          : t('children.addError', 'Failed to add child.'));
+            ? t('common.networkError', 'Network error. Check your connection.')
+            : t('children.addError', 'Failed to add child.'));
       Alert.alert(t('common.error', 'Error'), String(message));
     }
   }, [validate, addChild, firstName, lastName, dateOfBirth, fatherName, parentId, selectedSchool, router, t]);
@@ -362,7 +364,15 @@ export default function AddChildScreen() {
         presentationStyle="pageSheet"
         onRequestClose={() => setShowSchoolPicker(false)}
       >
-        <View style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
+        <View
+          style={[
+            styles.modalContainer,
+            {
+              backgroundColor: theme.colors.background,
+              paddingTop: modalTopInset,
+            },
+          ]}
+        >
           {/* Modal Header */}
           <View style={[styles.modalHeader, { borderBottomColor: theme.colors.borderLight }]}>
             <ThemedText variant="subtitle">

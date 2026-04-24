@@ -108,8 +108,13 @@ const ParentDashboard: React.FC = () => {
 
   const balance = useMemo(() => {
     const total = installments.reduce((sum, i) => sum + i.amount + (i.lateFee || 0), 0);
-    const paid = installments.filter((i) => i.isPaid).reduce((sum, i) => sum + i.amount, 0);
-    const pending = total - paid;
+    // Include lateFee in paid too so the ratio can reach exactly 1 when
+    // every installment (including its late fee) is settled — otherwise
+    // the progress bar would sit just shy of full even when nothing is owed.
+    const paid = installments
+      .filter((i) => i.isPaid)
+      .reduce((sum, i) => sum + i.amount + (i.lateFee || 0), 0);
+    const pending = Math.max(0, total - paid);
     return { total, paid, pending };
   }, [installments]);
 
@@ -158,7 +163,15 @@ const ParentDashboard: React.FC = () => {
     }));
   }, [recentTxData]);
 
-  const paidRatio = balance.total > 0 ? balance.paid / balance.total : 0;
+  // Fully paid = full bar. Also handle the "no installments yet" case by
+  // showing an empty bar rather than NaN. Clamp to [0, 1] defensively.
+  const allPaid =
+    installments.length > 0 && installments.every((i) => i.isPaid);
+  const paidRatio = allPaid
+    ? 1
+    : balance.total > 0
+      ? Math.min(1, Math.max(0, balance.paid / balance.total))
+      : 0;
 
   const headerAnim = useAnimatedEntry({ type: 'slideUp', delay: staggerDelay(0) });
   const balanceAnim = useAnimatedEntry({ type: 'slideUp', delay: staggerDelay(1) });
@@ -251,35 +264,46 @@ const ParentDashboard: React.FC = () => {
           action={t('common.seeAll', 'See All')}
           onAction={() => router.push('/(app)/payments')}
         />
-        {upcomingDues.map((due) => (
-          <ThemedCard
-            key={due.id}
-            variant="elevated"
-            onPress={() => router.push({ pathname: '/(app)/payment-detail', params: { installmentId: due.id } })}
-            style={styles.dueCard}
-          >
-            <View style={styles.dueHeader}>
-              <View style={styles.dueFlex}>
-                <ThemedText variant="subtitle">{due.childName}</ThemedText>
-                <ThemedText variant="caption" color={theme.colors.textSecondary}>
-                  {due.school}
-                </ThemedText>
-              </View>
-              <PaymentStatusBadge status={due.status} size="sm" />
-            </View>
-            <View style={styles.dueFooter}>
-              <ThemedText variant="numeric" color={due.status === 'Overdue' ? theme.colors.error : theme.colors.primary}>
-                {formatCurrency(due.amount)}
-              </ThemedText>
-              <View style={styles.dateRow}>
-                <Ionicons name="calendar-outline" size={14} color={theme.colors.textTertiary} />
-                <ThemedText variant="caption" color={theme.colors.textTertiary} style={styles.dateTxt}>
-                  {formatDate(due.dueDate)}
-                </ThemedText>
-              </View>
-            </View>
+        {upcomingDues.length === 0 ? (
+          <ThemedCard variant="outlined" style={styles.dueCard}>
+            <ThemedText variant="bodySmall" color={theme.colors.textSecondary}>
+              {t(
+                'parent.dashboard.noUpcomingDues',
+                'Aucune échéance à venir. Tout est à jour !',
+              )}
+            </ThemedText>
           </ThemedCard>
-        ))}
+        ) : (
+          upcomingDues.map((due) => (
+            <ThemedCard
+              key={due.id}
+              variant="elevated"
+              onPress={() => router.push({ pathname: '/(app)/payment-detail', params: { installmentId: due.id } })}
+              style={styles.dueCard}
+            >
+              <View style={styles.dueHeader}>
+                <View style={styles.dueFlex}>
+                  <ThemedText variant="subtitle">{due.childName}</ThemedText>
+                  <ThemedText variant="caption" color={theme.colors.textSecondary}>
+                    {due.school}
+                  </ThemedText>
+                </View>
+                <PaymentStatusBadge status={due.status} size="sm" />
+              </View>
+              <View style={styles.dueFooter}>
+                <ThemedText variant="numeric" color={due.status === 'Overdue' ? theme.colors.error : theme.colors.primary}>
+                  {formatCurrency(due.amount)}
+                </ThemedText>
+                <View style={styles.dateRow}>
+                  <Ionicons name="calendar-outline" size={14} color={theme.colors.textTertiary} />
+                  <ThemedText variant="caption" color={theme.colors.textTertiary} style={styles.dateTxt}>
+                    {formatDate(due.dueDate)}
+                  </ThemedText>
+                </View>
+              </View>
+            </ThemedCard>
+          ))
+        )}
       </Animated.View>
 
       {/* Recent Payments */}

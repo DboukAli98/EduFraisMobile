@@ -86,50 +86,69 @@ export default function MerchandiseDetailScreen() {
   const infoAnim = useAnimatedEntry({ type: 'slideUp', delay: staggerDelay(2) });
   const actionAnim = useAnimatedEntry({ type: 'slideUp', delay: staggerDelay(3) });
 
-  const handleBuyNow = useCallback(async () => {
+  const handleBuyNow = useCallback(() => {
     if (!item || !user) return;
 
-    const merchandiseItems: MerchandiseItemDto[] = [{
-      merchandiseId: item.schoolMerchandiseId,
-      quantity,
-    }];
+    Alert.alert(
+      t('merchandiseDetail.confirmPurchaseTitle', 'Confirm purchase'),
+      t(
+        'merchandiseDetail.confirmPurchaseMessage',
+        'Buy {{quantity}} item(s) for {{amount}} via Airtel Money?',
+        { quantity, amount: formatCurrency(totalPrice) },
+      ),
+      [
+        {
+          text: t('common.cancel', 'Cancel'),
+          style: 'cancel',
+        },
+        {
+          text: t('merchandiseDetail.confirmPurchase', 'Buy'),
+          onPress: async () => {
+            const merchandiseItems: MerchandiseItemDto[] = [{
+              merchandiseId: item.schoolMerchandiseId,
+              quantity,
+            }];
 
-    // Airtel ESB validates reference as [A-Za-z0-9]{4,64}; we use a
-    // 4-char alphanumeric generator to match Digipay UAT expectations.
-    const reference = generatePaymentReference();
+            // Airtel ESB validates reference as [A-Za-z0-9]{4,64}; we use a
+            // 4-char alphanumeric generator to match Digipay UAT expectations.
+            const reference = generatePaymentReference();
 
-    try {
-      const result = await initiatePayment({
-        reference,
-        subscriberMsisdn: user.phoneNumber,
-        amount: totalPrice,
-        paymentType: 'MERCHANDISEFEE',
-        merchandiseItems,
-        userId: user.id,
-      }).unwrap();
+            try {
+              const result = await initiatePayment({
+                reference,
+                subscriberMsisdn: user.phoneNumber,
+                amount: totalPrice,
+                paymentType: 'MERCHANDISEFEE',
+                merchandiseItems,
+                userId: user.id,
+              }).unwrap();
 
-      if (result.status === 'success' || result.status === 'Success') {
-        setQuantity(1);
-        // Hand off to the shared sleek payment-success screen, which will
-        // poll CheckPaymentStatus and reveal the final outcome.
-        router.push({
-          pathname: '/payment-success',
-          params: {
-            reference,
-            amount: String(totalPrice),
-            type: 'merchandisefee',
+              if (result.status === 'success' || result.status === 'Success') {
+                setQuantity(1);
+                // Hand off to the shared sleek payment-success screen, which will
+                // poll CheckPaymentStatus and reveal the final outcome.
+                router.push({
+                  pathname: '/payment-success',
+                  params: {
+                    reference,
+                    amount: String(totalPrice),
+                    type: 'merchandisefee',
+                  },
+                } as any);
+              } else {
+                Alert.alert(t('common.error', 'Error'), result.message || t('payments.paymentFailed', 'Payment failed'));
+              }
+            } catch (err: any) {
+              Alert.alert(
+                t('common.error', 'Error'),
+                err?.data?.message || t('payments.paymentFailed', 'Payment failed'),
+              );
+            }
           },
-        } as any);
-      } else {
-        Alert.alert(t('common.error', 'Error'), result.message || t('payments.paymentFailed', 'Payment failed'));
-      }
-    } catch (err: any) {
-      Alert.alert(
-        t('common.error', 'Error'),
-        err?.data?.message || t('payments.paymentFailed', 'Payment failed'),
-      );
-    }
-  }, [item, quantity, totalPrice, user, initiatePayment, t]);
+        },
+      ],
+    );
+  }, [item, quantity, totalPrice, user, initiatePayment, router, t]);
 
   if (isLoading) {
     return (
@@ -261,55 +280,97 @@ export default function MerchandiseDetailScreen() {
               audience="parent"
             />
           )}
+
+          {/* Purchase card — inline so it never overlaps content or the tab bar. */}
+          {isParent && (
+            <Animated.View style={[styles.inlineCheckoutPanel, actionAnim]}>
+              <View
+                style={[
+                  styles.checkoutPanel,
+                  {
+                    backgroundColor: theme.colors.card,
+                    borderColor: theme.colors.borderLight,
+                    borderRadius: theme.borderRadius.lg,
+                    ...theme.shadows.lg,
+                  },
+                ]}
+              >
+                <View style={styles.checkoutTopRow}>
+                  <View style={styles.checkoutTotalBlock}>
+                    <ThemedText variant="caption" color={theme.colors.textSecondary}>
+                      {t('merchandiseDetail.total', 'Total')}
+                    </ThemedText>
+                    <ThemedText variant="subtitle" color={theme.colors.primary} style={styles.checkoutTotal}>
+                      {formatCurrency(totalPrice)}
+                    </ThemedText>
+                  </View>
+
+                  <View
+                    style={[
+                      styles.quantityRow,
+                      {
+                        backgroundColor: theme.colors.inputBackground,
+                        borderColor: theme.colors.borderLight,
+                        borderRadius: theme.borderRadius.full,
+                      },
+                    ]}
+                  >
+                    <Pressable
+                      onPress={() => setQuantity((q) => Math.max(1, q - 1))}
+                      style={[
+                        styles.qtyBtn,
+                        {
+                          backgroundColor: quantity > 1 ? theme.colors.surface : 'transparent',
+                          borderRadius: theme.borderRadius.full,
+                          opacity: quantity > 1 ? 1 : 0.45,
+                        },
+                      ]}
+                    >
+                      <Ionicons name="remove" size={18} color={theme.colors.text} />
+                    </Pressable>
+                    <ThemedText variant="subtitle" style={styles.qtyText}>
+                      {quantity}
+                    </ThemedText>
+                    <Pressable
+                      onPress={() => setQuantity((q) => q + 1)}
+                      style={[styles.qtyBtn, { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.full }]}
+                    >
+                      <Ionicons name="add" size={18} color="#fff" />
+                    </Pressable>
+                  </View>
+                </View>
+
+                <Pressable
+                  onPress={handleBuyNow}
+                  disabled={isPaying}
+                  style={[
+                    styles.buyBtn,
+                    {
+                      backgroundColor: theme.colors.primary,
+                      borderRadius: theme.borderRadius.lg,
+                      opacity: isPaying ? 0.78 : 1,
+                    },
+                  ]}
+                >
+                  <View style={[styles.buyIconBubble, { backgroundColor: 'rgba(255,255,255,0.16)' }]}>
+                    <Ionicons name={isPaying ? 'hourglass-outline' : 'cart-outline'} size={18} color="#fff" />
+                  </View>
+                  <ThemedText variant="button" color="#fff" style={styles.buyMainText} numberOfLines={1}>
+                    {isPaying ? t('common.loading', 'Loading...') : t('merchandiseDetail.buyNow', 'Buy Now')}
+                  </ThemedText>
+                </Pressable>
+              </View>
+            </Animated.View>
+          )}
         </Animated.View>
       </ScrollView>
-
-      {/* Bottom Action Bar — only for parents */}
-      {isParent && (
-        <Animated.View style={[styles.bottomBar, { backgroundColor: theme.colors.card, borderTopColor: theme.colors.border }, actionAnim]}>
-          {/* Quantity Selector */}
-          <View style={styles.quantityRow}>
-            <Pressable
-              onPress={() => setQuantity((q) => Math.max(1, q - 1))}
-              style={[styles.qtyBtn, { backgroundColor: theme.colors.disabled, borderRadius: theme.borderRadius.md }]}
-            >
-              <Ionicons name="remove" size={20} color={theme.colors.text} />
-            </Pressable>
-            <ThemedText variant="subtitle" style={styles.qtyText}>
-              {quantity}
-            </ThemedText>
-            <Pressable
-              onPress={() => setQuantity((q) => q + 1)}
-              style={[styles.qtyBtn, { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.md }]}
-            >
-              <Ionicons name="add" size={20} color="#fff" />
-            </Pressable>
-          </View>
-
-          {/* Buy Button */}
-          <Pressable
-            onPress={handleBuyNow}
-            disabled={isPaying}
-            style={[styles.buyBtn, { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.lg }]}
-          >
-            <View style={styles.buyBtnContent}>
-              <Ionicons name="cart-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
-              <ThemedText variant="body" color="#fff" style={{ fontWeight: '700' }}>
-                {isPaying
-                  ? t('common.loading', 'Loading...')
-                  : `${t('merchandiseDetail.buyNow', 'Buy Now')} — ${formatCurrency(totalPrice)}`}
-              </ThemedText>
-            </View>
-          </Pressable>
-        </Animated.View>
-      )}
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingBottom: 120,
+    paddingBottom: 32,
   },
   loadingContainer: {
     flex: 1,
@@ -406,43 +467,64 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 12,
   },
-  bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+  inlineCheckoutPanel: {
+    marginTop: 12,
+    marginBottom: 28,
+  },
+  checkoutPanel: {
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 10,
+  },
+  checkoutTopRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingBottom: 28,
-    borderTopWidth: 1,
-    gap: 12,
+    marginBottom: 8,
+  },
+  checkoutTotalBlock: {
+    flex: 1,
+    marginRight: 12,
+  },
+  checkoutTotal: {
+    marginTop: 1,
+    fontWeight: '800',
   },
   quantityRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    borderWidth: 1,
+    paddingHorizontal: 5,
+    paddingVertical: 5,
+    gap: 6,
   },
   qtyBtn: {
-    width: 36,
-    height: 36,
+    width: 30,
+    height: 30,
     alignItems: 'center',
     justifyContent: 'center',
   },
   qtyText: {
-    minWidth: 28,
+    minWidth: 24,
     textAlign: 'center',
     fontWeight: '700',
+    fontSize: 16,
   },
   buyBtn: {
-    flex: 1,
-    paddingVertical: 14,
+    minHeight: 46,
+    paddingHorizontal: 12,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  buyBtnContent: {
     flexDirection: 'row',
+  },
+  buyIconBubble: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  buyMainText: {
+    fontWeight: '700',
   },
 });

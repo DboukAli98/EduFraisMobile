@@ -73,7 +73,6 @@ const resolveStatusLabel = (
   item: { fK_StatusId?: number; statusName?: string },
   t: any,
 ): string => {
-  if (item.statusName && item.statusName.trim().length > 0) return item.statusName;
   switch (item.fK_StatusId) {
     case 6:
       return t('payments.pending', 'Pending');
@@ -86,7 +85,9 @@ const resolveStatusLabel = (
     case 11:
       return t('payments.inProgress', 'In Progress');
     default:
-      return t('payments.unknownStatus', 'Unknown');
+      return item.statusName && item.statusName.trim().length > 0
+        ? item.statusName
+        : t('payments.unknownStatus', 'Unknown');
   }
 };
 
@@ -301,88 +302,88 @@ const PaymentHistoryScreen: React.FC = () => {
       const statusLabel = resolveStatusLabel(item, t);
       return (
         <ThemedCard
-        variant="elevated"
-        onPress={() => handleCardPress(item.paymentTransactionId)}
-        style={styles.card}
-      >
-        <View style={styles.cardHeader}>
-          <View style={styles.cardHeaderLeft}>
-            <ThemedText variant="numeric" color={theme.colors.primary}>
-              {formatCurrency(item.amountPaid)}
-            </ThemedText>
-            <ThemedText
-              variant="caption"
-              color={theme.colors.textTertiary}
-              style={styles.cardDate}
-            >
-              {formatDate(item.paidDate)}
-            </ThemedText>
+          variant="elevated"
+          onPress={() => handleCardPress(item.paymentTransactionId)}
+          style={styles.card}
+        >
+          <View style={styles.cardHeader}>
+            <View style={styles.cardHeaderLeft}>
+              <ThemedText variant="numeric" color={theme.colors.primary}>
+                {formatCurrency(item.amountPaid)}
+              </ThemedText>
+              <ThemedText
+                variant="caption"
+                color={theme.colors.textTertiary}
+                style={styles.cardDate}
+              >
+                {formatDate(item.paidDate)}
+              </ThemedText>
+            </View>
+            <StatusBadge statusName={statusLabel} />
           </View>
-          <StatusBadge statusName={statusLabel} />
-        </View>
 
-        <View style={styles.cardBody}>
-          {childName ? (
-            <View style={styles.cardRow}>
+          <View style={styles.cardBody}>
+            {childName ? (
+              <View style={styles.cardRow}>
+                <Ionicons
+                  name="person-outline"
+                  size={14}
+                  color={theme.colors.textSecondary}
+                />
+                <ThemedText
+                  variant="bodySmall"
+                  color={theme.colors.textSecondary}
+                  style={styles.cardRowText}
+                >
+                  {childName}
+                  {gradeName ? ` - ${gradeName}` : ''}
+                </ThemedText>
+              </View>
+            ) : null}
+            {item.schoolName ? (
+              <View style={styles.cardRow}>
+                <Ionicons
+                  name="school-outline"
+                  size={14}
+                  color={theme.colors.textSecondary}
+                />
+                <ThemedText
+                  variant="bodySmall"
+                  color={theme.colors.textSecondary}
+                  style={styles.cardRowText}
+                >
+                  {item.schoolName}
+                </ThemedText>
+              </View>
+            ) : null}
+          </View>
+
+          <View style={styles.cardFooter}>
+            <View style={styles.footerLeft}>
               <Ionicons
-                name="person-outline"
+                name="card-outline"
                 size={14}
-                color={theme.colors.textSecondary}
+                color={theme.colors.textTertiary}
               />
               <ThemedText
-                variant="bodySmall"
-                color={theme.colors.textSecondary}
-                style={styles.cardRowText}
+                variant="caption"
+                color={theme.colors.textTertiary}
+                style={styles.footerLeftText}
+                numberOfLines={1}
               >
-                {childName}
-                {gradeName ? ` - ${gradeName}` : ''}
+                {item.paymentMethod}
               </ThemedText>
             </View>
-          ) : null}
-          {item.schoolName ? (
-            <View style={styles.cardRow}>
-              <Ionicons
-                name="school-outline"
-                size={14}
-                color={theme.colors.textSecondary}
-              />
-              <ThemedText
-                variant="bodySmall"
-                color={theme.colors.textSecondary}
-                style={styles.cardRowText}
-              >
-                {item.schoolName}
-              </ThemedText>
-            </View>
-          ) : null}
-        </View>
-
-        <View style={styles.cardFooter}>
-          <View style={styles.footerLeft}>
-            <Ionicons
-              name="card-outline"
-              size={14}
-              color={theme.colors.textTertiary}
-            />
             <ThemedText
               variant="caption"
               color={theme.colors.textTertiary}
-              style={styles.footerLeftText}
+              style={styles.footerRef}
               numberOfLines={1}
             >
-              {item.paymentMethod}
+              {t('payments.reference', 'Reference')}: {item.transactionReference}
             </ThemedText>
           </View>
-          <ThemedText
-            variant="caption"
-            color={theme.colors.textTertiary}
-            style={styles.footerRef}
-            numberOfLines={1}
-          >
-            Ref: {item.transactionReference}
-          </ThemedText>
-        </View>
-      </ThemedCard>
+        </ThemedCard>
       );
     },
     [theme, handleCardPress, t],
@@ -393,88 +394,88 @@ const PaymentHistoryScreen: React.FC = () => {
     ({ item }: { item: MerchandisePaymentHistoryDto }) => {
       const statusLabel = resolveStatusLabel(item, t);
       return (
-      <ThemedCard
-        variant="elevated"
-        onPress={() => handleCardPress(item.paymentTransactionId)}
-        style={styles.card}
-      >
-        <View style={styles.cardHeader}>
-          <View style={styles.cardHeaderLeft}>
-            <ThemedText variant="numeric" color={theme.colors.primary}>
-              {formatCurrency(item.amountPaid)}
-            </ThemedText>
-            <ThemedText
-              variant="caption"
-              color={theme.colors.textTertiary}
-              style={styles.cardDate}
-            >
-              {formatDate(item.paidDate)}
-            </ThemedText>
+        <ThemedCard
+          variant="elevated"
+          onPress={() => handleCardPress(item.paymentTransactionId)}
+          style={styles.card}
+        >
+          <View style={styles.cardHeader}>
+            <View style={styles.cardHeaderLeft}>
+              <ThemedText variant="numeric" color={theme.colors.primary}>
+                {formatCurrency(item.amountPaid)}
+              </ThemedText>
+              <ThemedText
+                variant="caption"
+                color={theme.colors.textTertiary}
+                style={styles.cardDate}
+              >
+                {formatDate(item.paidDate)}
+              </ThemedText>
+            </View>
+            <StatusBadge statusName={statusLabel} />
           </View>
-          <StatusBadge statusName={statusLabel} />
-        </View>
 
-        <View style={styles.cardBody}>
-          {item.merchandiseName ? (
-            <View style={styles.cardRow}>
+          <View style={styles.cardBody}>
+            {item.merchandiseName ? (
+              <View style={styles.cardRow}>
+                <Ionicons
+                  name="pricetag-outline"
+                  size={14}
+                  color={theme.colors.textSecondary}
+                />
+                <ThemedText
+                  variant="bodySmall"
+                  color={theme.colors.textSecondary}
+                  style={styles.cardRowText}
+                >
+                  {item.merchandiseName}
+                </ThemedText>
+              </View>
+            ) : null}
+            {item.schoolName ? (
+              <View style={styles.cardRow}>
+                <Ionicons
+                  name="school-outline"
+                  size={14}
+                  color={theme.colors.textSecondary}
+                />
+                <ThemedText
+                  variant="bodySmall"
+                  color={theme.colors.textSecondary}
+                  style={styles.cardRowText}
+                >
+                  {item.schoolName}
+                </ThemedText>
+              </View>
+            ) : null}
+          </View>
+
+          <View style={styles.cardFooter}>
+            <View style={styles.footerLeft}>
               <Ionicons
-                name="pricetag-outline"
+                name="card-outline"
                 size={14}
-                color={theme.colors.textSecondary}
+                color={theme.colors.textTertiary}
               />
               <ThemedText
-                variant="bodySmall"
-                color={theme.colors.textSecondary}
-                style={styles.cardRowText}
+                variant="caption"
+                color={theme.colors.textTertiary}
+                style={styles.footerLeftText}
+                numberOfLines={1}
               >
-                {item.merchandiseName}
+                {item.paymentMethod}
               </ThemedText>
             </View>
-          ) : null}
-          {item.schoolName ? (
-            <View style={styles.cardRow}>
-              <Ionicons
-                name="school-outline"
-                size={14}
-                color={theme.colors.textSecondary}
-              />
-              <ThemedText
-                variant="bodySmall"
-                color={theme.colors.textSecondary}
-                style={styles.cardRowText}
-              >
-                {item.schoolName}
-              </ThemedText>
-            </View>
-          ) : null}
-        </View>
-
-        <View style={styles.cardFooter}>
-          <View style={styles.footerLeft}>
-            <Ionicons
-              name="card-outline"
-              size={14}
-              color={theme.colors.textTertiary}
-            />
             <ThemedText
               variant="caption"
               color={theme.colors.textTertiary}
-              style={styles.footerLeftText}
+              style={styles.footerRef}
               numberOfLines={1}
             >
-              {item.paymentMethod}
+              {t('payments.reference', 'Reference')}: {item.transactionReference}
             </ThemedText>
           </View>
-          <ThemedText
-            variant="caption"
-            color={theme.colors.textTertiary}
-            style={styles.footerRef}
-            numberOfLines={1}
-          >
-            Ref: {item.transactionReference}
-          </ThemedText>
-        </View>
-      </ThemedCard>
+        </ThemedCard>
       );
     },
     [theme, handleCardPress, t],

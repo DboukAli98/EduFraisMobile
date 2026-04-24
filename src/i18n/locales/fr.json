@@ -275,9 +275,20 @@
     "title": "Assistance",
     "newRequest": "Nouvelle demande",
     "myRequests": "Mes demandes",
+    "noRequests": "Aucune demande d'assistance",
+    "noRequestsDescription": "Vous n'avez aucune demande correspondant à ce filtre.",
+    "unsupportedRole": "Le suivi des demandes d'assistance est actuellement disponible pour les comptes parent et agent.",
+    "missingIdentity": "Votre compte ne contient pas les informations requises pour créer une demande d'assistance.",
+    "missingDirector": "Aucun directeur n'est encore configuré pour cette école.",
+    "requestSubmitted": "Votre demande d'assistance a été envoyée.",
+    "submitError": "Échec de l'envoi de la demande d'assistance.",
+    "submitRequest": "Envoyer la demande",
+    "subject": "Titre",
+    "subjectPlaceholder": "Décrivez brièvement votre problème",
     "requestType": "Type de demande",
     "priority": "Priorité",
     "description": "Description",
+    "descriptionPlaceholder": "Fournissez des détails sur votre problème...",
     "general": "Général",
     "payment": "Problème de paiement",
     "help": "Aide",
@@ -285,6 +296,13 @@
     "medium": "Moyenne",
     "high": "Élevée",
     "urgent": "Urgente",
+    "cancelled": "Annulée",
+    "filter": {
+      "all": "Tous",
+      "open": "Ouvert",
+      "inProgress": "En cours",
+      "resolved": "Résolu"
+    },
     "open": "Ouvert",
     "inProgress": "En cours",
     "resolved": "Résolu"
@@ -478,6 +496,7 @@
       "history": "Historique",
       "support": "Assistance",
       "upcomingDues": "Échéances à venir",
+      "noUpcomingDues": "Aucune échéance à venir. Tout est à jour !",
       "recentPayments": "Paiements récents",
       "noRecentPayments": "Aucun paiement récent. Vos paiements réussis apparaîtront ici.",
       "myAgents": "Mes agents"
@@ -486,6 +505,17 @@
       "title": "Paiements",
       "installment": "Versement",
       "makePayment": "Effectuer un paiement",
+      "allPaidTitle": "Tout est payé",
+      "allPaidMessage": "Tous les versements ont été payés. Aucun paiement en attente.",
+      "viewHistory": "Voir l'historique des paiements",
+      "searchPlaceholder": "Rechercher par enfant, école ou cycle...",
+      "totalDue": "À payer",
+      "totalPaid": "Payé",
+      "overdue": "En retard",
+      "noSearchResults": "Aucun versement correspondant",
+      "noInstallments": "Aucun versement trouvé",
+      "tryDifferentSearch": "Essayez de modifier votre recherche ou vos filtres.",
+      "noInstallmentsHint": "Vos versements apparaîtront ici dès qu'ils seront disponibles.",
       "filter": {
         "all": "Tous",
         "pending": "En attente",
@@ -584,6 +614,10 @@
       "downloadReceipt": "Télécharger le reçu",
       "viewHistory": "Voir l'historique des paiements",
       "payNow": "Payer maintenant",
+      "confirmPayment": "Confirmer le paiement",
+      "confirmPaymentMessage": "Vous êtes sur le point de payer {{amount}} via Airtel Money. Une demande sera envoyée sur votre téléphone pour confirmer.",
+      "confirm": "Confirmer",
+      "paymentPending": "Paiement en attente...",
       "paymentFailed": "Échec du paiement",
       "invalidPhone": "Votre numéro de téléphone est invalide. Veuillez le mettre à jour dans les Paramètres avant de payer.",
       "missingUserId": "Votre session ne contient pas d'identifiant utilisateur. Veuillez vous déconnecter et vous reconnecter.",
@@ -628,7 +662,12 @@
     "category": "Catégorie",
     "status": "Statut",
     "available": "Disponible",
-    "buyNow": "Acheter"
+    "buyNow": "Acheter",
+    "quantity": "Qté",
+    "total": "Total",
+    "confirmPurchaseTitle": "Confirmer l'achat",
+    "confirmPurchaseMessage": "Acheter {{quantity}} article(s) pour {{amount}} via Airtel Money ?",
+    "confirmPurchase": "Acheter"
   },
   "childDetail": {
     "title": "Détails de l'enfant",
@@ -649,7 +688,29 @@
     "enrollmentComplete": "Inscription terminée",
     "enrollmentCompleteDesc": "La classe et le plan de paiement sont définis. Les versements sont visibles dans l'onglet Paiements.",
     "pendingApproval": "En attente d'approbation",
-    "pendingDesc": "Le directeur de l'école doit approuver cette inscription avant que vous puissiez sélectionner une classe et un plan de paiement."
+    "pendingDesc": "Le directeur de l'école doit approuver cette inscription avant que vous puissiez sélectionner une classe et un plan de paiement.",
+    "cycleType": {
+      "Full": "Paiement unique",
+      "Monthly": "Mensuel",
+      "Weekly": "Hebdomadaire",
+      "Quarterly": "Trimestriel",
+      "Custom": "Personnalisé"
+    },
+    "intervalUnit": {
+      "Day": "jour(s)",
+      "Week": "semaine(s)",
+      "Month": "mois",
+      "Year": "an(s)"
+    },
+    "cycleSummary": {
+      "installments_one": "{{count}} versement",
+      "installments_other": "{{count}} versements",
+      "every": "tous les {{count}} {{unit}}",
+      "startsOn": "démarre le {{date}}"
+    },
+    "cycleTotal": "Total à payer",
+    "cycleScheduleEstimated": "Aperçu indicatif — le montant exact de chaque versement est fixé par l'école.",
+    "installmentLabel": "Versement {{num}}"
   },
   "time": {
     "today": "Aujourd'hui",

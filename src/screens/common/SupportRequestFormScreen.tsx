@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
-  View, StyleSheet, Pressable } from 'react-native';
+  View, StyleSheet, Pressable
+} from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -137,8 +138,8 @@ export default function SupportRequestFormScreen() {
       Alert.alert(
         t('common.error', 'Error'),
         error?.data?.message ||
-          error?.data?.error ||
-          t('support.submitError', 'Failed to submit support request.'),
+        error?.data?.error ||
+        t('support.submitError', 'Failed to submit support request.'),
       );
     }
   };
@@ -160,16 +161,16 @@ export default function SupportRequestFormScreen() {
     <ScreenContainer>
       <AnimatedSection index={0}>
         <ThemedInput
-          label={t('support.title', 'Title')}
+          label={t('support.subject', 'Title')}
           value={title}
           onChangeText={setTitle}
-          placeholder={t('support.titlePlaceholder', 'Briefly describe your issue')}
+          placeholder={t('support.subjectPlaceholder', 'Briefly describe your issue')}
           containerStyle={styles.topInput}
         />
       </AnimatedSection>
 
       <AnimatedSection index={1}>
-        <SectionHeader title={t('support.type', 'Type')} style={styles.sectionLabel} />
+        <SectionHeader title={t('support.requestType', 'Type')} style={styles.sectionLabel} />
         <View style={styles.chipRow}>
           {REQUEST_TYPES.map((type) => {
             const isSelected = selectedType === type.key;
@@ -199,7 +200,7 @@ export default function SupportRequestFormScreen() {
                   color={isSelected ? '#FFFFFF' : theme.colors.textSecondary}
                   style={{ fontWeight: '600', marginLeft: 6 }}
                 >
-                  {t(`support.type.${type.key.toLowerCase()}`, type.key)}
+                  {t(`support.${type.key.toLowerCase()}`, type.key)}
                 </ThemedText>
               </Pressable>
             );
@@ -232,7 +233,7 @@ export default function SupportRequestFormScreen() {
                   color={isSelected ? '#FFFFFF' : color}
                   style={{ fontWeight: '700' }}
                 >
-                  {t(`support.priority.${priority.key.toLowerCase()}`, priority.key)}
+                  {t(`support.${priority.key.toLowerCase()}`, priority.key)}
                 </ThemedText>
               </Pressable>
             );

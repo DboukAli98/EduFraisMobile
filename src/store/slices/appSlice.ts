@@ -13,7 +13,7 @@ interface AppState {
 
 const initialState: AppState = {
   themeMode: "system",
-  language: "en",
+  language: "fr",
   isOnboarded: false,
   selectedRole: null,
   pushNotificationsEnabled: true,
