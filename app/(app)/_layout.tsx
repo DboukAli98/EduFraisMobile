@@ -260,6 +260,10 @@ export default function AppLayout() {
         options={{ href: null }}
       />
       <Tabs.Screen
+        name="request-activity"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
         name="parent-agent-detail"
         options={{ href: null }}
       />

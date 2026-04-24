@@ -161,14 +161,23 @@ export interface ParentInstallmentDto {
 
 export interface RecentPaymentTransactionDto {
   paymentTransactionId: number;
+  fK_InstallmentId?: number;
   amountPaid: number;
   paidDate: string;
   paymentMethod: string;
   transactionReference: string;
-  statusName: string;
+  fK_StatusId?: number;
+  statusName?: string;
+  isPaid?: boolean;
+  childId?: number;
+  childFirstName?: string;
+  childLastName?: string;
+  childFullName?: string;
   childName?: string;
+  gradeName?: string;
   schoolName?: string;
   paymentType?: string;
+  daysAgo?: number;
 }
 
 export interface PaymentTransactionsSummary {
@@ -326,9 +335,16 @@ export interface SchoolFeesPaymentHistoryDto {
   paidDate: string;
   paymentMethod: string;
   transactionReference: string;
-  statusName: string;
+  // Backend returns the numeric status id (fK_StatusId). statusName is not
+  // serialised on this envelope, so the client resolves the label locally.
+  fK_StatusId?: number;
+  statusName?: string;
+  childFullName?: string;
+  firstName?: string;
+  lastName?: string;
   childName?: string;
   schoolName?: string;
+  schoolGradeName?: string;
   gradeName?: string;
 }
 
@@ -338,7 +354,8 @@ export interface MerchandisePaymentHistoryDto {
   paidDate: string;
   paymentMethod: string;
   transactionReference: string;
-  statusName: string;
+  fK_StatusId?: number;
+  statusName?: string;
   merchandiseName?: string;
   schoolName?: string;
 }
@@ -402,11 +419,43 @@ export interface CollectingAgent {
   modifiedOn?: string;
 }
 
+// Parent-initiated request lifecycle states. Keeps in sync with the
+// backend enum ActivityRequestStatus (1..5). The mobile code generally
+// uses the string form — numeric form is only emitted by the older
+// get-my-activities endpoint which serializes the raw model.
+export type ActivityRequestStatus =
+  | 'Requested'
+  | 'Accepted'
+  | 'Declined'
+  | 'Completed'
+  | 'Cancelled';
+
+// Activity types a parent is allowed to ask an agent to perform. Kept
+// separate from the full CollectingAgentActivityType so the
+// RequestActivityScreen chip picker can't emit agent-only types
+// (PaymentCollected/Attempted etc.).
+export type ParentRequestableActivityType =
+  | 'FieldVisit'
+  | 'PhoneCall'
+  | 'ParentContact'
+  | 'PaymentHelp'
+  | 'Other';
+
 export interface CollectingAgentActivity {
   activityId: number;
-  fK_CollectingAgentId: number;
+  // Both shapes are accepted because the backend exposes this entity
+  // through two different response paths:
+  //   - Model-based (director GetAgentActivities) emits fK_* columns.
+  //   - DTO-based (GetMyActivities / GetMyActivityRequests) emits the
+  //     flattened collectingAgentId / parentId / agentName / parentName.
+  fK_CollectingAgentId?: number;
+  collectingAgentId?: number;
   fK_ParentId?: number;
+  parentId?: number;
+  agentName?: string;
+  parentName?: string;
   activityType: string | number;
+  activityTypeDisplayName?: string;
   activityDescription: string;
   notes?: string;
   relatedTransactionId?: number;
@@ -416,6 +465,18 @@ export interface CollectingAgentActivity {
   collectingAgent?: CollectingAgent | null;
   createdOn?: string;
   modifiedOn?: string;
+
+  // --- Parent-initiated request lifecycle -------------------------------
+  // All null/undefined on classic agent-logged rows. Present on rows the
+  // parent filed via RequestActivity.
+  requestStatus?: ActivityRequestStatus | null;
+  requestStatusDisplayName?: string | null;
+  requestedByParent?: boolean;
+  requestedAt?: string | null;
+  acceptedAt?: string | null;
+  completedAt?: string | null;
+  cancelledAt?: string | null;
+  declineReason?: string | null;
 }
 
 export interface AgentCommission {

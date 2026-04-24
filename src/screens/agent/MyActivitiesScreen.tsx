@@ -11,14 +11,25 @@ import {
   EmptyState,
   ScreenSkeleton,
   ThemedButton,
+  useAlert,
 } from '../../components';
 import { useTheme } from '../../theme';
-import { useGetMyActivitiesQuery } from '../../services/api/apiSlice';
+import {
+  useGetMyActivitiesQuery,
+  useGetAgentActivityRequestsQuery,
+  useAcceptActivityRequestMutation,
+  useDeclineActivityRequestMutation,
+  useCompleteActivityRequestMutation,
+} from '../../services/api/apiSlice';
 import { formatDateTimeCongo } from '../../utils';
-import type { CollectingAgentActivity } from '../../types';
+import type {
+  CollectingAgentActivity,
+  ActivityRequestStatus,
+} from '../../types';
 
 // Order matches the backend CollectingAgentActivityType enum so numeric
 // values map correctly when the API returns the raw int.
+// PaymentHelp (9) was added for the parent-initiated request flow.
 const ACTIVITY_TYPE_KEYS = [
   'PaymentCollected',
   'PaymentAttempted',
@@ -29,6 +40,7 @@ const ACTIVITY_TYPE_KEYS = [
   'FieldVisit',
   'PhoneCall',
   'Other',
+  'PaymentHelp',
 ] as const;
 
 type ActivityKey = (typeof ACTIVITY_TYPE_KEYS)[number];
@@ -50,6 +62,46 @@ const ACTIVITY_META: Record<
   FieldVisit: { icon: 'navigate-outline', label: 'Field Visit', colorToken: 'primary' },
   PhoneCall: { icon: 'call-outline', label: 'Phone Call', colorToken: 'secondary' },
   Other: { icon: 'ellipse-outline', label: 'Other', colorToken: 'primary' },
+  PaymentHelp: { icon: 'cash-outline', label: 'Payment Help', colorToken: 'success' },
+};
+
+// ---------------------------------------------------------------------------
+// Badge colors for request lifecycle. Keep in sync with the parent-side
+// ParentAgentDetailScreen so a row looks the same on both sides of the loop.
+// ---------------------------------------------------------------------------
+
+type BadgeTheme = { bg: string; fg: string; label: string };
+
+const useRequestStatusTheme = (): Record<ActivityRequestStatus, BadgeTheme> => {
+  const { theme } = useTheme();
+  const { t } = useTranslation();
+  return {
+    Requested: {
+      bg: theme.colors.warning + '22',
+      fg: theme.colors.warning,
+      label: t('parent.requestActivity.status.Requested', 'Pending'),
+    },
+    Accepted: {
+      bg: theme.colors.primary + '22',
+      fg: theme.colors.primary,
+      label: t('parent.requestActivity.status.Accepted', 'Accepted'),
+    },
+    Declined: {
+      bg: theme.colors.error + '22',
+      fg: theme.colors.error,
+      label: t('parent.requestActivity.status.Declined', 'Declined'),
+    },
+    Completed: {
+      bg: theme.colors.success + '22',
+      fg: theme.colors.success,
+      label: t('parent.requestActivity.status.Completed', 'Completed'),
+    },
+    Cancelled: {
+      bg: theme.colors.textTertiary + '22',
+      fg: theme.colors.textTertiary,
+      label: t('parent.requestActivity.status.Cancelled', 'Cancelled'),
+    },
+  };
 };
 
 const FILTER_OPTIONS: { value: ActivityKey | 'all'; label: string }[] = [
@@ -75,6 +127,8 @@ const MyActivitiesScreen: React.FC = () => {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const router = useRouter();
+  const { showAlert } = useAlert();
+  const requestStatusTheme = useRequestStatusTheme();
 
   const [filter, setFilter] = useState<ActivityKey | 'all'>('all');
 
@@ -84,7 +138,125 @@ const MyActivitiesScreen: React.FC = () => {
     activityType: filter === 'all' ? undefined : filter,
   });
 
+  // Incoming parent-initiated requests. Only Requested + Accepted are
+  // actionable; Declined / Completed / Cancelled are terminal and already
+  // appear in the normal activities list below.
+  const { data: requestsData, refetch: refetchRequests } =
+    useGetAgentActivityRequestsQuery({ pageNumber: 1, pageSize: 50 });
+
+  const pendingRequests = useMemo(() => {
+    const rows = Array.isArray(requestsData?.data) ? requestsData!.data : [];
+    return rows.filter(
+      (r) => r.requestStatus === 'Requested' || r.requestStatus === 'Accepted',
+    );
+  }, [requestsData]);
+
+  const [acceptRequest, { isLoading: accepting }] = useAcceptActivityRequestMutation();
+  const [declineRequest, { isLoading: declining }] = useDeclineActivityRequestMutation();
+  const [completeRequest, { isLoading: completing }] = useCompleteActivityRequestMutation();
+
   const activities = useMemo(() => (Array.isArray(data?.data) ? data!.data : []), [data]);
+
+  const handleAccept = async (activityId: number) => {
+    try {
+      const result = await acceptRequest({ activityId }).unwrap();
+      if (result.status === 'Success') {
+        refetchRequests();
+        refetch();
+      } else {
+        showAlert({
+          type: 'error',
+          title: t('common.error', 'Error'),
+          message: result.error || t('common.genericError', 'Something went wrong'),
+        });
+      }
+    } catch (err: any) {
+      showAlert({
+        type: 'error',
+        title: t('common.error', 'Error'),
+        message: err?.data?.error || err?.message || t('common.genericError', 'Something went wrong'),
+      });
+    }
+  };
+
+  const handleDecline = (activityId: number) => {
+    showAlert({
+      type: 'warning',
+      title: t('agent.activities.declineTitle', 'Decline Request'),
+      message: t(
+        'agent.activities.declinePrompt',
+        'The parent will be notified that you cannot handle this request.',
+      ),
+      buttons: [
+        { text: t('common.cancel', 'Cancel'), style: 'cancel' },
+        {
+          text: t('agent.activities.decline', 'Decline'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const result = await declineRequest({ activityId }).unwrap();
+              if (result.status === 'Success') {
+                refetchRequests();
+                refetch();
+              } else {
+                showAlert({
+                  type: 'error',
+                  title: t('common.error', 'Error'),
+                  message: result.error || t('common.genericError', 'Something went wrong'),
+                });
+              }
+            } catch (err: any) {
+              showAlert({
+                type: 'error',
+                title: t('common.error', 'Error'),
+                message:
+                  err?.data?.error || err?.message || t('common.genericError', 'Something went wrong'),
+              });
+            }
+          },
+        },
+      ],
+    });
+  };
+
+  const handleComplete = (activityId: number) => {
+    showAlert({
+      type: 'info',
+      title: t('agent.activities.completeTitle', 'Mark as completed?'),
+      message: t(
+        'agent.activities.completePrompt',
+        'The parent will be notified that this activity is done.',
+      ),
+      buttons: [
+        { text: t('common.cancel', 'Cancel'), style: 'cancel' },
+        {
+          text: t('agent.activities.complete', 'Complete'),
+          onPress: async () => {
+            try {
+              const result = await completeRequest({ activityId }).unwrap();
+              if (result.status === 'Success') {
+                refetchRequests();
+                refetch();
+              } else {
+                showAlert({
+                  type: 'error',
+                  title: t('common.error', 'Error'),
+                  message: result.error || t('common.genericError', 'Something went wrong'),
+                });
+              }
+            } catch (err: any) {
+              showAlert({
+                type: 'error',
+                title: t('common.error', 'Error'),
+                message:
+                  err?.data?.error || err?.message || t('common.genericError', 'Something went wrong'),
+              });
+            }
+          },
+        },
+      ],
+    });
+  };
 
   const resolveIconColor = (colorToken: (typeof ACTIVITY_META)[ActivityKey]['colorToken']) => {
     switch (colorToken) {
@@ -97,6 +269,110 @@ const MyActivitiesScreen: React.FC = () => {
       default:
         return theme.colors.primary;
     }
+  };
+
+  const renderPendingRequest = (item: CollectingAgentActivity) => {
+    const key = normalizeActivityType(item.activityType);
+    const meta = ACTIVITY_META[key];
+    const iconColor = resolveIconColor(meta.colorToken);
+    const badge = item.requestStatus ? requestStatusTheme[item.requestStatus] : null;
+    const isRequested = item.requestStatus === 'Requested';
+    const isAccepted = item.requestStatus === 'Accepted';
+    const parentName =
+      item.parent?.firstName && item.parent?.lastName
+        ? `${item.parent.firstName} ${item.parent.lastName}`
+        : item.parentName || t('agent.activities.parentAnonymous', 'Parent');
+    return (
+      <ThemedCard
+        key={item.activityId}
+        variant="elevated"
+        style={{
+          ...styles.requestCard,
+          borderColor: theme.colors.primary,
+          borderWidth: 1,
+          borderRadius: theme.borderRadius.md,
+        }}
+      >
+        <View style={styles.activityRow}>
+          <View
+            style={[
+              styles.iconWrap,
+              { backgroundColor: iconColor + '15', borderRadius: theme.borderRadius.md },
+            ]}
+          >
+            <Ionicons name={meta.icon} size={18} color={iconColor} />
+          </View>
+          <View style={styles.activityContent}>
+            <View style={styles.activityHeader}>
+              <ThemedText variant="bodySmall" style={styles.activityTitle}>
+                {t(`agent.activities.types.${key}`, meta.label)}
+              </ThemedText>
+              {badge ? (
+                <View
+                  style={[
+                    styles.badge,
+                    { backgroundColor: badge.bg, borderRadius: theme.borderRadius.sm },
+                  ]}
+                >
+                  <ThemedText variant="caption" color={badge.fg} style={styles.badgeLabel}>
+                    {badge.label}
+                  </ThemedText>
+                </View>
+              ) : null}
+            </View>
+
+            <ThemedText variant="body" style={styles.activityDescription}>
+              {item.activityDescription}
+            </ThemedText>
+
+            <ThemedText variant="caption" color={theme.colors.textSecondary}>
+              {t('agent.activities.from', 'From')}: {parentName}
+            </ThemedText>
+
+            <ThemedText variant="caption" color={theme.colors.textTertiary}>
+              {formatDateTimeCongo(
+                item.requestedAt || item.activityDate || item.createdOn || new Date().toISOString(),
+              )}
+            </ThemedText>
+
+            {!!item.notes && (
+              <ThemedText variant="caption" color={theme.colors.textTertiary} style={styles.notes}>
+                {item.notes}
+              </ThemedText>
+            )}
+
+            <View style={styles.actionsRow}>
+              {isRequested ? (
+                <>
+                  <ThemedButton
+                    title={t('agent.activities.accept', 'Accept')}
+                    variant="primary"
+                    onPress={() => handleAccept(item.activityId)}
+                    loading={accepting}
+                    style={styles.actionBtn}
+                  />
+                  <ThemedButton
+                    title={t('agent.activities.decline', 'Decline')}
+                    variant="ghost"
+                    onPress={() => handleDecline(item.activityId)}
+                    loading={declining}
+                    style={styles.actionBtn}
+                  />
+                </>
+              ) : isAccepted ? (
+                <ThemedButton
+                  title={t('agent.activities.markComplete', 'Mark Completed')}
+                  variant="primary"
+                  onPress={() => handleComplete(item.activityId)}
+                  loading={completing}
+                  style={styles.actionBtn}
+                />
+              ) : null}
+            </View>
+          </View>
+        </View>
+      </ThemedCard>
+    );
   };
 
   const renderItem = ({ item }: { item: CollectingAgentActivity }) => {
@@ -165,6 +441,18 @@ const MyActivitiesScreen: React.FC = () => {
         onPress={() => router.push('/(app)/log-activity')}
         style={styles.logBtn}
       />
+
+      {pendingRequests.length > 0 ? (
+        <View style={styles.inboxSection}>
+          <View style={styles.inboxTitleRow}>
+            <Ionicons name="mail-unread-outline" size={18} color={theme.colors.primary} />
+            <ThemedText variant="bodySmall" style={styles.inboxTitle}>
+              {t('agent.activities.inboxTitle', 'Parent Requests')} ({pendingRequests.length})
+            </ThemedText>
+          </View>
+          {pendingRequests.map(renderPendingRequest)}
+        </View>
+      ) : null}
 
       <ScrollView
         horizontal
@@ -307,6 +595,36 @@ const styles = StyleSheet.create({
   },
   notes: {
     marginTop: 4,
+  },
+  inboxSection: {
+    marginBottom: 16,
+  },
+  inboxTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  inboxTitle: {
+    fontWeight: '700',
+  },
+  requestCard: {
+    marginBottom: 10,
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  badgeLabel: {
+    fontWeight: '700',
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
+  },
+  actionBtn: {
+    flex: 1,
   },
 });
 

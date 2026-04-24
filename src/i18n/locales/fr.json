@@ -188,6 +188,7 @@
     "failed": "Échoué",
     "inProgress": "En cours",
     "cancelled": "Annulé",
+    "unknownStatus": "Statut inconnu",
     "noPaymentsFound": "Aucun paiement trouve",
     "noPaymentsDesc": "Votre historique de paiement apparaitra ici une fois que vous effectuez des paiements.",
     "invoice": "Recu de paiement",
@@ -478,6 +479,7 @@
       "support": "Assistance",
       "upcomingDues": "Échéances à venir",
       "recentPayments": "Paiements récents",
+      "noRecentPayments": "Aucun paiement récent. Vos paiements réussis apparaîtront ici.",
       "myAgents": "Mes agents"
     },
     "payments": {
@@ -535,6 +537,42 @@
       "cancelTitle": "Annuler la demande",
       "cancelMsg": "Êtes-vous sûr de vouloir annuler cette demande ?"
     },
+    "requestActivity": {
+      "title": "Demander une activité",
+      "typeSection": "De quoi avez-vous besoin ?",
+      "agentSection": "Agent",
+      "descriptionSection": "Détails",
+      "descriptionPlaceholder": "Expliquez à l'agent ce dont vous avez besoin (obligatoire)",
+      "notesSection": "Notes (facultatif)",
+      "notesPlaceholder": "Contexte supplémentaire — montant, lieu, créneau horaire…",
+      "submit": "Envoyer la demande",
+      "sent": "Demande envoyée à votre agent",
+      "sendingTo": "Envoi à",
+      "agentRequired": "Veuillez choisir l'agent qui doit traiter cette demande",
+      "descriptionRequired": "Veuillez décrire ce dont vous avez besoin",
+      "noAgents": "Vous n'avez encore aucun agent approuvé. Demandez-en un avant de soumettre une demande d'activité.",
+      "cta": "Demander une activité",
+      "outgoingTitle": "Mes demandes",
+      "outgoingEmpty": "Aucune demande envoyée.",
+      "cancel": "Annuler",
+      "cancelTitle": "Annuler la demande",
+      "cancelMsg": "Voulez-vous vraiment annuler cette demande ?",
+      "declineReasonLabel": "Motif",
+      "types": {
+        "PhoneCall": "Appel téléphonique",
+        "FieldVisit": "Visite sur place",
+        "ParentContact": "Contact général",
+        "PaymentHelp": "Aide au paiement",
+        "Other": "Autre"
+      },
+      "status": {
+        "Requested": "En attente",
+        "Accepted": "Accepté",
+        "Declined": "Refusé",
+        "Completed": "Terminé",
+        "Cancelled": "Annulé"
+      }
+    },
     "paymentDetail": {
       "notFound": "Paiement non trouvé",
       "installment": "Versement",
@@ -544,12 +582,37 @@
       "dueDate": "Date d'échéance",
       "paidDate": "Date de paiement",
       "downloadReceipt": "Télécharger le reçu",
+      "viewHistory": "Voir l'historique des paiements",
       "payNow": "Payer maintenant",
       "paymentFailed": "Échec du paiement",
       "invalidPhone": "Votre numéro de téléphone est invalide. Veuillez le mettre à jour dans les Paramètres avant de payer.",
       "missingUserId": "Votre session ne contient pas d'identifiant utilisateur. Veuillez vous déconnecter et vous reconnecter.",
       "networkError": "Erreur réseau. Vérifiez votre connexion et assurez-vous que le serveur est accessible.",
       "paymentError": "Échec de l'initiation du paiement. Veuillez réessayer."
+    },
+    "invoice": {
+      "receiptTitle": "Reçu de paiement",
+      "receiptNumber": "N° de reçu",
+      "date": "Date",
+      "amount": "Montant",
+      "totalAmount": "Montant total",
+      "paymentMethod": "Mode de paiement",
+      "details": "Détails du reçu",
+      "child": "Enfant",
+      "school": "École",
+      "grade": "Classe",
+      "cycle": "Plan de paiement",
+      "merchandise": "Article",
+      "payerInfo": "Informations du payeur",
+      "payer": "Payeur",
+      "name": "Nom",
+      "phone": "Téléphone",
+      "email": "E-mail",
+      "paid": "PAYÉ",
+      "pending": "EN ATTENTE",
+      "share": "Partager le reçu",
+      "backToPayments": "Retour aux paiements",
+      "notFound": "Reçu introuvable"
     }
   },
   "merchandise": {

@@ -137,6 +137,8 @@ import type {
   InvoiceHistoryDto,
   CollectingAgent,
   CollectingAgentActivity,
+  ActivityRequestStatus,
+  ParentRequestableActivityType,
   AgentCommission,
   AgentPerformance,
   CollectingAgentParents,
@@ -160,7 +162,7 @@ export const apiSlice = createApi({
   tagTypes: [
     'Auth', 'Parents', 'Children', 'Schools', 'Payments',
     'Agents', 'Support', 'Notifications', 'Reports', 'Merchandise',
-    'Invoices',
+    'Invoices', 'ActivityRequests',
   ],
   endpoints: (builder) => ({
     // ═══════════════════════════════════════════════════════════
@@ -265,7 +267,9 @@ export const apiSlice = createApi({
       GetRecentPaymentTransactionsResponse,
       { parentId: number; timePeriod?: string; topCount?: number }
     >({
-      query: (params) => ({ url: '/parents/GetRecentPaymentTransactions', params }),
+      // Backend route attribute is `[Route("GetParentRecentTrx")]` on the
+      // parents controller — keep this URL in sync with that attribute.
+      query: (params) => ({ url: '/parents/GetParentRecentTrx', params }),
       providesTags: ['Payments'],
     }),
 
@@ -643,6 +647,93 @@ export const apiSlice = createApi({
       query: (data) => ({ url: '/collectingagent/LogActivity', method: 'POST', body: data }),
       invalidatesTags: ['Agents'],
     }),
+
+    // ── Parent-initiated activity requests ────────────────────────────
+    // Parent files a request → agent accepts / declines → agent completes
+    // (or parent cancels). See CollectingAgentActivity on the backend for
+    // the state-machine contract. `ActivityRequests` is a dedicated tag
+    // so the parent's outgoing list and the agent's inbox refresh
+    // without invalidating the broader 'Agents' cache.
+    requestAgentActivity: builder.mutation<
+      BaseResponse & { activity?: CollectingAgentActivity },
+      {
+        collectingAgentId: number;
+        activityType: ParentRequestableActivityType;
+        activityDescription: string;
+        notes?: string;
+      }
+    >({
+      query: (data) => ({
+        url: '/collectingagent/RequestActivity',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['ActivityRequests', 'Agents'],
+    }),
+    acceptActivityRequest: builder.mutation<
+      BaseResponse & { activity?: CollectingAgentActivity },
+      { activityId: number }
+    >({
+      query: (data) => ({
+        url: '/collectingagent/AcceptActivityRequest',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['ActivityRequests', 'Agents'],
+    }),
+    declineActivityRequest: builder.mutation<
+      BaseResponse & { activity?: CollectingAgentActivity },
+      { activityId: number; reason?: string }
+    >({
+      query: (data) => ({
+        url: '/collectingagent/DeclineActivityRequest',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['ActivityRequests', 'Agents'],
+    }),
+    completeActivityRequest: builder.mutation<
+      BaseResponse & { activity?: CollectingAgentActivity },
+      { activityId: number; completionNotes?: string }
+    >({
+      query: (data) => ({
+        url: '/collectingagent/CompleteActivityRequest',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['ActivityRequests', 'Agents'],
+    }),
+    cancelActivityRequest: builder.mutation<
+      BaseResponse & { activity?: CollectingAgentActivity },
+      { activityId: number }
+    >({
+      query: (data) => ({
+        url: '/collectingagent/CancelActivityRequest',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['ActivityRequests', 'Agents'],
+    }),
+    getMyActivityRequests: builder.query<
+      PagedResponse<CollectingAgentActivity>,
+      { status?: ActivityRequestStatus } & PaginationRequest
+    >({
+      query: (params) => ({
+        url: '/collectingagent/GetMyActivityRequests',
+        params,
+      }),
+      providesTags: ['ActivityRequests'],
+    }),
+    getAgentActivityRequests: builder.query<
+      PagedResponse<CollectingAgentActivity>,
+      { status?: ActivityRequestStatus } & PaginationRequest
+    >({
+      query: (params) => ({
+        url: '/collectingagent/GetAgentActivityRequests',
+        params,
+      }),
+      providesTags: ['ActivityRequests'],
+    }),
     getMyCommissions: builder.query<
       PagedResponse<AgentCommission> & { totalEarnings: number; approvedEarnings: number; pendingEarnings: number },
       { startDate?: string; endDate?: string; isApproved?: boolean } & PaginationRequest
@@ -944,6 +1035,14 @@ export const {
   useCancelAgentRequestMutation,
   useGetMyActivitiesQuery,
   useLogMyActivityMutation,
+  // Parent-initiated activity requests
+  useRequestAgentActivityMutation,
+  useAcceptActivityRequestMutation,
+  useDeclineActivityRequestMutation,
+  useCompleteActivityRequestMutation,
+  useCancelActivityRequestMutation,
+  useGetMyActivityRequestsQuery,
+  useGetAgentActivityRequestsQuery,
   useGetMyCommissionsQuery,
   useGetMyPerformanceQuery,
   useRequestCommissionApprovalMutation,

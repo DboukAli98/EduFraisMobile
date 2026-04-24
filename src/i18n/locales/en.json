@@ -188,6 +188,7 @@
     "failed": "Failed",
     "inProgress": "In Progress",
     "cancelled": "Cancelled",
+    "unknownStatus": "Unknown status",
     "noPaymentsFound": "No Payments Found",
     "noPaymentsDesc": "Your payment history will appear here once you make payments.",
     "invoice": "Payment Receipt",
@@ -478,6 +479,7 @@
       "support": "Support",
       "upcomingDues": "Upcoming Dues",
       "recentPayments": "Recent Payments",
+      "noRecentPayments": "No recent payments. Your successful payments will appear here.",
       "myAgents": "My Agents"
     },
     "payments": {
@@ -535,6 +537,42 @@
       "cancelTitle": "Cancel Request",
       "cancelMsg": "Are you sure you want to cancel this request?"
     },
+    "requestActivity": {
+      "title": "Request Activity",
+      "typeSection": "What do you need?",
+      "agentSection": "Agent",
+      "descriptionSection": "Details",
+      "descriptionPlaceholder": "Tell the agent what you need (required)",
+      "notesSection": "Notes (optional)",
+      "notesPlaceholder": "Any extra context — amount, location, time window…",
+      "submit": "Send Request",
+      "sent": "Request sent to your agent",
+      "sendingTo": "Sending to",
+      "agentRequired": "Please pick which agent should handle this",
+      "descriptionRequired": "Please describe what you need",
+      "noAgents": "You have no approved agents yet. Ask your director or request one before filing activity requests.",
+      "cta": "Request an Activity",
+      "outgoingTitle": "My Requests",
+      "outgoingEmpty": "No requests sent yet.",
+      "cancel": "Cancel",
+      "cancelTitle": "Cancel Request",
+      "cancelMsg": "Are you sure you want to cancel this request?",
+      "declineReasonLabel": "Reason",
+      "types": {
+        "PhoneCall": "Phone Call",
+        "FieldVisit": "Field Visit",
+        "ParentContact": "General Contact",
+        "PaymentHelp": "Payment Help",
+        "Other": "Other"
+      },
+      "status": {
+        "Requested": "Pending",
+        "Accepted": "Accepted",
+        "Declined": "Declined",
+        "Completed": "Completed",
+        "Cancelled": "Cancelled"
+      }
+    },
     "paymentDetail": {
       "notFound": "Payment not found",
       "installment": "Installment",
@@ -544,12 +582,37 @@
       "dueDate": "Due Date",
       "paidDate": "Paid Date",
       "downloadReceipt": "Download Receipt",
+      "viewHistory": "View Payment History",
       "payNow": "Pay Now",
       "paymentFailed": "Payment Failed",
       "invalidPhone": "Your phone number is invalid. Please update it in Settings before paying.",
       "missingUserId": "Your session is missing a user ID. Please log out and sign in again.",
       "networkError": "Network error. Check your connection and ensure the server is reachable.",
       "paymentError": "Failed to initiate payment. Please try again."
+    },
+    "invoice": {
+      "receiptTitle": "Payment Receipt",
+      "receiptNumber": "Receipt #",
+      "date": "Date",
+      "amount": "Amount",
+      "totalAmount": "Total Amount",
+      "paymentMethod": "Payment Method",
+      "details": "Invoice Details",
+      "child": "Child",
+      "school": "School",
+      "grade": "Grade",
+      "cycle": "Payment Cycle",
+      "merchandise": "Merchandise",
+      "payerInfo": "Payer Information",
+      "payer": "Payer",
+      "name": "Name",
+      "phone": "Phone",
+      "email": "Email",
+      "paid": "PAID",
+      "pending": "PENDING",
+      "share": "Share Receipt",
+      "backToPayments": "Back to Payments",
+      "notFound": "Payment record not found"
     }
   },
   "merchandise": {

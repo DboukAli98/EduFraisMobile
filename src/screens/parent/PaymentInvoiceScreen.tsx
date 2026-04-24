@@ -116,10 +116,26 @@ const PaymentInvoiceScreen: React.FC = () => {
   // Derive display values
   // -------------------------------------------------------------------------
 
+  // A transaction is considered "Paid" on the receipt when its status id is
+  // Processed (8). The backend only serialises `fK_StatusId` on the history
+  // envelope, so map through that; fall back to `statusName` if a future
+  // response ever includes it.
   const isPaid = useMemo(() => {
     if (installment) return installment.isPaid;
-    if (schoolFeesTransaction) return schoolFeesTransaction.statusName === 'Paid';
-    if (merchandiseTransaction) return merchandiseTransaction.statusName === 'Paid';
+    if (schoolFeesTransaction) {
+      return (
+        schoolFeesTransaction.fK_StatusId === 8 ||
+        schoolFeesTransaction.statusName === 'Paid' ||
+        schoolFeesTransaction.statusName === 'Processed'
+      );
+    }
+    if (merchandiseTransaction) {
+      return (
+        merchandiseTransaction.fK_StatusId === 8 ||
+        merchandiseTransaction.statusName === 'Paid' ||
+        merchandiseTransaction.statusName === 'Processed'
+      );
+    }
     return false;
   }, [installment, schoolFeesTransaction, merchandiseTransaction]);
 
@@ -176,9 +192,18 @@ const PaymentInvoiceScreen: React.FC = () => {
     ];
 
     if (installment || schoolFeesTransaction) {
-      const childName = installment?.childName ?? schoolFeesTransaction?.childName ?? '';
+      const txChildName =
+        schoolFeesTransaction?.childFullName ||
+        [schoolFeesTransaction?.firstName, schoolFeesTransaction?.lastName]
+          .filter(Boolean)
+          .join(' ') ||
+        schoolFeesTransaction?.childName;
+      const txGradeName =
+        schoolFeesTransaction?.schoolGradeName || schoolFeesTransaction?.gradeName;
+
+      const childName = installment?.childName ?? txChildName ?? '';
       const schoolName = installment?.schoolName ?? schoolFeesTransaction?.schoolName ?? '';
-      const gradeName = installment?.gradeName ?? schoolFeesTransaction?.gradeName ?? '';
+      const gradeName = installment?.gradeName ?? txGradeName ?? '';
       if (childName) lines.push(`${t('parent.invoice.child', 'Child')}: ${childName}`);
       if (schoolName) lines.push(`${t('parent.invoice.school', 'School')}: ${schoolName}`);
       if (gradeName) lines.push(`${t('parent.invoice.grade', 'Grade')}: ${gradeName}`);
@@ -359,34 +384,48 @@ const PaymentInvoiceScreen: React.FC = () => {
           />
 
           {/* School fees details */}
-          {(installment || schoolFeesTransaction) && (
-            <>
-              {(installment?.childName || schoolFeesTransaction?.childName) && (
-                <DetailRow
-                  label={t('parent.invoice.child', 'Child')}
-                  value={installment?.childName ?? schoolFeesTransaction?.childName ?? ''}
-                />
-              )}
-              {(installment?.schoolName || schoolFeesTransaction?.schoolName) && (
-                <DetailRow
-                  label={t('parent.invoice.school', 'School')}
-                  value={installment?.schoolName ?? schoolFeesTransaction?.schoolName ?? ''}
-                />
-              )}
-              {(installment?.gradeName || schoolFeesTransaction?.gradeName) && (
-                <DetailRow
-                  label={t('parent.invoice.grade', 'Grade')}
-                  value={installment?.gradeName ?? schoolFeesTransaction?.gradeName ?? ''}
-                />
-              )}
-              {installment?.paymentCycleName && (
-                <DetailRow
-                  label={t('parent.invoice.cycle', 'Payment Cycle')}
-                  value={installment.paymentCycleName}
-                />
-              )}
-            </>
-          )}
+          {(installment || schoolFeesTransaction) && (() => {
+            const txChildName =
+              schoolFeesTransaction?.childFullName ||
+              [schoolFeesTransaction?.firstName, schoolFeesTransaction?.lastName]
+                .filter(Boolean)
+                .join(' ') ||
+              schoolFeesTransaction?.childName;
+            const txGradeName =
+              schoolFeesTransaction?.schoolGradeName || schoolFeesTransaction?.gradeName;
+            const resolvedChild = installment?.childName ?? txChildName ?? '';
+            const resolvedSchool =
+              installment?.schoolName ?? schoolFeesTransaction?.schoolName ?? '';
+            const resolvedGrade = installment?.gradeName ?? txGradeName ?? '';
+            return (
+              <>
+                {resolvedChild ? (
+                  <DetailRow
+                    label={t('parent.invoice.child', 'Child')}
+                    value={resolvedChild}
+                  />
+                ) : null}
+                {resolvedSchool ? (
+                  <DetailRow
+                    label={t('parent.invoice.school', 'School')}
+                    value={resolvedSchool}
+                  />
+                ) : null}
+                {resolvedGrade ? (
+                  <DetailRow
+                    label={t('parent.invoice.grade', 'Grade')}
+                    value={resolvedGrade}
+                  />
+                ) : null}
+                {installment?.paymentCycleName ? (
+                  <DetailRow
+                    label={t('parent.invoice.cycle', 'Payment Cycle')}
+                    value={installment.paymentCycleName}
+                  />
+                ) : null}
+              </>
+            );
+          })()}
 
           {/* Merchandise details */}
           {merchandiseTransaction && (

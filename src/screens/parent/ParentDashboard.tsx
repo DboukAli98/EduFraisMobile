@@ -128,14 +128,32 @@ const ParentDashboard: React.FC = () => {
       }));
   }, [installments]);
 
+  // Map the backend's numeric status id (or legacy statusName) to the
+  // canonical union the PaymentStatusBadge understands. Default to
+  // 'Pending' — we never want to crash the badge by passing undefined.
+  const mapTxStatus = (
+    tx: RecentPaymentTransactionDto,
+  ): 'Paid' | 'Pending' | 'InProgress' | 'Failed' | 'Cancelled' => {
+    if (tx.fK_StatusId === 8 || tx.statusName === 'Processed' || tx.statusName === 'Paid') {
+      return 'Paid';
+    }
+    if (tx.fK_StatusId === 10 || tx.statusName === 'Failed') return 'Failed';
+    if (tx.fK_StatusId === 9 || tx.statusName === 'Cancelled') return 'Cancelled';
+    if (tx.fK_StatusId === 11 || tx.statusName === 'InProgress') return 'InProgress';
+    return 'Pending';
+  };
+
   const recentPayments = useMemo(() => {
     const txList = recentTxData?.data || [];
     return txList.map((tx: RecentPaymentTransactionDto) => ({
       id: String(tx.paymentTransactionId),
       amount: tx.amountPaid,
       date: tx.paidDate,
-      status: tx.statusName as 'Paid' | 'Pending' | 'Overdue',
-      childName: tx.childName,
+      status: mapTxStatus(tx),
+      childName:
+        tx.childFullName ||
+        [tx.childFirstName, tx.childLastName].filter(Boolean).join(' ') ||
+        tx.childName,
       paymentType: tx.paymentType,
     }));
   }, [recentTxData]);
@@ -270,27 +288,46 @@ const ParentDashboard: React.FC = () => {
           title={t('parent.dashboard.recentPayments', 'Recent Payments')}
           style={styles.recentSec}
         />
-        {recentPayments.map((p) => (
-          <ThemedCard key={p.id} variant="outlined" style={styles.payItem}>
-            <View style={styles.payRow}>
-              <View
-                style={[
-                  styles.payIcon,
-                  { backgroundColor: theme.colors.successLight, borderRadius: theme.borderRadius.md },
-                ]}
-              >
-                <Ionicons name="checkmark-circle" size={20} color={theme.colors.success} />
-              </View>
-              <View style={styles.payContent}>
-                <ThemedText variant="body">{formatCurrency(p.amount)}</ThemedText>
-                <ThemedText variant="caption" color={theme.colors.textSecondary}>
-                  {formatDate(p.date)}
-                </ThemedText>
-              </View>
-              <PaymentStatusBadge status={p.status} size="sm" />
-            </View>
+        {recentPayments.length === 0 ? (
+          <ThemedCard variant="outlined" style={styles.payItem}>
+            <ThemedText variant="bodySmall" color={theme.colors.textSecondary}>
+              {t(
+                'parent.dashboard.noRecentPayments',
+                'No recent payments. Your successful payments will appear here.',
+              )}
+            </ThemedText>
           </ThemedCard>
-        ))}
+        ) : (
+          recentPayments.map((p) => (
+            <ThemedCard key={p.id} variant="outlined" style={styles.payItem}>
+              <View style={styles.payRow}>
+                <View
+                  style={[
+                    styles.payIcon,
+                    {
+                      backgroundColor: theme.colors.successLight,
+                      borderRadius: theme.borderRadius.md,
+                    },
+                  ]}
+                >
+                  <Ionicons name="checkmark-circle" size={20} color={theme.colors.success} />
+                </View>
+                <View style={styles.payContent}>
+                  <ThemedText variant="body">{formatCurrency(p.amount)}</ThemedText>
+                  <ThemedText variant="caption" color={theme.colors.textSecondary}>
+                    {formatDate(p.date)}
+                  </ThemedText>
+                  {p.childName ? (
+                    <ThemedText variant="caption" color={theme.colors.textTertiary}>
+                      {p.childName}
+                    </ThemedText>
+                  ) : null}
+                </View>
+                <PaymentStatusBadge status={p.status} size="sm" />
+              </View>
+            </ThemedCard>
+          ))
+        )}
       </Animated.View>
     </ScreenContainer>
   );

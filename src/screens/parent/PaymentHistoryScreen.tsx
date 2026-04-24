@@ -64,16 +64,52 @@ const STATUS_FILTERS: StatusFilterOption[] = [
 // ---------------------------------------------------------------------------
 // StatusBadge (inline)
 // ---------------------------------------------------------------------------
+// Backend returns only the numeric `fK_StatusId` on the history envelopes.
+// Map to a localised label + colour here; keep in sync with
+// `PaymentStatusTypeConstants` on the server.
+// ---------------------------------------------------------------------------
 
-const getStatusColor = (statusName: string): { bg: string; text: string } => {
-  const lower = statusName.toLowerCase();
-  if (lower.includes('process') || lower.includes('success') || lower.includes('complete')) {
+const resolveStatusLabel = (
+  item: { fK_StatusId?: number; statusName?: string },
+  t: any,
+): string => {
+  if (item.statusName && item.statusName.trim().length > 0) return item.statusName;
+  switch (item.fK_StatusId) {
+    case 6:
+      return t('payments.pending', 'Pending');
+    case 8:
+      return t('payments.processed', 'Processed');
+    case 9:
+      return t('payments.cancelled', 'Cancelled');
+    case 10:
+      return t('payments.failed', 'Failed');
+    case 11:
+      return t('payments.inProgress', 'In Progress');
+    default:
+      return t('payments.unknownStatus', 'Unknown');
+  }
+};
+
+const getStatusColor = (statusName?: string): { bg: string; text: string } => {
+  const lower = (statusName || '').toLowerCase();
+  if (
+    lower.includes('process') ||
+    lower.includes('success') ||
+    lower.includes('complete') ||
+    lower.includes('trait') // "Traité"
+  ) {
     return { bg: '#DCFCE7', text: '#166534' };
   }
-  if (lower.includes('pending') || lower.includes('wait')) {
+  if (lower.includes('pending') || lower.includes('wait') || lower.includes('attente')) {
     return { bg: '#FEF9C3', text: '#854D0E' };
   }
-  if (lower.includes('fail') || lower.includes('reject') || lower.includes('cancel')) {
+  if (
+    lower.includes('fail') ||
+    lower.includes('reject') ||
+    lower.includes('cancel') ||
+    lower.includes('échou') ||
+    lower.includes('annul')
+  ) {
     return { bg: '#FEE2E2', text: '#991B1B' };
   }
   return { bg: '#F3F4F6', text: '#374151' };
@@ -196,17 +232,30 @@ const PaymentHistoryScreen: React.FC = () => {
   const isFetching =
     activeTab === 'fees' ? feesFetching : merchandiseFetching;
 
+  // Resolve the display name for a fee item — backend gives firstName/lastName
+  // and childFullName; fall back to the legacy childName field if present.
+  const resolveFeeChildName = (i: SchoolFeesPaymentHistoryDto): string | undefined => {
+    if (i.childFullName && i.childFullName.trim()) return i.childFullName;
+    const first = (i.firstName || '').trim();
+    const last = (i.lastName || '').trim();
+    const composed = `${first} ${last}`.trim();
+    if (composed.length > 0) return composed;
+    return i.childName;
+  };
+
   // -- Filtered data
   const filteredFees = useMemo(() => {
     const items = feesData?.data || [];
     if (!searchQuery.trim()) return items;
     const q = searchQuery.toLowerCase().trim();
-    return items.filter(
-      (i) =>
-        (i.childName?.toLowerCase().includes(q)) ||
+    return items.filter((i) => {
+      const name = resolveFeeChildName(i)?.toLowerCase() || '';
+      return (
+        name.includes(q) ||
         (i.schoolName?.toLowerCase().includes(q)) ||
-        (i.transactionReference?.toLowerCase().includes(q)),
-    );
+        (i.transactionReference?.toLowerCase().includes(q))
+      );
+    });
   }, [feesData, searchQuery]);
 
   const filteredMerchandise = useMemo(() => {
@@ -246,8 +295,12 @@ const PaymentHistoryScreen: React.FC = () => {
 
   // -- Render helpers: Fee card
   const renderFeeItem = useCallback(
-    ({ item }: { item: SchoolFeesPaymentHistoryDto }) => (
-      <ThemedCard
+    ({ item }: { item: SchoolFeesPaymentHistoryDto }) => {
+      const childName = resolveFeeChildName(item);
+      const gradeName = item.schoolGradeName || item.gradeName;
+      const statusLabel = resolveStatusLabel(item, t);
+      return (
+        <ThemedCard
         variant="elevated"
         onPress={() => handleCardPress(item.paymentTransactionId)}
         style={styles.card}
@@ -265,11 +318,11 @@ const PaymentHistoryScreen: React.FC = () => {
               {formatDate(item.paidDate)}
             </ThemedText>
           </View>
-          <StatusBadge statusName={item.statusName} />
+          <StatusBadge statusName={statusLabel} />
         </View>
 
         <View style={styles.cardBody}>
-          {item.childName ? (
+          {childName ? (
             <View style={styles.cardRow}>
               <Ionicons
                 name="person-outline"
@@ -281,8 +334,8 @@ const PaymentHistoryScreen: React.FC = () => {
                 color={theme.colors.textSecondary}
                 style={styles.cardRowText}
               >
-                {item.childName}
-                {item.gradeName ? ` - ${item.gradeName}` : ''}
+                {childName}
+                {gradeName ? ` - ${gradeName}` : ''}
               </ThemedText>
             </View>
           ) : null}
@@ -305,7 +358,7 @@ const PaymentHistoryScreen: React.FC = () => {
         </View>
 
         <View style={styles.cardFooter}>
-          <View style={styles.cardRow}>
+          <View style={styles.footerLeft}>
             <Ionicons
               name="card-outline"
               size={14}
@@ -314,23 +367,32 @@ const PaymentHistoryScreen: React.FC = () => {
             <ThemedText
               variant="caption"
               color={theme.colors.textTertiary}
-              style={styles.cardRowText}
+              style={styles.footerLeftText}
+              numberOfLines={1}
             >
               {item.paymentMethod}
             </ThemedText>
           </View>
-          <ThemedText variant="caption" color={theme.colors.textTertiary}>
+          <ThemedText
+            variant="caption"
+            color={theme.colors.textTertiary}
+            style={styles.footerRef}
+            numberOfLines={1}
+          >
             Ref: {item.transactionReference}
           </ThemedText>
         </View>
       </ThemedCard>
-    ),
-    [theme, handleCardPress],
+      );
+    },
+    [theme, handleCardPress, t],
   );
 
   // -- Render helpers: Merchandise card
   const renderMerchandiseItem = useCallback(
-    ({ item }: { item: MerchandisePaymentHistoryDto }) => (
+    ({ item }: { item: MerchandisePaymentHistoryDto }) => {
+      const statusLabel = resolveStatusLabel(item, t);
+      return (
       <ThemedCard
         variant="elevated"
         onPress={() => handleCardPress(item.paymentTransactionId)}
@@ -349,7 +411,7 @@ const PaymentHistoryScreen: React.FC = () => {
               {formatDate(item.paidDate)}
             </ThemedText>
           </View>
-          <StatusBadge statusName={item.statusName} />
+          <StatusBadge statusName={statusLabel} />
         </View>
 
         <View style={styles.cardBody}>
@@ -388,7 +450,7 @@ const PaymentHistoryScreen: React.FC = () => {
         </View>
 
         <View style={styles.cardFooter}>
-          <View style={styles.cardRow}>
+          <View style={styles.footerLeft}>
             <Ionicons
               name="card-outline"
               size={14}
@@ -397,18 +459,25 @@ const PaymentHistoryScreen: React.FC = () => {
             <ThemedText
               variant="caption"
               color={theme.colors.textTertiary}
-              style={styles.cardRowText}
+              style={styles.footerLeftText}
+              numberOfLines={1}
             >
               {item.paymentMethod}
             </ThemedText>
           </View>
-          <ThemedText variant="caption" color={theme.colors.textTertiary}>
+          <ThemedText
+            variant="caption"
+            color={theme.colors.textTertiary}
+            style={styles.footerRef}
+            numberOfLines={1}
+          >
             Ref: {item.transactionReference}
           </ThemedText>
         </View>
       </ThemedCard>
-    ),
-    [theme, handleCardPress],
+      );
+    },
+    [theme, handleCardPress, t],
   );
 
   // -- Empty state
@@ -747,6 +816,22 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#E5E7EB',
     paddingTop: 10,
+    gap: 8,
+  },
+  footerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  footerLeftText: {
+    marginLeft: 6,
+    flexShrink: 1,
+  },
+  footerRef: {
+    flexShrink: 0,
+    maxWidth: '55%',
+    textAlign: 'right',
   },
 
   statusBadge: {

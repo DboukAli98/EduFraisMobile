@@ -14,15 +14,23 @@ import {
   Avatar,
   ScreenSkeleton,
   SectionHeader,
+  ThemedButton,
+  useAlert,
 } from '../../components';
 import { useTheme } from '../../theme';
 import { useAnimatedEntry, staggerDelay, useAppSelector } from '../../hooks';
 import {
   useGetParentsCollectingAgentsQuery,
   useGetMyAgentRequestsQuery,
+  useGetMyActivityRequestsQuery,
+  useCancelActivityRequestMutation,
 } from '../../services/api/apiSlice';
-import { formatDate } from '../../utils';
-import type { CollectingAgentParents } from '../../types';
+import { formatDate, formatDateTimeCongo } from '../../utils';
+import type {
+  CollectingAgentParents,
+  CollectingAgentActivity,
+  ActivityRequestStatus,
+} from '../../types';
 
 // ---------------------------------------------------------------------------
 // Phone formatting consistent with director screens
@@ -51,12 +59,53 @@ const rawPhoneDigits = (countryCode?: string, phoneNumber?: string): string => {
 // Screen
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Colors for the request-lifecycle badge. Keep in sync with the agent-side
+// MyActivitiesScreen so a row looks the same on both sides of the request.
+// ---------------------------------------------------------------------------
+
+type BadgeTheme = { bg: string; fg: string; label: string };
+
+const useRequestStatusTheme = (): Record<ActivityRequestStatus, BadgeTheme> => {
+  const { theme } = useTheme();
+  const { t } = useTranslation();
+  return {
+    Requested: {
+      bg: theme.colors.warning + '22',
+      fg: theme.colors.warning,
+      label: t('parent.requestActivity.status.Requested', 'Pending'),
+    },
+    Accepted: {
+      bg: theme.colors.primary + '22',
+      fg: theme.colors.primary,
+      label: t('parent.requestActivity.status.Accepted', 'Accepted'),
+    },
+    Declined: {
+      bg: theme.colors.error + '22',
+      fg: theme.colors.error,
+      label: t('parent.requestActivity.status.Declined', 'Declined'),
+    },
+    Completed: {
+      bg: theme.colors.success + '22',
+      fg: theme.colors.success,
+      label: t('parent.requestActivity.status.Completed', 'Completed'),
+    },
+    Cancelled: {
+      bg: theme.colors.textTertiary + '22',
+      fg: theme.colors.textTertiary,
+      label: t('parent.requestActivity.status.Cancelled', 'Cancelled'),
+    },
+  };
+};
+
 const ParentAgentDetailScreen: React.FC = () => {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const router = useRouter();
+  const { showAlert } = useAlert();
   const params = useLocalSearchParams<{ collectingAgentParentId?: string }>();
   const id = parseInt(params.collectingAgentParentId || '0');
+  const statusTheme = useRequestStatusTheme();
 
   const user = useAppSelector((state) => state.auth.user);
   const parentId = parseInt(user?.entityUserId || '0');
@@ -69,6 +118,16 @@ const ParentAgentDetailScreen: React.FC = () => {
     { parentId, pageNumber: 1, pageSize: 50 },
     { skip: !parentId },
   );
+
+  // Outgoing activity requests — limit to the current agent below. Fetched
+  // unconditionally (backend already filters by the signed-in parent); the
+  // client slice narrows down to rows for this agent.
+  const { data: activityRequestsData } = useGetMyActivityRequestsQuery(
+    { pageNumber: 1, pageSize: 50 },
+    { skip: !parentId },
+  );
+  const [cancelActivityRequest, { isLoading: cancelling }] =
+    useCancelActivityRequestMutation();
 
   const row: CollectingAgentParents | undefined = useMemo(() => {
     const all = [...(approvedData?.data ?? []), ...(requestsData?.data ?? [])];
@@ -127,6 +186,70 @@ const ParentAgentDetailScreen: React.FC = () => {
     },
   };
   const sc = statusConfig[statusKey] || statusConfig.Approved;
+
+  // ---- Outgoing activity-request data for THIS agent ----------------------
+  const agentIdForFilter = agent?.collectingAgentId;
+  const outgoingRequests: CollectingAgentActivity[] = useMemo(() => {
+    const rows = activityRequestsData?.data ?? [];
+    if (!agentIdForFilter) return [];
+    return rows.filter(
+      (r) =>
+        (r.collectingAgentId ?? r.fK_CollectingAgentId) === agentIdForFilter,
+    );
+  }, [activityRequestsData, agentIdForFilter]);
+
+  const canRequestActivity = statusKey === 'Approved';
+
+  const handleRequestActivity = () => {
+    if (!agent?.collectingAgentId) return;
+    router.push({
+      pathname: '/request-activity',
+      params: { collectingAgentId: String(agent.collectingAgentId) },
+    });
+  };
+
+  const handleCancelRequest = (req: CollectingAgentActivity) => {
+    showAlert({
+      type: 'warning',
+      title: t('parent.requestActivity.cancelTitle', 'Cancel request?'),
+      message: t(
+        'parent.requestActivity.cancelConfirm',
+        'The agent will no longer see this request.',
+      ),
+      buttons: [
+        { text: t('common.cancel', 'Cancel'), style: 'cancel' },
+        {
+          text: t('parent.requestActivity.cancelConfirmButton', 'Yes, cancel'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const result = await cancelActivityRequest({
+                activityId: req.activityId,
+              }).unwrap();
+              if (result.status !== 'Success') {
+                showAlert({
+                  type: 'error',
+                  title: t('common.error', 'Error'),
+                  message:
+                    result.error ||
+                    t('common.genericError', 'Something went wrong'),
+                });
+              }
+            } catch (err: any) {
+              showAlert({
+                type: 'error',
+                title: t('common.error', 'Error'),
+                message:
+                  err?.data?.error ||
+                  err?.message ||
+                  t('common.genericError', 'Something went wrong'),
+              });
+            }
+          },
+        },
+      ],
+    });
+  };
 
   const handleCall = () => {
     if (!phoneRaw) return;
@@ -260,6 +383,119 @@ const ParentAgentDetailScreen: React.FC = () => {
           </View>
         ) : null}
       </ThemedCard>
+
+      {/* "Request an activity" CTA — only while the assignment is Approved.
+          Pending / Rejected rows can't file requests (backend enforces it). */}
+      {canRequestActivity ? (
+        <ThemedButton
+          title={t('parent.requestActivity.cta', 'Request an Activity')}
+          variant="primary"
+          onPress={handleRequestActivity}
+          style={styles.ctaBtn}
+        />
+      ) : null}
+
+      {/* Outgoing requests for THIS agent */}
+      {canRequestActivity ? (
+        <>
+          <SectionHeader
+            title={t('parent.requestActivity.yourRequests', 'Your Requests')}
+            style={styles.section}
+          />
+          {outgoingRequests.length === 0 ? (
+            <ThemedCard variant="outlined" style={styles.emptyCard}>
+              <ThemedText variant="bodySmall" color={theme.colors.textSecondary}>
+                {t(
+                  'parent.requestActivity.noneYet',
+                  "You haven't asked this agent for anything yet.",
+                )}
+              </ThemedText>
+            </ThemedCard>
+          ) : (
+            <View style={styles.requestList}>
+              {outgoingRequests.map((req) => {
+                const status =
+                  (typeof req.requestStatus === 'string'
+                    ? req.requestStatus
+                    : undefined) || 'Requested';
+                const badge = statusTheme[status as ActivityRequestStatus];
+                const canCancel =
+                  status === 'Requested' || status === 'Accepted';
+                return (
+                  <ThemedCard
+                    key={req.activityId}
+                    variant="outlined"
+                    style={styles.requestCard}
+                  >
+                    <View style={styles.requestHeader}>
+                      <ThemedText
+                        variant="bodySmall"
+                        style={{ fontWeight: '600', flex: 1 }}
+                      >
+                        {req.activityTypeDisplayName ||
+                          String(req.activityType)}
+                      </ThemedText>
+                      <View
+                        style={[
+                          styles.badge,
+                          {
+                            backgroundColor: badge.bg,
+                            borderRadius: theme.borderRadius.full,
+                          },
+                        ]}
+                      >
+                        <ThemedText
+                          variant="caption"
+                          color={badge.fg}
+                          style={styles.badgeLabel}
+                        >
+                          {badge.label}
+                        </ThemedText>
+                      </View>
+                    </View>
+                    <ThemedText variant="body" style={{ marginTop: 4 }}>
+                      {req.activityDescription}
+                    </ThemedText>
+                    <ThemedText
+                      variant="caption"
+                      color={theme.colors.textSecondary}
+                      style={{ marginTop: 4 }}
+                    >
+                      {formatDateTimeCongo(
+                        req.requestedAt ||
+                          req.createdOn ||
+                          new Date().toISOString(),
+                      )}
+                    </ThemedText>
+                    {status === 'Declined' && req.declineReason ? (
+                      <ThemedText
+                        variant="caption"
+                        color={theme.colors.error}
+                        style={{ marginTop: 4 }}
+                      >
+                        {t('parent.requestActivity.declinedReason', 'Reason')}:{' '}
+                        {req.declineReason}
+                      </ThemedText>
+                    ) : null}
+                    {canCancel ? (
+                      <ThemedButton
+                        title={t(
+                          'parent.requestActivity.cancelButton',
+                          'Cancel',
+                        )}
+                        variant="ghost"
+                        onPress={() => handleCancelRequest(req)}
+                        loading={cancelling}
+                        style={styles.cancelBtn}
+                      />
+                    ) : null}
+                  </ThemedCard>
+                );
+              })}
+            </View>
+          )}
+        </>
+      ) : null}
     </ScreenContainer>
   );
 };
@@ -325,6 +561,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     gap: 2,
+  },
+  ctaBtn: {
+    marginTop: 12,
+  },
+  requestList: {
+    gap: 10,
+  },
+  requestCard: {
+    padding: 12,
+  },
+  requestHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  badge: {
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+  },
+  badgeLabel: {
+    fontWeight: '600',
+    fontSize: 11,
+  },
+  cancelBtn: {
+    marginTop: 10,
+    alignSelf: 'flex-start',
+  },
+  emptyCard: {
+    paddingVertical: 16,
   },
 });
 
