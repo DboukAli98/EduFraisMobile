@@ -82,6 +82,7 @@ const ParentDashboard: React.FC = () => {
 
   // Auth / user info
   const user = useAppSelector((state) => state.auth.user);
+  const unreadCount = useAppSelector((state) => state.notifications.unreadCount);
   const parentId = parseInt(user?.entityUserId || '0');
   const nameParts = (user?.name || '').split(' ');
   const firstName = nameParts[0] || '';
@@ -210,6 +211,14 @@ const ParentDashboard: React.FC = () => {
           ]}
         >
           <Ionicons name="notifications-outline" size={22} color={theme.colors.text} />
+          {unreadCount > 0 ? (
+            <View
+              style={[
+                styles.notificationDot,
+                { backgroundColor: theme.colors.error, borderColor: theme.colors.surface },
+              ]}
+            />
+          ) : null}
         </Pressable>
       </Animated.View>
 
@@ -366,6 +375,7 @@ const styles = StyleSheet.create({
   headerLeft: { flexDirection: 'row', alignItems: 'center' },
   headerTextWrap: { marginLeft: 12 },
   bellBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  notificationDot: { position: 'absolute', top: 10, right: 10, width: 10, height: 10, borderRadius: 5, borderWidth: 1.5 },
   badge: { position: 'absolute', top: 4, right: 4, width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   badgeText: { fontSize: 10, fontWeight: '700', lineHeight: 14 },
 

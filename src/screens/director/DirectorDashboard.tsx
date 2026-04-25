@@ -67,6 +67,7 @@ const DirectorDashboard: React.FC = () => {
   const { isTablet } = useResponsive();
 
   const user = useAppSelector((state) => state.auth.user);
+  const unreadCount = useAppSelector((state) => state.notifications.unreadCount);
   const schoolId = parseInt((user?.schoolId ?? '0').split(',')[0], 10);
 
   const { data: schoolRes, isLoading: schoolLoading } = useGetSchoolDetailsQuery(
@@ -201,6 +202,14 @@ const DirectorDashboard: React.FC = () => {
           ]}
         >
           <Ionicons name="notifications-outline" size={22} color={theme.colors.text} />
+          {unreadCount > 0 ? (
+            <View
+              style={[
+                styles.notificationDot,
+                { backgroundColor: theme.colors.error, borderColor: theme.colors.surface },
+              ]}
+            />
+          ) : null}
         </Pressable>
       </Animated.View>
 
@@ -414,6 +423,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 16,
+  },
+  notificationDot: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1.5,
   },
   schoolLogo: {
     width: 48,

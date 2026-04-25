@@ -8,11 +8,13 @@ import {
   ScrollView,
   RefreshControl,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import Animated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   Alert,
@@ -34,7 +36,7 @@ import {
   useAddSchoolSectionMutation,
 } from '../../services/api/apiSlice';
 import { CURRENCY_SYMBOL } from '../../constants';
-import type { SchoolGradeSection, PaymentCycle, PaymentCycleType } from '../../types';
+import type { SchoolGradeSection, PaymentCycle, PaymentCycleType, IntervalUnitName } from '../../types';
 
 const formatCurrency = (amount: number) =>
   `${amount.toLocaleString()} ${CURRENCY_SYMBOL}`;
@@ -54,6 +56,31 @@ const CYCLE_TYPES: { key: PaymentCycleType; icon: string; count: number | null }
 ];
 
 const INTERVAL_UNITS = ['Day', 'Week', 'Month', 'Year'] as const;
+const PAYMENT_CYCLE_TYPE_BY_INDEX: PaymentCycleType[] = [
+  'Full',
+  'Monthly',
+  'Weekly',
+  'Quarterly',
+  'Custom',
+];
+const INTERVAL_UNIT_BY_INDEX: IntervalUnitName[] = ['Day', 'Week', 'Month', 'Year'];
+
+const resolveCycleTypeName = (raw: PaymentCycleType | number | undefined): PaymentCycleType => {
+  if (typeof raw === 'number') return PAYMENT_CYCLE_TYPE_BY_INDEX[raw] ?? 'Custom';
+  if (typeof raw === 'string' && (PAYMENT_CYCLE_TYPE_BY_INDEX as string[]).includes(raw)) {
+    return raw as PaymentCycleType;
+  }
+  return 'Custom';
+};
+
+const resolveIntervalUnitName = (
+  raw: IntervalUnitName | number | null | undefined,
+): IntervalUnitName | null => {
+  if (raw == null) return null;
+  if (typeof raw === 'number') return INTERVAL_UNIT_BY_INDEX[raw] ?? null;
+  if ((INTERVAL_UNIT_BY_INDEX as string[]).includes(raw as string)) return raw as IntervalUnitName;
+  return null;
+};
 
 // ─── Cycle Card ─────────────────────────────────────────────────
 const CycleCard: React.FC<{ cycle: PaymentCycle; index: number; gradeFee: number }> = ({
@@ -65,8 +92,14 @@ const CycleCard: React.FC<{ cycle: PaymentCycle; index: number; gradeFee: number
   const { t } = useTranslation();
   const anim = useAnimatedEntry({ type: 'slideUp', delay: staggerDelay(index, 50) });
 
+  const cycleTypeName = resolveCycleTypeName(cycle.paymentCycleType);
+  const intervalUnitName = resolveIntervalUnitName(cycle.intervalUnit);
+  const cycleConfig = CYCLE_TYPES.find((c) => c.key === cycleTypeName) ?? CYCLE_TYPES[4];
   const installments = cycle.installmentAmounts
-    ? cycle.installmentAmounts.split(',').map(Number)
+    ? cycle.installmentAmounts
+      .split(',')
+      .map((amount) => Number(amount.trim()))
+      .filter((amount) => !Number.isNaN(amount) && amount > 0)
     : [];
 
   const typeLabels: Record<string, string> = {
@@ -77,17 +110,30 @@ const CycleCard: React.FC<{ cycle: PaymentCycle; index: number; gradeFee: number
     Custom: t('cycles.typeCustom', 'Custom'),
   };
 
-  const countLabel = cycle.paymentCycleType === 'Full'
-    ? `1 ${t('cycles.installment', 'installment')}`
-    : cycle.paymentCycleType === 'Monthly'
-      ? `12 ${t('cycles.installments', 'installments')}`
-      : cycle.paymentCycleType === 'Quarterly'
-        ? `4 ${t('cycles.installments', 'installments')}`
-        : cycle.paymentCycleType === 'Weekly'
-          ? `52 ${t('cycles.installments', 'installments')}`
-          : cycle.intervalCount && cycle.intervalUnit != null
-            ? `${t('cycles.every', 'Every')} ${cycle.intervalCount} ${t(`cycles.unit${typeof cycle.intervalUnit === 'string' ? cycle.intervalUnit : (['Day', 'Week', 'Month', 'Year'][cycle.intervalUnit as any] || '')}`, '')}`
-            : '';
+  const defaultCount = cycleConfig.count;
+  const customCount = cycleTypeName === 'Custom' && cycle.intervalCount && intervalUnitName
+    ? intervalUnitName === 'Day'
+      ? Math.ceil(365 / cycle.intervalCount)
+      : intervalUnitName === 'Week'
+        ? Math.ceil(52 / cycle.intervalCount)
+        : intervalUnitName === 'Month'
+          ? Math.ceil(12 / cycle.intervalCount)
+          : 1
+    : null;
+  const installmentCount = installments.length || defaultCount || customCount || 0;
+  const totalAmount = installments.length
+    ? installments.reduce((sum, amount) => sum + amount, 0)
+    : gradeFee;
+  const perInstallment = installmentCount > 0
+    ? Math.round((totalAmount / installmentCount) * 100) / 100
+    : 0;
+  const installmentLabel = installmentCount > 0
+    ? `${installmentCount} ${t(installmentCount === 1 ? 'cycles.installment' : 'cycles.installments')}`
+    : t('cycles.customSchedule', 'Custom schedule');
+  const intervalLabel = cycleTypeName === 'Custom' && cycle.intervalCount && intervalUnitName
+    ? `${t('cycles.every', 'Every')} ${cycle.intervalCount} ${t(`cycles.unit${intervalUnitName}`, intervalUnitName)}`
+    : null;
+  const summaryParts = [typeLabels[cycleTypeName] ?? cycleTypeName, installmentLabel, intervalLabel].filter(Boolean);
 
   return (
     <Animated.View style={anim}>
@@ -95,7 +141,7 @@ const CycleCard: React.FC<{ cycle: PaymentCycle; index: number; gradeFee: number
         <View style={styles.cycleHeader}>
           <View style={[styles.cycleIcon, { backgroundColor: theme.colors.primaryLight + '20' }]}>
             <Ionicons
-              name={CYCLE_TYPES.find((c) => c.key === cycle.paymentCycleType)?.icon as any ?? 'card-outline'}
+              name={cycleConfig.icon as any}
               size={20}
               color={theme.colors.primary}
             />
@@ -107,14 +153,12 @@ const CycleCard: React.FC<{ cycle: PaymentCycle; index: number; gradeFee: number
             <View style={styles.cycleMetaRow}>
               <View style={[styles.typeBadge, { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.sm }]}>
                 <ThemedText variant="caption" color="#FFFFFF" style={{ fontWeight: '600' }}>
-                  {typeLabels[cycle.paymentCycleType] ?? cycle.paymentCycleType}
+                  {typeLabels[cycleTypeName] ?? cycleTypeName}
                 </ThemedText>
               </View>
-              {countLabel ? (
-                <ThemedText variant="caption" color={theme.colors.textTertiary}>
-                  {countLabel}
-                </ThemedText>
-              ) : null}
+              <ThemedText variant="caption" color={theme.colors.textTertiary} numberOfLines={1} style={styles.cycleMetaText}>
+                {summaryParts.slice(1).join(' • ')}
+              </ThemedText>
             </View>
           </View>
         </View>
@@ -125,13 +169,42 @@ const CycleCard: React.FC<{ cycle: PaymentCycle; index: number; gradeFee: number
           </ThemedText>
         ) : null}
 
+        <View style={styles.cycleInsightGrid}>
+          <View style={[styles.cycleInsight, { backgroundColor: theme.colors.primary + '10', borderRadius: theme.borderRadius.md }]}>
+            <ThemedText variant="caption" color={theme.colors.textTertiary} numberOfLines={1}>
+              {t('cycles.installments', 'Installments')}
+            </ThemedText>
+            <ThemedText variant="body" color={theme.colors.primary} style={styles.cycleInsightValue} numberOfLines={1}>
+              {installmentCount || '—'}
+            </ThemedText>
+          </View>
+          <View style={[styles.cycleInsight, { backgroundColor: theme.colors.primary + '10', borderRadius: theme.borderRadius.md }]}>
+            <ThemedText variant="caption" color={theme.colors.textTertiary} numberOfLines={1}>
+              {t('cycles.perInstallment', 'Per installment')}
+            </ThemedText>
+            <ThemedText variant="body" color={theme.colors.primary} style={styles.cycleInsightValue} numberOfLines={1}>
+              {perInstallment ? `~${formatCurrency(perInstallment)}` : '—'}
+            </ThemedText>
+          </View>
+        </View>
+
         <View style={[styles.cycleFeeRow, { borderTopColor: theme.colors.border }]}>
-          <ThemedText variant="caption" color={theme.colors.textTertiary}>
-            {t('cycles.startsOn', 'Starts')}: {formatDate(cycle.planStartDate)}
-          </ThemedText>
-          <ThemedText variant="body" color={theme.colors.primary} style={{ fontWeight: '700' }}>
-            {formatCurrency(gradeFee)}
-          </ThemedText>
+          <View style={styles.cycleDateInfo}>
+            <ThemedText variant="caption" color={theme.colors.textTertiary}>
+              {t('cycles.startsOn', 'Starts')}
+            </ThemedText>
+            <ThemedText variant="bodySmall" color={theme.colors.text} numberOfLines={1}>
+              {formatDate(cycle.planStartDate)}
+            </ThemedText>
+          </View>
+          <View style={styles.cycleTotalInfo}>
+            <ThemedText variant="caption" color={theme.colors.textTertiary} align="right">
+              {t('cycles.total', 'Total')}
+            </ThemedText>
+            <ThemedText variant="body" color={theme.colors.primary} style={{ fontWeight: '700' }} numberOfLines={1}>
+              {formatCurrency(totalAmount)}
+            </ThemedText>
+          </View>
         </View>
 
         {installments.length > 1 && (
@@ -162,6 +235,7 @@ const CycleCard: React.FC<{ cycle: PaymentCycle; index: number; gradeFee: number
 export default function PaymentCyclesScreen() {
   const { theme } = useTheme();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const user = useAppSelector((state) => state.auth.user);
   const schoolId = parseInt(user?.schoolId || '0');
 
@@ -338,6 +412,13 @@ export default function PaymentCyclesScreen() {
     return Math.round((activeGrade.schoolGradeFee / expectedCount) * 100) / 100;
   }, [activeGrade, expectedCount]);
 
+  const selectedCycleConfig = useMemo(
+    () => CYCLE_TYPES.find((ct) => ct.key === cycleType) ?? CYCLE_TYPES[1],
+    [cycleType],
+  );
+
+  const selectedCycleLabel = t(`cycles.type${cycleType}`, cycleType);
+
   if (gradesLoading) {
     return (
       <ScreenContainer scrollable={false}>
@@ -350,7 +431,9 @@ export default function PaymentCyclesScreen() {
     <ScreenContainer scrollable={false}>
       {/* Header */}
       <Animated.View style={[styles.headerRow, headerAnim]}>
-        <ThemedText variant="h1">{t('cycles.title', 'Payment Plans')}</ThemedText>
+        <ThemedText variant="h1" numberOfLines={1} style={styles.headerTitle}>
+          {t('cycles.title', 'Payment Plans')}
+        </ThemedText>
         <View style={styles.headerActions}>
           <Pressable
             onPress={() => {
@@ -358,16 +441,41 @@ export default function PaymentCyclesScreen() {
               setGradeStartDate(null); setGradeEndDate(null);
               setShowGradeModal(true);
             }}
-            style={[styles.addBtn, { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.full, borderWidth: 1, borderColor: theme.colors.primary }]}
+            style={[
+              styles.headerActionPill,
+              {
+                backgroundColor: theme.colors.surface,
+                borderRadius: theme.borderRadius.full,
+                borderWidth: 1,
+                borderColor: theme.colors.primary,
+              },
+            ]}
           >
             <Ionicons name="school-outline" size={18} color={theme.colors.primary} />
+            <ThemedText
+              variant="button"
+              color={theme.colors.primary}
+              numberOfLines={1}
+              style={styles.headerActionText}
+            >
+              {t('cycles.addGrade', 'Add Grade')}
+            </ThemedText>
           </Pressable>
           {selectedGradeId && (
             <Pressable
               onPress={openAddCycle}
-              style={[styles.addBtn, { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.full }]}
+              style={[
+                styles.headerActionPill,
+                {
+                  backgroundColor: theme.colors.primary,
+                  borderRadius: theme.borderRadius.full,
+                },
+              ]}
             >
-              <Ionicons name="add" size={24} color="#fff" />
+              <Ionicons name="add" size={18} color="#fff" />
+              <ThemedText variant="button" color="#fff" numberOfLines={1} style={styles.headerActionText}>
+                {t('cycles.addCycle', 'Add Plan')}
+              </ThemedText>
             </Pressable>
           )}
         </View>
@@ -422,25 +530,33 @@ export default function PaymentCyclesScreen() {
       {/* Grade Info Bar */}
       {activeGrade && (
         <View style={[styles.gradeInfoBar, { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.md }]}>
-          <View style={styles.gradeInfoItem}>
-            <ThemedText variant="caption" color={theme.colors.textTertiary}>{t('cycles.fee', 'Fee')}</ThemedText>
-            <ThemedText variant="body" color={theme.colors.primary} style={{ fontWeight: '700' }}>
-              {formatCurrency(activeGrade.schoolGradeFee)}
-            </ThemedText>
+          <View style={styles.gradeInfoTopRow}>
+            <View style={styles.gradeInfoItem}>
+              <ThemedText variant="caption" color={theme.colors.textTertiary}>{t('cycles.fee', 'Fee')}</ThemedText>
+              <ThemedText variant="body" color={theme.colors.primary} style={{ fontWeight: '700' }} numberOfLines={1}>
+                {formatCurrency(activeGrade.schoolGradeFee)}
+              </ThemedText>
+            </View>
+            <View style={[styles.gradeInfoDivider, { backgroundColor: theme.colors.border }]} />
+            <View style={styles.gradeInfoItem}>
+              <ThemedText variant="caption" color={theme.colors.textTertiary}>{t('cycles.plans', 'Plans')}</ThemedText>
+              <ThemedText variant="body" color={theme.colors.text} style={{ fontWeight: '600' }}>
+                {cycles.length}
+              </ThemedText>
+            </View>
           </View>
-          <View style={[styles.gradeInfoDivider, { backgroundColor: theme.colors.border }]} />
-          <View style={styles.gradeInfoItem}>
-            <ThemedText variant="caption" color={theme.colors.textTertiary}>{t('cycles.term', 'Term')}</ThemedText>
-            <ThemedText variant="caption" color={theme.colors.text}>
-              {formatDate(activeGrade.termStartDate)} — {formatDate(activeGrade.termEndDate)}
-            </ThemedText>
-          </View>
-          <View style={[styles.gradeInfoDivider, { backgroundColor: theme.colors.border }]} />
-          <View style={styles.gradeInfoItem}>
-            <ThemedText variant="caption" color={theme.colors.textTertiary}>{t('cycles.plans', 'Plans')}</ThemedText>
-            <ThemedText variant="body" color={theme.colors.text} style={{ fontWeight: '600' }}>
-              {cycles.length}
-            </ThemedText>
+          <View style={[styles.gradePeriodRow, { borderTopColor: theme.colors.border }]}>
+            <View style={[styles.gradePeriodIcon, { backgroundColor: theme.colors.primary + '12', borderRadius: theme.borderRadius.full }]}>
+              <Ionicons name="calendar-outline" size={16} color={theme.colors.primary} />
+            </View>
+            <View style={styles.gradePeriodTextWrap}>
+              <ThemedText variant="caption" color={theme.colors.textTertiary} style={styles.gradePeriodLabel}>
+                {t('cycles.term', 'Term')}
+              </ThemedText>
+              <ThemedText variant="bodySmall" color={theme.colors.text} numberOfLines={1} style={styles.gradePeriodText}>
+                {formatDate(activeGrade.termStartDate)} - {formatDate(activeGrade.termEndDate)}
+              </ThemedText>
+            </View>
           </View>
         </View>
       )}
@@ -675,76 +791,181 @@ export default function PaymentCyclesScreen() {
 
       {/* ─── Add Cycle Modal ─────────────────────────────────── */}
       <Modal visible={showCycleModal} animationType="fade" transparent onRequestClose={() => setShowCycleModal(false)}>
-        <Pressable style={styles.modalOverlay} onPress={() => setShowCycleModal(false)}>
-          <Pressable style={[styles.modalContent, { backgroundColor: theme.colors.card, borderRadius: theme.borderRadius.lg }]} onPress={() => { }}>
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <ThemedText variant="subtitle" style={styles.modalTitle}>
-                {t('cycles.addCycle', 'Add Payment Plan')}
-              </ThemedText>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.sheetKeyboard}
+        >
+          <Pressable style={styles.sheetBackdrop} onPress={() => setShowCycleModal(false)} />
+          <View
+            style={[
+              styles.planSheet,
+              {
+                backgroundColor: theme.colors.card,
+                borderTopLeftRadius: theme.borderRadius.xl,
+                borderTopRightRadius: theme.borderRadius.xl,
+              },
+            ]}
+          >
+            <View style={[styles.sheetHandle, { backgroundColor: theme.colors.border }]} />
+            <View style={styles.planSheetHeader}>
+              <View style={[styles.planHeaderIcon, { backgroundColor: theme.colors.primary + '15', borderRadius: theme.borderRadius.lg }]}>
+                <Ionicons name="layers-outline" size={22} color={theme.colors.primary} />
+              </View>
+              <View style={styles.planHeaderCopy}>
+                <ThemedText variant="h2" numberOfLines={1}>
+                  {t('cycles.addCycle', 'Add Plan')}
+                </ThemedText>
+                <ThemedText variant="caption" color={theme.colors.textSecondary} numberOfLines={2}>
+                  {t('cycles.planSetupDesc', 'Configure how families will pay this class fee.')}
+                </ThemedText>
+              </View>
+              <Pressable
+                onPress={() => setShowCycleModal(false)}
+                style={[styles.sheetCloseBtn, { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.full }]}
+              >
+                <Ionicons name="close" size={20} color={theme.colors.textSecondary} />
+              </Pressable>
+            </View>
 
-              <ThemedInput
-                label={t('cycles.cycleName', 'Plan Name')}
-                value={cycleName}
-                onChangeText={setCycleName}
-                placeholder={t('cycles.cycleNamePlaceholder', 'e.g. Monthly Payment')}
-              />
-              <ThemedInput
-                label={t('cycles.cycleDesc', 'Description (optional)')}
-                value={cycleDesc}
-                onChangeText={setCycleDesc}
-                placeholder={t('cycles.cycleDescPlaceholder', 'Brief description...')}
-              />
-
-              {/* Cycle Type Selector */}
-              <ThemedText variant="bodySmall" style={styles.label}>
-                {t('cycles.cycleType', 'Payment Type')}
-              </ThemedText>
-              <View style={styles.typeGrid}>
-                {CYCLE_TYPES.map((ct) => {
-                  const isActive = cycleType === ct.key;
-                  return (
-                    <Pressable
-                      key={ct.key}
-                      onPress={() => setCycleType(ct.key)}
-                      style={[
-                        styles.typeCard,
-                        {
-                          backgroundColor: isActive ? theme.colors.primary + '15' : theme.colors.surface,
-                          borderColor: isActive ? theme.colors.primary : theme.colors.border,
-                          borderRadius: theme.borderRadius.md,
-                        },
-                      ]}
-                    >
-                      <Ionicons
-                        name={ct.icon as any}
-                        size={20}
-                        color={isActive ? theme.colors.primary : theme.colors.textTertiary}
-                      />
-                      <ThemedText
-                        variant="caption"
-                        color={isActive ? theme.colors.primary : theme.colors.text}
-                        style={{ fontWeight: isActive ? '700' : '400', marginTop: 4 }}
-                      >
-                        {t(`cycles.type${ct.key}`, ct.key)}
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.planSheetScroll}>
+              {activeGrade && (
+                <View
+                  style={[
+                    styles.selectedGradeCard,
+                    {
+                      backgroundColor: theme.colors.primary + '10',
+                      borderColor: theme.colors.primary + '25',
+                      borderRadius: theme.borderRadius.lg,
+                    },
+                  ]}
+                >
+                  <View style={styles.selectedGradeHeader}>
+                    <ThemedText variant="caption" color={theme.colors.primary} style={styles.sectionEyebrow}>
+                      {t('cycles.selectedGrade', 'Selected class')}
+                    </ThemedText>
+                    <ThemedText variant="subtitle" numberOfLines={1}>
+                      {activeGrade.schoolGradeName}
+                    </ThemedText>
+                  </View>
+                  <View style={styles.selectedGradeStats}>
+                    <View style={styles.selectedGradeStat}>
+                      <ThemedText variant="caption" color={theme.colors.textTertiary}>
+                        {t('cycles.annualFee', 'Annual fee')}
                       </ThemedText>
-                      {ct.count !== null && (
-                        <ThemedText variant="caption" color={theme.colors.textTertiary} style={{ fontSize: 10 }}>
-                          {ct.count}x
-                        </ThemedText>
-                      )}
-                    </Pressable>
-                  );
-                })}
+                      <ThemedText variant="body" color={theme.colors.primary} style={styles.statStrong}>
+                        {formatCurrency(activeGrade.schoolGradeFee)}
+                      </ThemedText>
+                    </View>
+                    <View style={[styles.selectedGradeDivider, { backgroundColor: theme.colors.primary + '25' }]} />
+                    <View style={styles.selectedGradeStatWide}>
+                      <ThemedText variant="caption" color={theme.colors.textTertiary}>
+                        {t('cycles.term', 'Term')}
+                      </ThemedText>
+                      <ThemedText variant="caption" color={theme.colors.text} numberOfLines={1}>
+                        {formatDate(activeGrade.termStartDate)} - {formatDate(activeGrade.termEndDate)}
+                      </ThemedText>
+                    </View>
+                  </View>
+                </View>
+              )}
+
+              <View style={styles.formSection}>
+                <View style={styles.formSectionTitleRow}>
+                  <Ionicons name="create-outline" size={18} color={theme.colors.primary} />
+                  <ThemedText variant="subtitle">{t('cycles.planDetails', 'Plan details')}</ThemedText>
+                </View>
+                <ThemedInput
+                  label={t('cycles.cycleName', 'Plan Name')}
+                  value={cycleName}
+                  onChangeText={setCycleName}
+                  placeholder={t('cycles.cycleNamePlaceholder', 'e.g. Monthly Payment')}
+                />
+                <ThemedInput
+                  label={t('cycles.cycleDesc', 'Description (optional)')}
+                  value={cycleDesc}
+                  onChangeText={setCycleDesc}
+                  placeholder={t('cycles.cycleDescPlaceholder', 'Brief description...')}
+                />
               </View>
 
-              {/* Custom Fields */}
+              <View style={styles.formSection}>
+                <View style={styles.formSectionTitleRow}>
+                  <Ionicons name="repeat-outline" size={18} color={theme.colors.primary} />
+                  <ThemedText variant="subtitle">{t('cycles.paymentRhythm', 'Payment rhythm')}</ThemedText>
+                </View>
+                <View style={styles.modernTypeGrid}>
+                  {CYCLE_TYPES.map((ct) => {
+                    const isActive = cycleType === ct.key;
+                    return (
+                      <Pressable
+                        key={ct.key}
+                        onPress={() => setCycleType(ct.key)}
+                        style={[
+                          styles.modernTypeCard,
+                          {
+                            backgroundColor: isActive ? theme.colors.primary : theme.colors.surface,
+                            borderColor: isActive ? theme.colors.primary : theme.colors.border,
+                            borderRadius: theme.borderRadius.lg,
+                          },
+                        ]}
+                      >
+                        <View
+                          style={[
+                            styles.modernTypeIcon,
+                            {
+                              backgroundColor: isActive ? 'rgba(255,255,255,0.16)' : theme.colors.primary + '12',
+                              borderRadius: theme.borderRadius.md,
+                            },
+                          ]}
+                        >
+                          <Ionicons
+                            name={ct.icon as any}
+                            size={19}
+                            color={isActive ? '#fff' : theme.colors.primary}
+                          />
+                        </View>
+                        <View style={styles.modernTypeCopy}>
+                          <ThemedText
+                            variant="bodySmall"
+                            color={isActive ? '#fff' : theme.colors.text}
+                            numberOfLines={1}
+                            style={styles.modernTypeLabel}
+                          >
+                            {t(`cycles.type${ct.key}`, ct.key)}
+                          </ThemedText>
+                          <ThemedText
+                            variant="caption"
+                            color={isActive ? 'rgba(255,255,255,0.72)' : theme.colors.textTertiary}
+                            numberOfLines={1}
+                          >
+                            {ct.count !== null
+                              ? `${ct.count} ${t('cycles.installments', 'installments')}`
+                              : t('cycles.customSchedule', 'Custom schedule')}
+                          </ThemedText>
+                        </View>
+                        {isActive && <Ionicons name="checkmark-circle" size={18} color="#fff" />}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+
               {cycleType === 'Custom' && (
-                <View style={styles.customSection}>
+                <View
+                  style={[
+                    styles.customPanel,
+                    {
+                      backgroundColor: theme.colors.surface,
+                      borderColor: theme.colors.border,
+                      borderRadius: theme.borderRadius.lg,
+                    },
+                  ]}
+                >
                   <ThemedText variant="bodySmall" style={styles.label}>
                     {t('cycles.customInterval', 'Interval')}
                   </ThemedText>
                   <View style={styles.customRow}>
-                    <View style={{ flex: 1 }}>
+                    <View style={styles.customIntervalInput}>
                       <ThemedInput
                         label={t('cycles.every', 'Every')}
                         value={intervalCount}
@@ -753,7 +974,7 @@ export default function PaymentCyclesScreen() {
                         keyboardType="numeric"
                       />
                     </View>
-                    <View style={{ flex: 1.5 }}>
+                    <View style={styles.customUnitColumn}>
                       <ThemedText variant="caption" color={theme.colors.textTertiary} style={{ marginBottom: 6 }}>
                         {t('cycles.unit', 'Unit')}
                       </ThemedText>
@@ -767,7 +988,7 @@ export default function PaymentCyclesScreen() {
                               style={[
                                 styles.unitChip,
                                 {
-                                  backgroundColor: isActive ? theme.colors.primary : theme.colors.surface,
+                                  backgroundColor: isActive ? theme.colors.primary : theme.colors.card,
                                   borderColor: isActive ? theme.colors.primary : theme.colors.border,
                                   borderRadius: theme.borderRadius.sm,
                                 },
@@ -787,7 +1008,6 @@ export default function PaymentCyclesScreen() {
                     </View>
                   </View>
 
-                  {/* Custom Amounts */}
                   <ThemedInput
                     label={t('cycles.customAmounts', 'Custom Amounts (optional, comma-separated)')}
                     value={customAmounts}
@@ -797,56 +1017,85 @@ export default function PaymentCyclesScreen() {
                 </View>
               )}
 
-              {/* Preview */}
               {expectedCount > 0 && activeGrade && (
-                <View style={[styles.previewBox, { backgroundColor: theme.colors.primaryLight + '10', borderRadius: theme.borderRadius.md, borderColor: theme.colors.primary + '30' }]}>
-                  <View style={styles.previewRow}>
-                    <ThemedText variant="caption" color={theme.colors.textSecondary}>
-                      {t('cycles.installments', 'Installments')}
-                    </ThemedText>
-                    <ThemedText variant="body" color={theme.colors.primary} style={{ fontWeight: '700' }}>
-                      {expectedCount}
-                    </ThemedText>
+                <View
+                  style={[
+                    styles.previewBoxModern,
+                    {
+                      backgroundColor: theme.colors.surface,
+                      borderRadius: theme.borderRadius.lg,
+                      borderColor: theme.colors.border,
+                    },
+                  ]}
+                >
+                  <View style={styles.previewHeaderModern}>
+                    <View style={[styles.previewIcon, { backgroundColor: theme.colors.successLight, borderRadius: theme.borderRadius.md }]}>
+                      <Ionicons name={selectedCycleConfig.icon as any} size={18} color={theme.colors.success} />
+                    </View>
+                    <View style={styles.previewTitleWrap}>
+                      <ThemedText variant="subtitle">{t('cycles.planPreview', 'Plan preview')}</ThemedText>
+                      <ThemedText variant="caption" color={theme.colors.textSecondary} numberOfLines={1}>
+                        {selectedCycleLabel}
+                      </ThemedText>
+                    </View>
                   </View>
-                  <View style={styles.previewRow}>
-                    <ThemedText variant="caption" color={theme.colors.textSecondary}>
-                      {t('cycles.perInstallment', 'Per installment')}
-                    </ThemedText>
-                    <ThemedText variant="body" color={theme.colors.primary} style={{ fontWeight: '700' }}>
-                      ~{formatCurrency(perInstallment)}
-                    </ThemedText>
+                  <View style={styles.previewMetrics}>
+                    <View style={[styles.previewMetricCard, { backgroundColor: theme.colors.primary + '10', borderRadius: theme.borderRadius.md }]}>
+                      <ThemedText variant="caption" color={theme.colors.textTertiary}>
+                        {t('cycles.installments', 'Installments')}
+                      </ThemedText>
+                      <ThemedText variant="h2" color={theme.colors.primary}>
+                        {expectedCount}
+                      </ThemedText>
+                    </View>
+                    <View style={[styles.previewMetricCard, { backgroundColor: theme.colors.primary + '10', borderRadius: theme.borderRadius.md }]}>
+                      <ThemedText variant="caption" color={theme.colors.textTertiary}>
+                        {t('cycles.perInstallment', 'Per installment')}
+                      </ThemedText>
+                      <ThemedText variant="body" color={theme.colors.primary} numberOfLines={1} style={styles.statStrong}>
+                        ~{formatCurrency(perInstallment)}
+                      </ThemedText>
+                    </View>
                   </View>
-                  <View style={styles.previewRow}>
-                    <ThemedText variant="caption" color={theme.colors.textSecondary}>
+                  <View style={[styles.previewTotalRow, { borderTopColor: theme.colors.border }]}>
+                    <ThemedText variant="bodySmall" color={theme.colors.textSecondary}>
                       {t('cycles.total', 'Total')}
                     </ThemedText>
-                    <ThemedText variant="body" color={theme.colors.text} style={{ fontWeight: '600' }}>
+                    <ThemedText variant="subtitle" color={theme.colors.text}>
                       {formatCurrency(activeGrade.schoolGradeFee)}
                     </ThemedText>
                   </View>
                 </View>
               )}
-
-              <View style={styles.modalActions}>
-                <ThemedButton
-                  title={t('common.cancel')}
-                  variant="ghost"
-                  size="md"
-                  onPress={() => setShowCycleModal(false)}
-                  style={styles.modalBtn}
-                />
-                <ThemedButton
-                  title={isAddingCycle ? t('common.loading') : t('common.save')}
-                  variant="primary"
-                  size="md"
-                  onPress={handleAddCycle}
-                  disabled={isAddingCycle}
-                  style={styles.modalBtn}
-                />
-              </View>
             </ScrollView>
-          </Pressable>
-        </Pressable>
+
+            <View
+              style={[
+                styles.sheetActions,
+                {
+                  borderTopColor: theme.colors.border,
+                  paddingBottom: Math.max(insets.bottom + 12, 20),
+                },
+              ]}
+            >
+              <ThemedButton
+                title={t('common.cancel')}
+                variant="secondary"
+                size="lg"
+                onPress={() => setShowCycleModal(false)}
+                style={styles.sheetActionBtn}
+              />
+              <ThemedButton
+                title={isAddingCycle ? t('common.loading') : t('common.save')}
+                variant="primary"
+                size="lg"
+                onPress={handleAddCycle}
+                disabled={isAddingCycle}
+                style={styles.sheetActionBtn}
+              />
+            </View>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </ScreenContainer>
   );
@@ -854,22 +1103,29 @@ export default function PaymentCyclesScreen() {
 
 const styles = StyleSheet.create({
   headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    gap: 12,
     paddingHorizontal: 16,
     marginTop: 8,
-    marginBottom: 8,
+    marginBottom: 12,
+  },
+  headerTitle: {
+    flexShrink: 1,
   },
   headerActions: {
-    flexDirection: 'row',
     gap: 8,
   },
-  addBtn: {
-    width: 40,
+  headerActionPill: {
+    width: '100%',
     height: 40,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
+  },
+  headerActionText: {
+    flexShrink: 1,
+    fontSize: 12,
   },
   gradeChipWrapper: {
     height: 56,
@@ -887,10 +1143,14 @@ const styles = StyleSheet.create({
     minWidth: 80,
   },
   gradeInfoBar: {
-    flexDirection: 'row',
     marginHorizontal: 16,
     marginBottom: 12,
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 10,
+  },
+  gradeInfoTopRow: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
   gradeInfoItem: {
@@ -900,6 +1160,33 @@ const styles = StyleSheet.create({
   gradeInfoDivider: {
     width: 1,
     height: 28,
+  },
+  gradePeriodRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    marginTop: 10,
+    paddingTop: 10,
+    gap: 10,
+  },
+  gradePeriodIcon: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gradePeriodTextWrap: {
+    flex: 1,
+    minWidth: 0,
+  },
+  gradePeriodLabel: {
+    fontSize: 10,
+    lineHeight: 13,
+  },
+  gradePeriodText: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '600',
   },
   list: {
     paddingHorizontal: 16,
@@ -929,17 +1216,46 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 4,
   },
+  cycleMetaText: {
+    flex: 1,
+    minWidth: 0,
+  },
   typeBadge: {
     paddingHorizontal: 8,
     paddingVertical: 2,
+  },
+  cycleInsightGrid: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 12,
+  },
+  cycleInsight: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minHeight: 64,
+    justifyContent: 'center',
+  },
+  cycleInsightValue: {
+    fontWeight: '700',
+    marginTop: 2,
   },
   cycleFeeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderTopWidth: 1,
-    marginTop: 10,
-    paddingTop: 10,
+    marginTop: 12,
+    paddingTop: 12,
+    gap: 12,
+  },
+  cycleDateInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+  cycleTotalInfo: {
+    flexShrink: 0,
+    alignItems: 'flex-end',
   },
   installmentPreview: {
     flexDirection: 'row',
@@ -975,6 +1291,182 @@ const styles = StyleSheet.create({
   },
   modalBtn: {
     minWidth: 100,
+  },
+  sheetKeyboard: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  sheetBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(15, 23, 42, 0.48)',
+  },
+  planSheet: {
+    maxHeight: '92%',
+    paddingTop: 8,
+    overflow: 'hidden',
+  },
+  sheetHandle: {
+    width: 44,
+    height: 4,
+    borderRadius: 999,
+    alignSelf: 'center',
+    marginBottom: 12,
+  },
+  planSheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    gap: 12,
+  },
+  planHeaderIcon: {
+    width: 46,
+    height: 46,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  planHeaderCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  sheetCloseBtn: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  planSheetScroll: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  selectedGradeCard: {
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 18,
+  },
+  selectedGradeHeader: {
+    marginBottom: 12,
+  },
+  selectedGradeStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  selectedGradeStat: {
+    flex: 0.95,
+  },
+  selectedGradeStatWide: {
+    flex: 1.35,
+    minWidth: 0,
+  },
+  selectedGradeDivider: {
+    width: 1,
+    height: 34,
+  },
+  sectionEyebrow: {
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0,
+    marginBottom: 2,
+  },
+  statStrong: {
+    fontWeight: '700',
+  },
+  formSection: {
+    marginBottom: 18,
+  },
+  formSectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  modernTypeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  modernTypeCard: {
+    width: '48%',
+    minHeight: 78,
+    borderWidth: 1,
+    padding: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+  },
+  modernTypeIcon: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modernTypeCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  modernTypeLabel: {
+    fontWeight: '700',
+  },
+  customPanel: {
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 18,
+  },
+  customIntervalInput: {
+    flex: 1,
+  },
+  customUnitColumn: {
+    flex: 1.55,
+  },
+  previewBoxModern: {
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 8,
+  },
+  previewHeaderModern: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 14,
+  },
+  previewIcon: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  previewTitleWrap: {
+    flex: 1,
+    minWidth: 0,
+  },
+  previewMetrics: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  previewMetricCard: {
+    flex: 1,
+    padding: 12,
+    minHeight: 76,
+    justifyContent: 'center',
+  },
+  previewTotalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    marginTop: 12,
+    paddingTop: 12,
+  },
+  sheetActions: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    borderTopWidth: 1,
+  },
+  sheetActionBtn: {
+    flex: 1,
   },
   label: {
     marginBottom: 8,

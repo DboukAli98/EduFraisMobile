@@ -1,11 +1,14 @@
+import { useEffect } from 'react';
 import { Tabs } from 'expo-router';
 import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { useAppSelector } from '../../src/store/store';
+import { useAppDispatch, useAppSelector } from '../../src/store/store';
 import { AnimatedTabBar, ThemedText } from '../../src/components';
 import { useTheme } from '../../src/theme';
 import { useOneSignalRegistration } from '../../src/hooks';
+import { useGetNotificationsQuery } from '../../src/services/api/apiSlice';
+import { setNotifications } from '../../src/store/slices/notificationSlice';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -49,16 +52,34 @@ const badgeStyles = StyleSheet.create({
 });
 
 export default function AppLayout() {
-  const role = useAppSelector((state) => state.auth.user?.role);
+  const dispatch = useAppDispatch();
+  const user = useAppSelector((state) => state.auth.user);
+  const role = user?.role;
   const unreadCount = useAppSelector((state) => state.notifications.unreadCount);
   const { theme } = useTheme();
   const { t } = useTranslation();
+  const notificationsHiddenFromTabs = role === 'parent' || role === 'agent' || role === 'director';
+  const { data: notificationsData } = useGetNotificationsQuery(
+    { userId: user?.id ?? '', pageNumber: 1, pageSize: 50 },
+    {
+      skip: !user?.id,
+      pollingInterval: 30000,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+    },
+  );
 
   // Initialise OneSignal and register the device's player id with the
   // backend whenever a user is authenticated. This is the only push
   // channel — both background and foreground notifications go through
   // OneSignal.
   useOneSignalRegistration();
+
+  useEffect(() => {
+    if (notificationsData?.data) {
+      dispatch(setNotifications(notificationsData.data));
+    }
+  }, [dispatch, notificationsData?.data]);
 
   return (
     <Tabs
@@ -185,6 +206,7 @@ export default function AppLayout() {
           tabBarIcon: ({ color, size }) => (
             <NotificationTabIcon color={color} size={size} badgeCount={unreadCount} />
           ),
+          href: notificationsHiddenFromTabs ? null : undefined,
         }}
       />
       <Tabs.Screen

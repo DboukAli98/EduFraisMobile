@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -38,6 +38,7 @@ export default function AgentDashboard() {
   const { t } = useTranslation();
   const router = useRouter();
   const user = useAppSelector((state) => state.auth.user);
+  const unreadCount = useAppSelector((state) => state.notifications.unreadCount);
   const agentId = parseInt(user?.entityUserId || '0');
 
   const { data: commissionsData, isLoading: loadingCommissions } = useGetMyCommissionsQuery({ pageNumber: 1, pageSize: 50 });
@@ -74,11 +75,33 @@ export default function AgentDashboard() {
               {user?.name || ''}
             </ThemedText>
           </View>
-          <Avatar
-            firstName={firstName}
-            lastName={lastName}
-            size="lg"
-          />
+          <View style={styles.headerActions}>
+            <Pressable
+              onPress={() => router.push('/(app)/notifications')}
+              style={[
+                styles.headerAction,
+                {
+                  backgroundColor: theme.colors.surface,
+                  borderRadius: theme.borderRadius.full,
+                },
+              ]}
+            >
+              <Ionicons name="notifications-outline" size={22} color={theme.colors.text} />
+              {unreadCount > 0 ? (
+                <View
+                  style={[
+                    styles.notificationDot,
+                    { backgroundColor: theme.colors.error, borderColor: theme.colors.surface },
+                  ]}
+                />
+              ) : null}
+            </Pressable>
+            <Avatar
+              firstName={firstName}
+              lastName={lastName}
+              size="lg"
+            />
+          </View>
         </View>
       </AnimatedSection>
 
@@ -284,6 +307,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
     marginBottom: 24,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  headerAction: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notificationDot: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1.5,
   },
   summaryGradient: {
     borderRadius: 20,
