@@ -309,6 +309,25 @@ export default function AppLayout() {
         name="director-child-detail"
         options={{ href: null }}
       />
+      {/* Loyalty (parents + agents). Hidden from the tab bar — entered
+          via a quick-action tile on each role's home screen, or by
+          deep link. */}
+      <Tabs.Screen
+        name="loyalty"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="loyalty-rewards"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="loyalty-ledger"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="loyalty-redemptions"
+        options={{ href: null }}
+      />
     </Tabs>
   );
 }

@@ -669,6 +669,69 @@
     "confirmPurchaseMessage": "Buy {{quantity}} item(s) for {{amount}} via Airtel Money?",
     "confirmPurchase": "Buy"
   },
+  "loyalty": {
+    "title": "Loyalty program",
+    "balance": "Balance",
+    "lifetimeEarned": "Lifetime earned",
+    "lifetimeRedeemed": "Lifetime redeemed",
+    "minRedeem": "Minimum redeem",
+    "welcomeBonus": "Welcome bonus",
+    "rewards": "Rewards",
+    "ledger": "Points history",
+    "redemptions": "My redemptions",
+    "rules": "How to earn",
+    "notEnrolled": "Make your first payment to join the loyalty program.",
+    "unavailable": {
+      "notYetAvailable": "Not yet available",
+      "expired": "Reward expired",
+      "outOfStock": "Out of stock",
+      "memberLimit": "Per-member limit reached",
+      "insufficientPoints": "Insufficient points"
+    },
+    "reward": {
+      "redeem": "Redeem",
+      "value": "Value",
+      "unlimitedStock": "Unlimited stock",
+      "stockRemaining": "{{count}} in stock",
+      "confirmTitle": "Confirm redemption",
+      "confirmMessage": "Redeem {{points}} points for \"{{name}}\"?",
+      "confirmCta": "Redeem",
+      "successTitle": "Redemption requested",
+      "successApproved": "Reward approved. The director will hand it over to you.",
+      "successPending": "Request sent to the director. You'll be notified once it's reviewed.",
+      "errorTitle": "Couldn't redeem"
+    },
+    "entry": {
+      "earn": "Earn",
+      "manualCredit": "Credit",
+      "redeem": "Redeem",
+      "manualDebit": "Debit",
+      "reverse": "Reverse"
+    },
+    "redemption": {
+      "status": {
+        "Pending": "Pending",
+        "Approved": "Approved",
+        "Rejected": "Rejected",
+        "Fulfilled": "Fulfilled",
+        "Cancelled": "Cancelled"
+      },
+      "cancel": "Cancel request",
+      "cancelConfirmTitle": "Cancel this redemption?",
+      "cancelConfirmMessage": "Your points will be restored.",
+      "cancelCta": "Confirm cancellation",
+      "rejectedReason": "Rejection reason"
+    },
+    "rule": {
+      "earnTemplate": "+{{points}} {{label}}",
+      "perPayment": "per payment",
+      "perCollection": "per collection",
+      "minimumAmount": "Min. {{amount}}",
+      "onlyOnTime": "On-time payment",
+      "onlyFullPayment": "Full payment",
+      "validUntil": "Valid until {{date}}"
+    }
+  },
   "childDetail": {
     "title": "Child Details",
     "notFound": "Child not found",
@@ -1068,6 +1131,10 @@
         "ParentContact": "Contacts",
         "Other": "Other"
       }
+    },
+    "loyalty": {
+      "thisWeek": "This week",
+      "noRules": "No earning rules right now. Once your director sets one, it will appear here."
     }
   }
 }

@@ -154,6 +154,12 @@ import type {
   AgentCollectionSummary,
   PaymentMethodBreakdown,
   ReportPeriod,
+  MyLoyaltySummaryDto,
+  LoyaltyLedgerEntryDto,
+  MyLoyaltyRewardDto,
+  LoyaltyRuleDto,
+  LoyaltyRedemptionDto,
+  RequestLoyaltyRedemptionPayload,
 } from '../../types';
 
 export const apiSlice = createApi({
@@ -163,6 +169,10 @@ export const apiSlice = createApi({
     'Auth', 'Parents', 'Children', 'Schools', 'Payments',
     'Agents', 'Support', 'Notifications', 'Reports', 'Merchandise',
     'Invoices', 'ActivityRequests',
+    // Loyalty: split into three tags so a redemption invalidates the
+    // member's balance + ledger + redemption list, but doesn't blow
+    // away the (mostly static) reward catalog.
+    'Loyalty', 'LoyaltyLedger', 'LoyaltyRewards',
   ],
   endpoints: (builder) => ({
     // ═══════════════════════════════════════════════════════════
@@ -956,6 +966,121 @@ export const apiSlice = createApi({
     >({
       query: () => ({ url: '/common/GetActiveCommissionRates' }),
     }),
+
+    // ═══════════════════════════════════════════════════════════
+    // LOYALTY — self-service ("/me") endpoints
+    // Backend chokepoint: Schools Fees/Controllers/LoyaltyController.cs.
+    // Every endpoint here is gated on the JWT — there is no userId in
+    // the body. The backend asserts FK_UserId == JWT user id on every
+    // call that takes a LoyaltyMemberId.
+    // ═══════════════════════════════════════════════════════════
+
+    /**
+     * Returns every loyalty membership the calling user has across
+     * every school whose program is enabled. Auto-enrolls on first
+     * call — the welcome bonus fires here, NOT on first payment, so
+     * call this on app start (or on the home screen) for parents and
+     * agents.
+     */
+    getMyLoyalty: builder.query<ApiResponse<MyLoyaltySummaryDto[]>, void>({
+      query: () => ({ url: '/loyalty/me' }),
+      providesTags: ['Loyalty'],
+    }),
+
+    getMyLoyaltyLedger: builder.query<
+      PagedResponse<LoyaltyLedgerEntryDto>,
+      { loyaltyMemberId: number; pageNumber?: number; pageSize?: number }
+    >({
+      query: ({ loyaltyMemberId, pageNumber = 1, pageSize = 20 }) => ({
+        url: '/loyalty/me/ledger',
+        params: { LoyaltyMemberId: loyaltyMemberId, PageNumber: pageNumber, PageSize: pageSize },
+      }),
+      providesTags: ['LoyaltyLedger'],
+    }),
+
+    /**
+     * Catalog filtered server-side: validity window, stock,
+     * MaxRedeemPerMember, and (when memberId is passed) the member's
+     * balance vs PointsCost / MinimumRedeemPoints. Each item carries
+     * `isRedeemable` + `unavailableReason` so the UI doesn't need to
+     * re-implement those rules.
+     */
+    getMyLoyaltyRewards: builder.query<
+      ApiResponse<MyLoyaltyRewardDto[]>,
+      { loyaltyProgramId: number; loyaltyMemberId?: number }
+    >({
+      query: ({ loyaltyProgramId, loyaltyMemberId }) => ({
+        url: '/loyalty/me/rewards',
+        params: {
+          LoyaltyProgramId: loyaltyProgramId,
+          ...(loyaltyMemberId ? { LoyaltyMemberId: loyaltyMemberId } : {}),
+        },
+      }),
+      providesTags: ['LoyaltyRewards'],
+    }),
+
+    /**
+     * Read-only earn rules for the caller's member type within the
+     * given program. Useful for the agent screen's "you earn X for
+     * each Y" summary block.
+     */
+    getMyLoyaltyRules: builder.query<
+      ApiResponse<LoyaltyRuleDto[]>,
+      { loyaltyProgramId: number }
+    >({
+      query: ({ loyaltyProgramId }) => ({
+        url: '/loyalty/me/rules',
+        params: { LoyaltyProgramId: loyaltyProgramId },
+      }),
+      providesTags: ['LoyaltyRewards'],
+    }),
+
+    getMyLoyaltyRedemptions: builder.query<
+      PagedResponse<LoyaltyRedemptionDto>,
+      { loyaltyMemberId: number; pageNumber?: number; pageSize?: number }
+    >({
+      query: ({ loyaltyMemberId, pageNumber = 1, pageSize = 20 }) => ({
+        url: '/loyalty/me/redemptions',
+        params: { LoyaltyMemberId: loyaltyMemberId, PageNumber: pageNumber, PageSize: pageSize },
+      }),
+      providesTags: ['LoyaltyLedger'],
+    }),
+
+    /**
+     * Self-service redemption. Backend wraps the points-deduct +
+     * ledger insert + redemption row in one transaction; honors
+     * program.AutoApproveRedemptions && !reward.RequiresDirectorApproval
+     * to flip the initial status to Approved. On success we invalidate
+     * everything that depends on the member's balance.
+     */
+    requestLoyaltyRedemption: builder.mutation<
+      ApiResponse<LoyaltyRedemptionDto>,
+      RequestLoyaltyRedemptionPayload
+    >({
+      query: (payload) => ({
+        url: '/loyalty/me/redeem',
+        method: 'POST',
+        body: {
+          LoyaltyMemberId: payload.loyaltyMemberId,
+          LoyaltyRewardId: payload.loyaltyRewardId,
+          Quantity: payload.quantity ?? 1,
+          RequestNotes: payload.requestNotes,
+        },
+      }),
+      invalidatesTags: ['Loyalty', 'LoyaltyLedger', 'LoyaltyRewards'],
+    }),
+
+    cancelMyLoyaltyRedemption: builder.mutation<
+      ApiResponse<LoyaltyRedemptionDto>,
+      { loyaltyRedemptionId: number }
+    >({
+      query: (payload) => ({
+        url: '/loyalty/me/cancel-redemption',
+        method: 'POST',
+        body: { LoyaltyRedemptionId: payload.loyaltyRedemptionId },
+      }),
+      invalidatesTags: ['Loyalty', 'LoyaltyLedger', 'LoyaltyRewards'],
+    }),
   }),
 });
 
@@ -1083,6 +1208,15 @@ export const {
   // Common
   useAlterModuleStatusMutation,
   useGetActiveCommissionRatesQuery,
+  // Loyalty (self-service)
+  useGetMyLoyaltyQuery,
+  useLazyGetMyLoyaltyQuery,
+  useGetMyLoyaltyLedgerQuery,
+  useGetMyLoyaltyRewardsQuery,
+  useGetMyLoyaltyRulesQuery,
+  useGetMyLoyaltyRedemptionsQuery,
+  useRequestLoyaltyRedemptionMutation,
+  useCancelMyLoyaltyRedemptionMutation,
 } = apiSlice;
 
 // ─── Invoice URL helpers ────────────────────────────────────────

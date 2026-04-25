@@ -19,8 +19,10 @@ import {
 import {
   useGetMyCommissionsQuery,
   useGetMyActivitiesQuery,
+  useGetMyLoyaltyQuery,
 } from '../../services/api/apiSlice';
 import { formatCurrency, formatDateTimeCongo } from '../../utils';
+import { PointsBadge } from '../../components/loyalty';
 
 const AnimatedSection: React.FC<{
   index: number;
@@ -43,6 +45,10 @@ export default function AgentDashboard() {
 
   const { data: commissionsData, isLoading: loadingCommissions } = useGetMyCommissionsQuery({ pageNumber: 1, pageSize: 50 });
   const { data: activitiesData, isLoading: loadingActivities } = useGetMyActivitiesQuery({ pageNumber: 1, pageSize: 20 });
+  // Eager fetch — first call also auto-enrolls the agent and fires
+  // the welcome bonus, so the home screen reflects it immediately.
+  const { data: loyaltyResp } = useGetMyLoyaltyQuery();
+  const loyaltySummary = loyaltyResp?.data?.[0];
 
   const commissions = commissionsData?.data ?? [];
   const activities = Array.isArray(activitiesData?.data) ? activitiesData.data : [];
@@ -195,6 +201,45 @@ export default function AgentDashboard() {
           </View>
         )}
       </AnimatedSection>
+
+      {/* Loyalty quick entry — only when the agent is enrolled in
+          their school's program. Commission earnings (real money) live
+          on /commissions, points are non-cashable perks — labeling the
+          tile "Points" keeps the two streams visually separate. */}
+      {loyaltySummary ? (
+        <AnimatedSection index={3}>
+          <Pressable
+            onPress={() => router.push('/(app)/loyalty')}
+            style={[
+              styles.loyaltyTile,
+              {
+                backgroundColor: theme.colors.surface,
+                borderRadius: theme.borderRadius.lg,
+                ...theme.shadows.sm,
+              },
+            ]}
+          >
+            <View style={[styles.loyaltyIcon, { backgroundColor: theme.colors.primary + '15' }]}>
+              <Ionicons name="star" size={20} color={theme.colors.primary} />
+            </View>
+            <View style={styles.loyaltyText}>
+              <ThemedText variant="bodySmall" style={{ fontWeight: '600' }}>
+                {t('loyalty.title', 'Loyalty program')}
+              </ThemedText>
+              <ThemedText variant="caption" color={theme.colors.textSecondary} numberOfLines={1}>
+                {loyaltySummary.program.programName}
+              </ThemedText>
+            </View>
+            <PointsBadge
+              points={loyaltySummary.member.currentPointsBalance}
+              pointsLabel={loyaltySummary.program.pointsLabel}
+              size="sm"
+              tone="filled"
+            />
+            <Ionicons name="chevron-forward" size={18} color={theme.colors.textTertiary} />
+          </Pressable>
+        </AnimatedSection>
+      ) : null}
 
       {/* Recent Commissions */}
       <AnimatedSection index={3}>
@@ -349,6 +394,24 @@ const styles = StyleSheet.create({
   },
   sectionSpacing: {
     marginTop: 24,
+  },
+  loyaltyTile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    marginTop: 16,
+  },
+  loyaltyIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loyaltyText: {
+    flex: 1,
+    minWidth: 0,
   },
   portfolioRow: {
     flexDirection: 'row',

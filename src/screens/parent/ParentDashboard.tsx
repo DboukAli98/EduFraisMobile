@@ -21,6 +21,7 @@ import {
   useGetParentInstallmentsQuery,
   useGetParentMonthPaymentFeeQuery,
   useGetRecentPaymentTransactionsQuery,
+  useGetMyLoyaltyQuery,
 } from '../../services/api/apiSlice';
 import { formatCurrency, formatDate } from '../../utils';
 import type { ParentInstallmentDto, RecentPaymentTransactionDto } from '../../types';
@@ -101,6 +102,13 @@ const ParentDashboard: React.FC = () => {
     data: recentTxData,
     isLoading: recentTxLoading,
   } = useGetRecentPaymentTransactionsQuery({ parentId, topCount: 3 }, { skip: !parentId });
+
+  // Loyalty membership lookup. Eager fetch so the welcome bonus fires
+  // on first dashboard view (the backend auto-enrolls inside /me when
+  // an enabled program exists for the parent's school). We only render
+  // the points tile when a real membership exists.
+  const { data: loyaltyResp } = useGetMyLoyaltyQuery();
+  const primaryLoyalty = loyaltyResp?.data?.[0];
 
   const isLoading = installmentsLoading || monthFeeLoading || recentTxLoading;
 
@@ -263,7 +271,19 @@ const ParentDashboard: React.FC = () => {
         <QuickAction icon="wallet-outline" label={t('parent.dashboard.payNow', 'Pay Now')} color={theme.colors.primary} onPress={() => router.push('/(app)/payments')} index={0} />
         <QuickAction icon="time-outline" label={t('parent.dashboard.history', 'History')} color={theme.colors.secondary} onPress={() => router.push('/(app)/payment-history')} index={1} />
         <QuickAction icon="person-add-outline" label={t('parent.dashboard.myAgents', 'My Agents')} color="#8B5CF6" onPress={() => router.push('/(app)/my-agents')} index={2} />
-        <QuickAction icon="help-circle-outline" label={t('parent.dashboard.support', 'Support')} color={theme.colors.accent} onPress={() => router.push('/(app)/support')} index={3} />
+        {primaryLoyalty ? (
+          <QuickAction
+            icon="star-outline"
+            // Show "350 Points" so the parent sees their balance at a
+            // glance — no need to tap through to learn the number.
+            label={`${primaryLoyalty.member.currentPointsBalance} ${primaryLoyalty.program.pointsLabel || t('loyalty.title', 'Points')}`}
+            color="#F59E0B"
+            onPress={() => router.push('/(app)/loyalty')}
+            index={3}
+          />
+        ) : (
+          <QuickAction icon="help-circle-outline" label={t('parent.dashboard.support', 'Support')} color={theme.colors.accent} onPress={() => router.push('/(app)/support')} index={3} />
+        )}
       </Animated.View>
 
       {/* Upcoming Dues */}

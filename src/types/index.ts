@@ -668,3 +668,180 @@ export interface PaymentMethodBreakdown {
 // ─── Status Constants ───────────────────────────────────────────
 export type PaymentStatus = 'Pending' | 'InProgress' | 'Processed' | 'Cancelled' | 'Failed';
 export type ChildApprovalStatus = 'Pending' | 'Approved' | 'Rejected';
+
+// ─── Loyalty ────────────────────────────────────────────────────
+// String unions match the backend enums (serialized as their .ToString()
+// names). The backend self-service envelopes are documented in
+// CLAUDE.md → "Loyalty / Self-service".
+
+export type LoyaltyMemberType = 'Parent' | 'CollectingAgent';
+export type LoyaltyTriggerType =
+  | 'SchoolFeePaymentProcessed'
+  | 'MerchandisePaymentProcessed'
+  | 'AgentCollectionProcessed'
+  | 'ManualEnrollmentBonus'
+  | 'ManualAdjustment';
+export type LoyaltyRulePeriodType = 'None' | 'Daily' | 'Weekly' | 'Monthly' | 'ProgramLifetime';
+export type LoyaltyRewardType = 'Merchandise' | 'SchoolFeeCredit' | 'CustomBenefit';
+export type LoyaltyLedgerEntryType =
+  | 'Earn'
+  | 'Redeem'
+  | 'Reverse'
+  | 'ManualCredit'
+  | 'ManualDebit';
+export type LoyaltyReferenceType = 'PaymentTransaction' | 'Redemption' | 'Rule' | 'Manual';
+export type LoyaltyRedemptionStatus =
+  | 'Pending'
+  | 'Approved'
+  | 'Rejected'
+  | 'Fulfilled'
+  | 'Cancelled';
+
+export interface LoyaltyProgramDto {
+  loyaltyProgramId: number;
+  schoolId: number;
+  programName: string;
+  programDescription?: string | null;
+  pointsLabel: string; // defaults to "Points" — render via this so directors can rebrand
+  welcomeBonusPoints: number;
+  minimumRedeemPoints: number;
+  autoApproveRedemptions: boolean;
+  allowParentParticipation: boolean;
+  allowAgentParticipation: boolean;
+  termsAndConditions?: string | null;
+  startsOn?: string | null;
+  endsOn?: string | null;
+  statusId: number;
+  createdOn?: string;
+  modifiedOn?: string;
+}
+
+export interface LoyaltyMemberDto {
+  loyaltyMemberId: number;
+  loyaltyProgramId: number;
+  schoolId: number;
+  memberType: LoyaltyMemberType;
+  memberEntityId: number; // ParentId or CollectingAgentId — never display
+  userId: string;
+  fullName: string;
+  email?: string | null;
+  phoneNumber?: string | null;
+  currentPointsBalance: number;
+  lifetimePointsEarned: number;
+  lifetimePointsRedeemed: number;
+  lastActivityOn?: string | null;
+  statusId: number;
+  createdOn?: string;
+  modifiedOn?: string;
+}
+
+export interface LoyaltyRuleDto {
+  loyaltyRuleId: number;
+  loyaltyProgramId: number;
+  ruleName: string;
+  ruleDescription?: string | null;
+  memberType: LoyaltyMemberType;
+  triggerType: LoyaltyTriggerType;
+  pointsAwarded: number;
+  minimumAmount?: number | null;
+  requiresOnTimePayment: boolean;
+  requiresFullPayment: boolean;
+  maxAwardsPerMember?: number | null;
+  periodType: LoyaltyRulePeriodType;
+  executionOrder: number;
+  canStackWithOtherRules: boolean;
+  validFrom?: string | null;
+  validTo?: string | null;
+  statusId: number;
+  createdOn?: string;
+  modifiedOn?: string;
+}
+
+export interface LoyaltyRewardDto {
+  loyaltyRewardId: number;
+  loyaltyProgramId: number;
+  rewardName: string;
+  rewardDescription?: string | null;
+  rewardType: LoyaltyRewardType;
+  pointsCost: number;
+  monetaryValue?: number | null;
+  schoolMerchandiseId?: number | null;
+  schoolMerchandiseName?: string | null;
+  stockQuantity?: number | null; // null = unlimited
+  maxRedeemPerMember?: number | null;
+  requiresDirectorApproval: boolean;
+  fulfillmentInstructions?: string | null;
+  validFrom?: string | null;
+  validTo?: string | null;
+  statusId: number;
+  createdOn?: string;
+  modifiedOn?: string;
+}
+
+/**
+ * Reward enriched with member-scoped availability — the /me/rewards
+ * endpoint computes IsRedeemable + UnavailableReason server-side, so the
+ * mobile UI can disable the button without re-implementing the rules.
+ * UnavailableReason values map to i18n keys under loyalty.unavailable.*.
+ */
+export interface MyLoyaltyRewardDto extends LoyaltyRewardDto {
+  memberRedemptionCount: number;
+  isRedeemable: boolean;
+  unavailableReason?: string | null;
+}
+
+export interface LoyaltyLedgerEntryDto {
+  loyaltyPointLedgerId: number;
+  loyaltyMemberId: number;
+  loyaltyRuleId?: number | null;
+  paymentTransactionId?: number | null;
+  loyaltyRedemptionId?: number | null;
+  entryType: LoyaltyLedgerEntryType;
+  referenceType: LoyaltyReferenceType;
+  pointsDelta: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  monetaryAmount?: number | null;
+  description?: string | null;
+  createdByUserId?: string | null;
+  createdOn?: string;
+}
+
+export interface LoyaltyRedemptionDto {
+  loyaltyRedemptionId: number;
+  loyaltyMemberId: number;
+  loyaltyRewardId: number;
+  rewardName: string;        // snapshotted on the row
+  rewardType: string;        // snapshotted ToString of LoyaltyRewardType
+  memberType: LoyaltyMemberType;
+  memberFullName: string;
+  quantity: number;
+  pointsSpent: number;
+  status: LoyaltyRedemptionStatus;
+  requestNotes?: string | null;
+  reviewNotes?: string | null;
+  reviewedByUserId?: string | null;
+  reviewedOn?: string | null;
+  fulfillmentReference?: string | null;
+  fulfilledOn?: string | null;
+  createdOn?: string;
+}
+
+/**
+ * Wire shape of GET /api/loyalty/me — the calling user's memberships
+ * across every school they're enrolled in. Auto-enrollment happens
+ * server-side, so first-time callers always get at least one entry per
+ * eligible school.
+ */
+export interface MyLoyaltySummaryDto {
+  member: LoyaltyMemberDto;
+  program: LoyaltyProgramDto;
+  schoolName: string;
+}
+
+export interface RequestLoyaltyRedemptionPayload {
+  loyaltyMemberId: number;
+  loyaltyRewardId: number;
+  quantity?: number; // default 1
+  requestNotes?: string;
+}

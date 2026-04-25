@@ -669,6 +669,69 @@
     "confirmPurchaseMessage": "Acheter {{quantity}} article(s) pour {{amount}} via Airtel Money ?",
     "confirmPurchase": "Acheter"
   },
+  "loyalty": {
+    "title": "Programme de fidélité",
+    "balance": "Solde",
+    "lifetimeEarned": "Total gagné",
+    "lifetimeRedeemed": "Total échangé",
+    "minRedeem": "Seuil de rachat",
+    "welcomeBonus": "Bonus de bienvenue",
+    "rewards": "Récompenses",
+    "ledger": "Historique des points",
+    "redemptions": "Mes échanges",
+    "rules": "Comment gagner",
+    "notEnrolled": "Effectuez votre premier paiement pour rejoindre le programme de fidélité.",
+    "unavailable": {
+      "notYetAvailable": "Pas encore disponible",
+      "expired": "Récompense expirée",
+      "outOfStock": "Rupture de stock",
+      "memberLimit": "Limite par membre atteinte",
+      "insufficientPoints": "Solde de points insuffisant"
+    },
+    "reward": {
+      "redeem": "Échanger",
+      "value": "Valeur",
+      "unlimitedStock": "Stock illimité",
+      "stockRemaining": "{{count}} en stock",
+      "confirmTitle": "Confirmer l'échange",
+      "confirmMessage": "Échanger {{points}} points contre « {{name}} » ?",
+      "confirmCta": "Échanger",
+      "successTitle": "Échange demandé",
+      "successApproved": "Récompense approuvée. Le directeur vous remettra l'article.",
+      "successPending": "Demande envoyée au directeur. Vous recevrez une notification après validation.",
+      "errorTitle": "Échange impossible"
+    },
+    "entry": {
+      "earn": "Gain",
+      "manualCredit": "Crédit",
+      "redeem": "Échange",
+      "manualDebit": "Débit",
+      "reverse": "Annulation"
+    },
+    "redemption": {
+      "status": {
+        "Pending": "En attente",
+        "Approved": "Approuvé",
+        "Rejected": "Refusé",
+        "Fulfilled": "Remis",
+        "Cancelled": "Annulé"
+      },
+      "cancel": "Annuler la demande",
+      "cancelConfirmTitle": "Annuler cet échange ?",
+      "cancelConfirmMessage": "Vos points vous seront restitués.",
+      "cancelCta": "Confirmer l'annulation",
+      "rejectedReason": "Motif du refus"
+    },
+    "rule": {
+      "earnTemplate": "+{{points}} {{label}}",
+      "perPayment": "à chaque paiement",
+      "perCollection": "à chaque collecte",
+      "minimumAmount": "Min. {{amount}}",
+      "onlyOnTime": "Paiement à temps",
+      "onlyFullPayment": "Paiement complet",
+      "validUntil": "Valable jusqu'au {{date}}"
+    }
+  },
   "childDetail": {
     "title": "Détails de l'enfant",
     "notFound": "Enfant introuvable",
@@ -1068,6 +1131,10 @@
         "ParentContact": "Contacts",
         "Other": "Autre"
       }
+    },
+    "loyalty": {
+      "thisWeek": "Cette semaine",
+      "noRules": "Aucune règle de gain pour le moment. Une fois définie par votre directeur, elle apparaîtra ici."
     }
   }
 }
