@@ -2,6 +2,9 @@
 export const API_BASE_URL =
   "https://edufrais-cnatavfte0fhdfe2.francecentral-01.azurewebsites.net/api";
 
+export const MWANABOT_API_BASE_URL =
+  "https://mwanabot-a4gefcggegdfbwah.canadacentral-01.azurewebsites.net";
+
 // OneSignal app id (must match the AppId in the backend's
 // appsettings.json → OneSignalCredentials, since the backend pushes
 // to this app's player ids).

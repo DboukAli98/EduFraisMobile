@@ -107,23 +107,7 @@ export interface MwanaBotChatMessage {
   text: string;
 }
 
-export interface MwanaBotRequest {
-  messages: MwanaBotChatMessage[];
-}
-
-export interface MwanaBotResponse extends BaseResponse {
-  reply?: string;
-  text?: string;
-  answer?: string;
-  data?:
-    | string
-    | {
-        reply?: string;
-        text?: string;
-        answer?: string;
-        message?: string;
-      };
-}
+export type MwanaBotSource = Record<string, unknown>;
 
 // ─── School ─────────────────────────────────────────────────────
 export interface School {

@@ -60,6 +60,13 @@ const SLIDES: Slide[] = [
     icon: 'card-outline',
     gradientColors: ['#F3797E', '#FB7185'],
   },
+  {
+    key: 'mwanabot',
+    titleKey: 'onboarding.slide4Title',
+    descKey: 'onboarding.slide4Desc',
+    icon: 'chatbubble-ellipses-outline',
+    gradientColors: ['#22C55E', '#3B82F6'],
+  },
 ];
 
 const OnboardingScreen: React.FC = () => {

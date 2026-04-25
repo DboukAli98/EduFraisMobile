@@ -166,8 +166,6 @@ import type {
   LoyaltyRuleDto,
   LoyaltyRedemptionDto,
   RequestLoyaltyRedemptionPayload,
-  MwanaBotRequest,
-  MwanaBotResponse,
 } from "../../types";
 
 export const apiSlice = createApi({
@@ -1418,13 +1416,6 @@ export const apiSlice = createApi({
     }),
 
     // ═══════════════════════════════════════════════════════════
-    // MWANABOT
-    // ═══════════════════════════════════════════════════════════
-    sendMwanaBotMessage: builder.mutation<MwanaBotResponse, MwanaBotRequest>({
-      query: (data) => ({ url: "/chat/mwana-bot", method: "POST", body: data }),
-    }),
-
-    // ═══════════════════════════════════════════════════════════
     // NOTIFICATIONS
     // ═══════════════════════════════════════════════════════════
     getNotifications: builder.query<
@@ -1826,8 +1817,6 @@ export const {
   useGetSupportRequestByIdQuery,
   useAddSupportRequestMutation,
   useUpdateSupportRequestStatusMutation,
-  // MwanaBot
-  useSendMwanaBotMessageMutation,
   // Notifications
   useGetNotificationsQuery,
   useGetNotificationByIdQuery,

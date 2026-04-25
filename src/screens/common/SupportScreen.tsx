@@ -125,6 +125,7 @@ export default function SupportScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<SupportFilter>('all');
   const role = useAppSelector((state) => state.auth.user?.role);
+  const canUseMwanaBot = role === 'parent';
 
   const source = useMemo(() => {
     if (role === 'agent') {
@@ -184,15 +185,17 @@ export default function SupportScreen() {
   return (
     <ScreenContainer>
       <AnimatedSection index={0}>
-        <ThemedButton
-          title="Parler avec MwanaBot"
-          onPress={() => router.push('/(app)/mwana-bot')}
-          variant="secondary"
-          size="md"
-          fullWidth
-          icon={<Ionicons name="chatbubble-ellipses-outline" size={20} color={theme.colors.primary} />}
-          style={styles.mwanaBotBtn}
-        />
+        {canUseMwanaBot && (
+          <ThemedButton
+            title="Parler avec MwanaBot"
+            onPress={() => router.push('/(app)/mwana-bot')}
+            variant="secondary"
+            size="md"
+            fullWidth
+            icon={<Ionicons name="chatbubble-ellipses-outline" size={20} color={theme.colors.primary} />}
+            style={styles.mwanaBotBtn}
+          />
+        )}
         <ThemedButton
           title={t('support.newRequest', 'New Request')}
           onPress={() => router.push('/(app)/support-request')}

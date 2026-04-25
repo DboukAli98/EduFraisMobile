@@ -65,7 +65,7 @@ const ScreenContainer: React.FC<ScreenContainerProps> = ({
       />
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {content}
       </KeyboardAvoidingView>

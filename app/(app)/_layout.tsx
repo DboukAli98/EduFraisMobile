@@ -106,6 +106,7 @@ export default function AppLayout() {
           tabBarIcon: ({ color, size }) => (
             <TabIcon name="chatbubble-ellipses-outline" color={color} size={size} />
           ),
+          href: role === 'director' || role === 'agent' ? null : undefined,
         }}
       />
       <Tabs.Screen

@@ -3,19 +3,24 @@ import {
     ActivityIndicator,
     FlatList,
     Keyboard,
+    Platform,
     Pressable,
     StyleSheet,
     TextInput,
     View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useTheme } from '../../theme';
 import { ScreenContainer, ThemedText } from '../../components';
-import { useSendMwanaBotMessageMutation } from '../../services/api/apiSlice';
-import type { MwanaBotChatMessage, MwanaBotResponse } from '../../types';
+import { useAppSelector } from '../../hooks';
+import { streamMwanaBotMessage, type MwanaBotStreamSubscription } from '../../services/mwanaBot/stream';
+import type { MwanaBotChatMessage, MwanaBotSource } from '../../types';
 
 type ChatMessage = MwanaBotChatMessage & {
     id: string;
+    isTyping?: boolean;
+    sources?: MwanaBotSource[];
 };
 
 const SUGGESTIONS = [
@@ -30,26 +35,18 @@ const createMessage = (role: ChatMessage['role'], text: string): ChatMessage => 
     text,
 });
 
-const getReplyText = (response: MwanaBotResponse): string => {
-    if (typeof response.data === 'string') {
-        return response.data;
-    }
+const createConversationId = () =>
+    `mobile-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
-    return response.data?.reply
-        ?? response.data?.text
-        ?? response.data?.answer
-        ?? response.data?.message
-        ?? response.reply
-        ?? response.text
-        ?? response.answer
-        ?? response.message
-        ?? "MwanaBot n'a pas encore de réponse. Veuillez réessayer.";
-};
+const FRIENDLY_ERROR = 'MwanaBot est momentanément indisponible. Veuillez réessayer dans un instant.';
 
 export default function MwanaBotScreen() {
     const { theme } = useTheme();
+    const tabBarHeight = useBottomTabBarHeight();
     const listRef = useRef<FlatList<ChatMessage>>(null);
-    const [sendMwanaBotMessage, { isLoading: isSending }] = useSendMwanaBotMessageMutation();
+    const user = useAppSelector((state) => state.auth.user);
+    const streamRef = useRef<MwanaBotStreamSubscription | null>(null);
+    const conversationIdRef = useRef(createConversationId());
     const [messages, setMessages] = useState<ChatMessage[]>([
         createMessage(
             'model',
@@ -57,8 +54,13 @@ export default function MwanaBotScreen() {
         ),
     ]);
     const [draft, setDraft] = useState('');
+    const [isStreaming, setIsStreaming] = useState(false);
+    const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
-    const canSend = useMemo(() => draft.trim().length > 0 && !isSending, [draft, isSending]);
+    const canSend = useMemo(() => draft.trim().length > 0 && !isStreaming, [draft, isStreaming]);
+    const composerBottomPadding = isKeyboardVisible
+        ? 10
+        : Math.min(Math.max(tabBarHeight - 28, 36), 52);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -66,40 +68,112 @@ export default function MwanaBotScreen() {
         }, 80);
 
         return () => clearTimeout(timer);
-    }, [messages.length, isSending]);
+    }, [messages.length, isStreaming]);
+
+    useEffect(() => () => {
+        streamRef.current?.close();
+    }, []);
+
+    useEffect(() => {
+        const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+        const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+        const showSubscription = Keyboard.addListener(showEvent, () => setIsKeyboardVisible(true));
+        const hideSubscription = Keyboard.addListener(hideEvent, () => setIsKeyboardVisible(false));
+
+        return () => {
+            showSubscription.remove();
+            hideSubscription.remove();
+        };
+    }, []);
+
+    const updateAssistantMessage = useCallback(
+        (messageId: string, update: (message: ChatMessage) => ChatMessage) => {
+            setMessages((current) => current.map((message) => (
+                message.id === messageId ? update(message) : message
+            )));
+        },
+        [],
+    );
 
     const sendText = useCallback(
-        async (text: string) => {
+        (text: string) => {
             const trimmed = text.trim();
-            if (!trimmed || isSending) {
+            if (!trimmed || isStreaming) {
                 return;
             }
 
             Keyboard.dismiss();
             setDraft('');
+            setIsStreaming(true);
+            streamRef.current?.close();
 
             const userMessage = createMessage('user', trimmed);
-            const nextMessages = [...messages, userMessage];
+            const assistantMessage = { ...createMessage('model', ''), isTyping: true };
+            const nextMessages = [...messages, userMessage, assistantMessage];
             setMessages(nextMessages);
 
-            try {
-                const response = await sendMwanaBotMessage({
-                    messages: nextMessages.map((message) => ({ role: message.role, text: message.text })),
-                }).unwrap();
-                const reply = getReplyText(response);
-                setMessages((current) => [...current, createMessage('model', reply)]);
-            } catch (error) {
-                setMessages((current) => [
-                    ...current,
-                    createMessage('model', 'MwanaBot est momentanément indisponible. Veuillez réessayer dans un instant.'),
-                ]);
-            }
+            streamRef.current = streamMwanaBotMessage({
+                message: trimmed,
+                userId: user?.id ?? 'anonymous-mobile-user',
+                username: user?.name,
+                conversationId: conversationIdRef.current,
+                onStart: (payload) => {
+                    if (payload.conversation_id) {
+                        conversationIdRef.current = payload.conversation_id;
+                    }
+                    updateAssistantMessage(assistantMessage.id, (message) => ({ ...message, isTyping: true }));
+                },
+                onSources: (sources) => {
+                    updateAssistantMessage(assistantMessage.id, (message) => ({ ...message, sources }));
+                },
+                onToken: (content) => {
+                    updateAssistantMessage(assistantMessage.id, (message) => ({
+                        ...message,
+                        text: `${message.text}${content}`,
+                        isTyping: true,
+                    }));
+                },
+                onDone: (payload) => {
+                    if (payload.conversation_id) {
+                        conversationIdRef.current = payload.conversation_id;
+                    }
+                    updateAssistantMessage(assistantMessage.id, (message) => ({
+                        ...message,
+                        text: payload.answer ?? message.text,
+                        isTyping: false,
+                    }));
+                    setIsStreaming(false);
+                    streamRef.current = null;
+                },
+                onError: (errorMessage) => {
+                    updateAssistantMessage(assistantMessage.id, (message) => ({
+                        ...message,
+                        text: errorMessage || FRIENDLY_ERROR,
+                        isTyping: false,
+                    }));
+                    setIsStreaming(false);
+                    streamRef.current = null;
+                },
+            });
         },
-        [isSending, messages, sendMwanaBotMessage],
+        [isStreaming, messages, updateAssistantMessage, user],
     );
 
     const renderMessage = ({ item }: { item: ChatMessage }) => {
         const isUser = item.role === 'user';
+        const isTypingPlaceholder = item.isTyping && !item.text;
+
+        if (isTypingPlaceholder) {
+            return (
+                <View style={[styles.messageRow, styles.botRow, styles.typingPlaceholderRow]}>
+                    <Ionicons name="sparkles-outline" size={17} color={theme.colors.primary} />
+                    <ActivityIndicator size="small" color={theme.colors.primary} />
+                    <ThemedText variant="caption" color={theme.colors.textSecondary} style={styles.typingText}>
+                        MwanaBot écrit...
+                    </ThemedText>
+                </View>
+            );
+        }
 
         return (
             <View style={[styles.messageRow, isUser ? styles.userRow : styles.botRow]}>
@@ -118,13 +192,15 @@ export default function MwanaBotScreen() {
                         },
                     ]}
                 >
-                    <ThemedText
-                        variant="bodySmall"
-                        color={isUser ? '#FFFFFF' : theme.colors.text}
-                        style={styles.messageText}
-                    >
-                        {item.text}
-                    </ThemedText>
+                    {!!item.text && (
+                        <ThemedText
+                            variant="bodySmall"
+                            color={isUser ? '#FFFFFF' : theme.colors.text}
+                            style={styles.messageText}
+                        >
+                            {item.text}
+                        </ThemedText>
+                    )}
                 </View>
             </View>
         );
@@ -151,14 +227,6 @@ export default function MwanaBotScreen() {
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.messagesContent}
                 keyboardShouldPersistTaps="handled"
-                ListFooterComponent={isSending ? (
-                    <View style={styles.typingRow}>
-                        <ActivityIndicator size="small" color={theme.colors.primary} />
-                        <ThemedText variant="caption" color={theme.colors.textSecondary} style={styles.typingText}>
-                            MwanaBot écrit...
-                        </ThemedText>
-                    </View>
-                ) : null}
             />
 
             <View style={styles.suggestionsRow}>
@@ -166,7 +234,7 @@ export default function MwanaBotScreen() {
                     <Pressable
                         key={suggestion}
                         onPress={() => sendText(suggestion)}
-                        disabled={isSending}
+                        disabled={isStreaming}
                         style={[
                             styles.suggestion,
                             {
@@ -174,7 +242,7 @@ export default function MwanaBotScreen() {
                                 borderColor: theme.colors.borderLight,
                                 borderRadius: theme.borderRadius.full,
                             },
-                            isSending && styles.disabled,
+                            isStreaming && styles.disabled,
                         ]}
                     >
                         <ThemedText variant="caption" color={theme.colors.textSecondary} numberOfLines={1}>
@@ -184,7 +252,15 @@ export default function MwanaBotScreen() {
                 ))}
             </View>
 
-            <View style={[styles.composerWrap, { borderTopColor: theme.colors.borderLight }]}>
+            <View
+                style={[
+                    styles.composerWrap,
+                    {
+                        borderTopColor: theme.colors.borderLight,
+                        paddingBottom: composerBottomPadding,
+                    },
+                ]}
+            >
                 <View
                     style={[
                         styles.composer,
@@ -289,15 +365,19 @@ const styles = StyleSheet.create({
     messageText: {
         lineHeight: 20,
     },
-    typingRow: {
+    inlineTypingRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginLeft: 40,
-        marginTop: 2,
-        marginBottom: 8,
+        minHeight: 20,
     },
     typingText: {
         marginLeft: 8,
+        fontWeight: '600',
+    },
+    typingPlaceholderRow: {
+        alignItems: 'center',
+        gap: 8,
+        marginLeft: 2,
     },
     suggestionsRow: {
         flexDirection: 'row',
