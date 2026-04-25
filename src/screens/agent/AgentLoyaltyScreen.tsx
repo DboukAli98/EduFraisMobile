@@ -139,13 +139,13 @@ const AgentLoyaltyScreen: React.FC = () => {
                   title: t('loyalty.reward.successTitle', 'Redemption requested'),
                   message: isApproved
                     ? t(
-                        'loyalty.reward.successApproved',
-                        'Reward approved. The director will hand it over to you.',
-                      )
+                      'loyalty.reward.successApproved',
+                      'Reward approved. The director will hand it over to you.',
+                    )
                     : t(
-                        'loyalty.reward.successPending',
-                        "Request sent to the director. You'll be notified once it's reviewed.",
-                      ),
+                      'loyalty.reward.successPending',
+                      "Request sent to the director. You'll be notified once it's reviewed.",
+                    ),
                   type: 'success',
                 });
               } catch (err: any) {
@@ -211,7 +211,7 @@ const AgentLoyaltyScreen: React.FC = () => {
         {/* Hero */}
         <Animated.View style={heroAnim}>
           <LinearGradient
-            colors={[theme.colors.primary, theme.colors.primaryDark || theme.colors.primary]}
+            colors={theme.colors.gradient.primary}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={[styles.hero, { borderRadius: theme.borderRadius.xl }]}

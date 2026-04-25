@@ -100,6 +100,15 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
+        name="mwana-bot"
+        options={{
+          title: 'MwanaBot',
+          tabBarIcon: ({ color, size }) => (
+            <TabIcon name="chatbubble-ellipses-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="payments"
         options={{
           title: t('payments.title'),

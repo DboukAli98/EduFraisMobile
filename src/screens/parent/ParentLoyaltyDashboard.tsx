@@ -119,7 +119,7 @@ const ParentLoyaltyDashboard: React.FC = () => {
         {/* Hero balance card */}
         <Animated.View style={balanceAnim}>
           <LinearGradient
-            colors={[theme.colors.primary, theme.colors.primaryDark || theme.colors.primary]}
+            colors={theme.colors.gradient.primary}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={[styles.heroCard, { borderRadius: theme.borderRadius.xl }]}

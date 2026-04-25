@@ -1,5 +1,10 @@
 // ─── User & Auth ────────────────────────────────────────────────
-export type UserRole = 'superadmin' | 'director' | 'manager' | 'parent' | 'agent';
+export type UserRole =
+  | "superadmin"
+  | "director"
+  | "manager"
+  | "parent"
+  | "agent";
 
 export interface LoginRequest {
   CountryCode: string;
@@ -39,7 +44,7 @@ export interface ResetPasswordInitRequest {
   CountryCode?: string;
   MobileNumber?: string;
   Email?: string;
-  Channel: 'email' | 'whatsapp';
+  Channel: "email" | "whatsapp";
 }
 
 // Final step: same identifier + the 6-digit OTP the user received,
@@ -92,6 +97,32 @@ export interface PaginationRequest {
   pageNumber?: number;
   pageSize?: number;
   search?: string;
+}
+
+// ─── MwanaBot ───────────────────────────────────────────────────
+export type MwanaBotChatRole = "user" | "model";
+
+export interface MwanaBotChatMessage {
+  role: MwanaBotChatRole;
+  text: string;
+}
+
+export interface MwanaBotRequest {
+  messages: MwanaBotChatMessage[];
+}
+
+export interface MwanaBotResponse extends BaseResponse {
+  reply?: string;
+  text?: string;
+  answer?: string;
+  data?:
+    | string
+    | {
+        reply?: string;
+        text?: string;
+        answer?: string;
+        message?: string;
+      };
 }
 
 // ─── School ─────────────────────────────────────────────────────
@@ -251,9 +282,14 @@ export interface AddChildRequest {
 // Backend enum order: Full=0, Monthly=1, Weekly=2, Quarterly=3, Custom=4.
 // The API serializes this as its numeric value, so consumers must accept
 // both the raw number and the string name they can derive from it.
-export type PaymentCycleType = 'Full' | 'Monthly' | 'Weekly' | 'Quarterly' | 'Custom';
+export type PaymentCycleType =
+  | "Full"
+  | "Monthly"
+  | "Weekly"
+  | "Quarterly"
+  | "Custom";
 // Backend IntervalUnit enum: Day=0, Week=1, Month=2, Year=3.
-export type IntervalUnitName = 'Day' | 'Week' | 'Month' | 'Year';
+export type IntervalUnitName = "Day" | "Week" | "Month" | "Year";
 
 export interface PaymentCycle {
   paymentCycleId: number;
@@ -373,9 +409,9 @@ export interface InvoiceHistoryDto {
   invoiceId: number;
   invoiceNumber: string;
   paymentTransactionId: number;
-  invoiceType: 'SCHOOLFEE' | 'MERCHANDISEFEE' | string;
+  invoiceType: "SCHOOLFEE" | "MERCHANDISEFEE" | string;
   totalAmount: number;
-  filePath: string;  // Public path under wwwroot, e.g. /invoices/2026/04/INV-2026-000123.pdf
+  filePath: string; // Public path under wwwroot, e.g. /invoices/2026/04/INV-2026-000123.pdf
   fileName: string;
   generatedOn: string;
   paymentMethod?: string;
@@ -429,22 +465,22 @@ export interface CollectingAgent {
 // uses the string form — numeric form is only emitted by the older
 // get-my-activities endpoint which serializes the raw model.
 export type ActivityRequestStatus =
-  | 'Requested'
-  | 'Accepted'
-  | 'Declined'
-  | 'Completed'
-  | 'Cancelled';
+  | "Requested"
+  | "Accepted"
+  | "Declined"
+  | "Completed"
+  | "Cancelled";
 
 // Activity types a parent is allowed to ask an agent to perform. Kept
 // separate from the full CollectingAgentActivityType so the
 // RequestActivityScreen chip picker can't emit agent-only types
 // (PaymentCollected/Attempted etc.).
 export type ParentRequestableActivityType =
-  | 'FieldVisit'
-  | 'PhoneCall'
-  | 'ParentContact'
-  | 'PaymentHelp'
-  | 'Other';
+  | "FieldVisit"
+  | "PhoneCall"
+  | "ParentContact"
+  | "PaymentHelp"
+  | "Other";
 
 export interface CollectingAgentActivity {
   activityId: number;
@@ -495,8 +531,8 @@ export interface AgentCommission {
   approvedDate?: string;
   description?: string;
   approvalNotes?: string;
-  commissionType: 'Collection' | 'Bonus' | 'Incentive' | 'Penalty';
-  status: 'Pending' | 'Approved' | 'Rejected' | 'Paid';
+  commissionType: "Collection" | "Bonus" | "Incentive" | "Penalty";
+  status: "Pending" | "Approved" | "Rejected" | "Paid";
   createdOn?: string;
   modifiedOn?: string;
 }
@@ -527,7 +563,7 @@ export interface CollectingAgentParents {
   isActive: boolean;
   assignmentNotes?: string;
   fK_AssignedByDirectorId?: number | null;
-  approvalStatus?: 'Pending' | 'Approved' | 'Rejected' | null;
+  approvalStatus?: "Pending" | "Approved" | "Rejected" | null;
   requestedByParent?: boolean;
   approvalNotes?: string | null;
   reviewedDate?: string | null;
@@ -552,8 +588,8 @@ export interface Director {
 }
 
 // ─── Support Requests ───────────────────────────────────────────
-export type SupportRequestType = 'General' | 'Payment' | 'Help';
-export type SupportRequestPriority = 'Low' | 'Medium' | 'High' | 'Urgent';
+export type SupportRequestType = "General" | "Payment" | "Help";
+export type SupportRequestPriority = "Low" | "Medium" | "High" | "Urgent";
 
 export interface SupportRequest {
   supportRequestId: number;
@@ -642,7 +678,7 @@ export interface PaidInstallmentsReport {
   schoolId: number;
 }
 
-export type ReportPeriod = 'week' | 'month' | 'quarter' | 'year';
+export type ReportPeriod = "week" | "month" | "quarter" | "year";
 
 export interface PaymentTrendPoint {
   label: string;
@@ -666,36 +702,53 @@ export interface PaymentMethodBreakdown {
 }
 
 // ─── Status Constants ───────────────────────────────────────────
-export type PaymentStatus = 'Pending' | 'InProgress' | 'Processed' | 'Cancelled' | 'Failed';
-export type ChildApprovalStatus = 'Pending' | 'Approved' | 'Rejected';
+export type PaymentStatus =
+  | "Pending"
+  | "InProgress"
+  | "Processed"
+  | "Cancelled"
+  | "Failed";
+export type ChildApprovalStatus = "Pending" | "Approved" | "Rejected";
 
 // ─── Loyalty ────────────────────────────────────────────────────
 // String unions match the backend enums (serialized as their .ToString()
 // names). The backend self-service envelopes are documented in
 // CLAUDE.md → "Loyalty / Self-service".
 
-export type LoyaltyMemberType = 'Parent' | 'CollectingAgent';
+export type LoyaltyMemberType = "Parent" | "CollectingAgent";
 export type LoyaltyTriggerType =
-  | 'SchoolFeePaymentProcessed'
-  | 'MerchandisePaymentProcessed'
-  | 'AgentCollectionProcessed'
-  | 'ManualEnrollmentBonus'
-  | 'ManualAdjustment';
-export type LoyaltyRulePeriodType = 'None' | 'Daily' | 'Weekly' | 'Monthly' | 'ProgramLifetime';
-export type LoyaltyRewardType = 'Merchandise' | 'SchoolFeeCredit' | 'CustomBenefit';
+  | "SchoolFeePaymentProcessed"
+  | "MerchandisePaymentProcessed"
+  | "AgentCollectionProcessed"
+  | "ManualEnrollmentBonus"
+  | "ManualAdjustment";
+export type LoyaltyRulePeriodType =
+  | "None"
+  | "Daily"
+  | "Weekly"
+  | "Monthly"
+  | "ProgramLifetime";
+export type LoyaltyRewardType =
+  | "Merchandise"
+  | "SchoolFeeCredit"
+  | "CustomBenefit";
 export type LoyaltyLedgerEntryType =
-  | 'Earn'
-  | 'Redeem'
-  | 'Reverse'
-  | 'ManualCredit'
-  | 'ManualDebit';
-export type LoyaltyReferenceType = 'PaymentTransaction' | 'Redemption' | 'Rule' | 'Manual';
+  | "Earn"
+  | "Redeem"
+  | "Reverse"
+  | "ManualCredit"
+  | "ManualDebit";
+export type LoyaltyReferenceType =
+  | "PaymentTransaction"
+  | "Redemption"
+  | "Rule"
+  | "Manual";
 export type LoyaltyRedemptionStatus =
-  | 'Pending'
-  | 'Approved'
-  | 'Rejected'
-  | 'Fulfilled'
-  | 'Cancelled';
+  | "Pending"
+  | "Approved"
+  | "Rejected"
+  | "Fulfilled"
+  | "Cancelled";
 
 export interface LoyaltyProgramDto {
   loyaltyProgramId: number;
@@ -811,8 +864,8 @@ export interface LoyaltyRedemptionDto {
   loyaltyRedemptionId: number;
   loyaltyMemberId: number;
   loyaltyRewardId: number;
-  rewardName: string;        // snapshotted on the row
-  rewardType: string;        // snapshotted ToString of LoyaltyRewardType
+  rewardName: string; // snapshotted on the row
+  rewardType: string; // snapshotted ToString of LoyaltyRewardType
   memberType: LoyaltyMemberType;
   memberFullName: string;
   quantity: number;

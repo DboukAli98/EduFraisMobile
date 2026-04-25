@@ -185,6 +185,15 @@ export default function SupportScreen() {
     <ScreenContainer>
       <AnimatedSection index={0}>
         <ThemedButton
+          title="Parler avec MwanaBot"
+          onPress={() => router.push('/(app)/mwana-bot')}
+          variant="secondary"
+          size="md"
+          fullWidth
+          icon={<Ionicons name="chatbubble-ellipses-outline" size={20} color={theme.colors.primary} />}
+          style={styles.mwanaBotBtn}
+        />
+        <ThemedButton
           title={t('support.newRequest', 'New Request')}
           onPress={() => router.push('/(app)/support-request')}
           variant="primary"
@@ -355,8 +364,11 @@ export default function SupportScreen() {
 }
 
 const styles = StyleSheet.create({
-  newRequestBtn: {
+  mwanaBotBtn: {
     marginTop: 8,
+  },
+  newRequestBtn: {
+    marginTop: 10,
   },
   filterRow: {
     flexDirection: 'row',

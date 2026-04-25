@@ -1,9 +1,15 @@
-import { createApi, fetchBaseQuery, type BaseQueryFn, type FetchArgs, type FetchBaseQueryError } from '@reduxjs/toolkit/query/react';
-import { router } from 'expo-router';
-import i18n from 'i18next';
-import type { RootState } from '../../store/store';
-import { logout } from '../../store/slices/authSlice';
-import { API_BASE_URL } from '../../constants';
+import {
+  createApi,
+  fetchBaseQuery,
+  type BaseQueryFn,
+  type FetchArgs,
+  type FetchBaseQueryError,
+} from "@reduxjs/toolkit/query/react";
+import { router } from "expo-router";
+import i18n from "i18next";
+import type { RootState } from "../../store/store";
+import { logout } from "../../store/slices/authSlice";
+import { API_BASE_URL } from "../../constants";
 
 // Guard so we don't trigger multiple navigations / dispatches if many
 // requests fail with 401 in quick succession.
@@ -18,37 +24,37 @@ const rawBaseQuery = fetchBaseQuery({
   prepareHeaders: (headers, { getState }) => {
     const token = (getState() as RootState).auth.token;
     if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
+      headers.set("Authorization", `Bearer ${token}`);
     }
-    headers.set('Content-Type', 'application/json');
+    headers.set("Content-Type", "application/json");
     // Tell the backend which language to localize error/success messages
     // in. Backend AuthMessages.cs reads the primary tag (fr / en) and
     // falls back to French. Defaults to 'fr' before i18n initializes.
-    headers.set('Accept-Language', (i18n.language || 'fr').split('-')[0]);
+    headers.set("Accept-Language", (i18n.language || "fr").split("-")[0]);
     return headers;
   },
 });
 
-const loggingBaseQuery: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = async (
-  args,
-  api,
-  extraOptions,
-) => {
-  const argsObj = typeof args === 'string' ? { url: args } : args;
+const loggingBaseQuery: BaseQueryFn<
+  string | FetchArgs,
+  unknown,
+  FetchBaseQueryError
+> = async (args, api, extraOptions) => {
+  const argsObj = typeof args === "string" ? { url: args } : args;
   const url = argsObj.url;
-  const method = (argsObj.method || 'GET').toUpperCase();
+  const method = (argsObj.method || "GET").toUpperCase();
   const isPayment = /\/payments\//i.test(url);
-  const tag = isPayment ? '[API][PAYMENT]' : '[API]';
+  const tag = isPayment ? "[API][PAYMENT]" : "[API]";
   const t0 = Date.now();
 
   // ── Request
   if (isPayment) {
     console.log(
       `${tag} → ${method} ${API_BASE_URL}${url}`,
-      '\n  body:',
-      argsObj.body ? JSON.stringify(argsObj.body, null, 2) : '(none)',
-      '\n  params:',
-      argsObj.params ? JSON.stringify(argsObj.params) : '(none)',
+      "\n  body:",
+      argsObj.body ? JSON.stringify(argsObj.body, null, 2) : "(none)",
+      "\n  params:",
+      argsObj.params ? JSON.stringify(argsObj.params) : "(none)",
     );
   } else {
     console.log(`${tag} → ${method} ${url}`);
@@ -58,15 +64,15 @@ const loggingBaseQuery: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryE
   const ms = Date.now() - t0;
 
   // ── Response
-  if ('error' in result && result.error) {
+  if ("error" in result && result.error) {
     const status = (result.error as any).status;
     console.log(
       `${tag} ✖ ${method} ${url} (${ms}ms)`,
-      '\n  status:',
+      "\n  status:",
       status,
-      '\n  data:',
+      "\n  data:",
       JSON.stringify((result.error as any).data, null, 2),
-      '\n  error:',
+      "\n  error:",
       (result.error as any).error,
     );
 
@@ -84,7 +90,7 @@ const loggingBaseQuery: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryE
       isHandling401 = true;
       try {
         api.dispatch(logout());
-        router.replace('/(auth)/sign-in');
+        router.replace("/(auth)/sign-in");
       } finally {
         // Release the guard on the next tick so subsequent (legitimate)
         // 401s after the user signs back in can still fire.
@@ -96,7 +102,7 @@ const loggingBaseQuery: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryE
   } else if (isPayment) {
     console.log(
       `${tag} ✓ ${method} ${url} (${ms}ms)`,
-      '\n  data:',
+      "\n  data:",
       JSON.stringify((result as any).data, null, 2),
     );
   } else {
@@ -160,19 +166,32 @@ import type {
   LoyaltyRuleDto,
   LoyaltyRedemptionDto,
   RequestLoyaltyRedemptionPayload,
-} from '../../types';
+  MwanaBotRequest,
+  MwanaBotResponse,
+} from "../../types";
 
 export const apiSlice = createApi({
-  reducerPath: 'api',
+  reducerPath: "api",
   baseQuery: loggingBaseQuery,
   tagTypes: [
-    'Auth', 'Parents', 'Children', 'Schools', 'Payments',
-    'Agents', 'Support', 'Notifications', 'Reports', 'Merchandise',
-    'Invoices', 'ActivityRequests',
+    "Auth",
+    "Parents",
+    "Children",
+    "Schools",
+    "Payments",
+    "Agents",
+    "Support",
+    "Notifications",
+    "Reports",
+    "Merchandise",
+    "Invoices",
+    "ActivityRequests",
     // Loyalty: split into three tags so a redemption invalidates the
     // member's balance + ledger + redemption list, but doesn't blow
     // away the (mostly static) reward catalog.
-    'Loyalty', 'LoyaltyLedger', 'LoyaltyRewards',
+    "Loyalty",
+    "LoyaltyLedger",
+    "LoyaltyRewards",
   ],
   endpoints: (builder) => ({
     // ═══════════════════════════════════════════════════════════
@@ -180,98 +199,177 @@ export const apiSlice = createApi({
     // ═══════════════════════════════════════════════════════════
     login: builder.mutation<LoginResponse, LoginRequest>({
       query: (credentials) => ({
-        url: '/authentication/Login',
-        method: 'POST',
+        url: "/authentication/Login",
+        method: "POST",
         body: credentials,
       }),
-      invalidatesTags: ['Auth'],
+      invalidatesTags: ["Auth"],
     }),
     register: builder.mutation<BaseResponse, RegisterRequest>({
-      query: (data) => ({ url: '/authentication/Register', method: 'POST', body: data }),
+      query: (data) => ({
+        url: "/authentication/Register",
+        method: "POST",
+        body: data,
+      }),
     }),
     logout: builder.mutation<BaseResponse, void>({
-      query: () => ({ url: '/authentication/Logout', method: 'POST' }),
-      invalidatesTags: ['Auth'],
+      query: () => ({ url: "/authentication/Logout", method: "POST" }),
+      invalidatesTags: ["Auth"],
     }),
-    resetPasswordInit: builder.mutation<BaseResponse, ResetPasswordInitRequest>({
-      query: (data) => ({ url: '/authentication/ResetInitPassword', method: 'POST', body: data }),
+    resetPasswordInit: builder.mutation<BaseResponse, ResetPasswordInitRequest>(
+      {
+        query: (data) => ({
+          url: "/authentication/ResetInitPassword",
+          method: "POST",
+          body: data,
+        }),
+      },
+    ),
+    resetPasswordFinal: builder.mutation<
+      BaseResponse,
+      ResetPasswordFinalRequest
+    >({
+      query: (data) => ({
+        url: "/authentication/ResetPassword",
+        method: "POST",
+        body: data,
+      }),
     }),
-    resetPasswordFinal: builder.mutation<BaseResponse, ResetPasswordFinalRequest>({
-      query: (data) => ({ url: '/authentication/ResetPassword', method: 'POST', body: data }),
-    }),
-    registerPushToken: builder.mutation<BaseResponse, RegisterPushTokenRequest>({
-      query: (data) => ({ url: '/authentication/RegisterDevicePushToken', method: 'POST', body: data }),
-    }),
-    changePassword: builder.mutation<BaseResponse, { userId: string; currentPassword: string; newPassword: string }>({
-      query: (data) => ({ url: '/authentication/ChangePassword', method: 'POST', body: data }),
+    registerPushToken: builder.mutation<BaseResponse, RegisterPushTokenRequest>(
+      {
+        query: (data) => ({
+          url: "/authentication/RegisterDevicePushToken",
+          method: "POST",
+          body: data,
+        }),
+      },
+    ),
+    changePassword: builder.mutation<
+      BaseResponse,
+      { userId: string; currentPassword: string; newPassword: string }
+    >({
+      query: (data) => ({
+        url: "/authentication/ChangePassword",
+        method: "POST",
+        body: data,
+      }),
     }),
 
     sendTestEmail: builder.mutation<BaseResponse, { email: string }>({
-      query: (data) => ({ url: '/authentication/SendTestEmail', method: 'POST', body: data }),
+      query: (data) => ({
+        url: "/authentication/SendTestEmail",
+        method: "POST",
+        body: data,
+      }),
     }),
 
     // ═══════════════════════════════════════════════════════════
     // PARENTS
     // ═══════════════════════════════════════════════════════════
-    getParents: builder.query<PagedResponse<Parent>, PaginationRequest & { schoolId?: number }>({
-      query: (params) => ({ url: '/parents/GetParentsListing', params }),
-      providesTags: ['Parents'],
+    getParents: builder.query<
+      PagedResponse<Parent>,
+      PaginationRequest & { schoolId?: number }
+    >({
+      query: (params) => ({ url: "/parents/GetParentsListing", params }),
+      providesTags: ["Parents"],
     }),
     getSingleParent: builder.query<ApiResponse<Parent>, { parentId: number }>({
-      query: (params) => ({ url: '/parents/GetSingleParentDetails', params }),
-      providesTags: ['Parents'],
+      query: (params) => ({ url: "/parents/GetSingleParentDetails", params }),
+      providesTags: ["Parents"],
     }),
-    addParent: builder.mutation<BaseResponse, {
-      firstName: string; lastName: string; fatherName?: string;
-      schoolId: number; civilId?: string; countryCode?: string;
-      phoneNumber?: string; email?: string;
-    }>({
-      query: (data) => ({ url: '/parents/AddParent', method: 'POST', body: data }),
-      invalidatesTags: ['Parents'],
+    addParent: builder.mutation<
+      BaseResponse,
+      {
+        firstName: string;
+        lastName: string;
+        fatherName?: string;
+        schoolId: number;
+        civilId?: string;
+        countryCode?: string;
+        phoneNumber?: string;
+        email?: string;
+      }
+    >({
+      query: (data) => ({
+        url: "/parents/AddParent",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Parents"],
     }),
-    updateParent: builder.mutation<BaseResponse, {
-      parentId: number; firstName?: string; lastName?: string;
-      email?: string; civilId?: string; fatherName?: string;
-      countryCode?: string; phoneNumber?: string; statusId?: number;
-    }>({
-      query: (data) => ({ url: '/parents/UpdateParent', method: 'PUT', body: data }),
-      invalidatesTags: ['Parents'],
+    updateParent: builder.mutation<
+      BaseResponse,
+      {
+        parentId: number;
+        firstName?: string;
+        lastName?: string;
+        email?: string;
+        civilId?: string;
+        fatherName?: string;
+        countryCode?: string;
+        phoneNumber?: string;
+        statusId?: number;
+      }
+    >({
+      query: (data) => ({
+        url: "/parents/UpdateParent",
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["Parents"],
     }),
-    getParentSchools: builder.query<ApiResponse<ParentSchoolDto[]>, { parentId: number }>({
-      query: (params) => ({ url: '/parents/GetParentSchools', params }),
-      providesTags: ['Parents', 'Schools'],
+    getParentSchools: builder.query<
+      ApiResponse<ParentSchoolDto[]>,
+      { parentId: number }
+    >({
+      query: (params) => ({ url: "/parents/GetParentSchools", params }),
+      providesTags: ["Parents", "Schools"],
     }),
     getParentChildren: builder.query<
       PagedResponse<ChildWithGradeDto>,
       { parentId: number } & PaginationRequest
     >({
-      query: (params) => ({ url: '/parents/GetParentChildrens', params }),
-      providesTags: ['Children'],
+      query: (params) => ({ url: "/parents/GetParentChildrens", params }),
+      providesTags: ["Children"],
     }),
     getParentPendingRejectedChildren: builder.query<
       PagedResponse<Child>,
       { parentId: number } & PaginationRequest
     >({
-      query: (params) => ({ url: '/parents/GetParentPendingRejectedChildrens', params }),
-      providesTags: ['Children'],
+      query: (params) => ({
+        url: "/parents/GetParentPendingRejectedChildrens",
+        params,
+      }),
+      providesTags: ["Children"],
     }),
     getParentInstallments: builder.query<
       PagedResponse<ParentInstallmentDto>,
-      { parentId: number; childId?: number; schoolId?: number; schoolGradeSectionId?: number } & PaginationRequest
+      {
+        parentId: number;
+        childId?: number;
+        schoolId?: number;
+        schoolGradeSectionId?: number;
+      } & PaginationRequest
     >({
-      query: (params) => ({ url: '/parents/GetParentInstallments', params }),
-      providesTags: ['Payments'],
+      query: (params) => ({ url: "/parents/GetParentInstallments", params }),
+      providesTags: ["Payments"],
     }),
     getParentInstallmentFilterData: builder.query<
       PagedResponse<any>,
       { parentId: number; filterName: string } & PaginationRequest
     >({
-      query: (params) => ({ url: '/parents/GetParentInstallmentFilterData', params }),
-      providesTags: ['Payments'],
+      query: (params) => ({
+        url: "/parents/GetParentInstallmentFilterData",
+        params,
+      }),
+      providesTags: ["Payments"],
     }),
-    getParentMonthPaymentFee: builder.query<ApiResponse<number>, { parentId: number }>({
-      query: (params) => ({ url: '/parents/GetParentMonthPaymentFee', params }),
-      providesTags: ['Payments'],
+    getParentMonthPaymentFee: builder.query<
+      ApiResponse<number>,
+      { parentId: number }
+    >({
+      query: (params) => ({ url: "/parents/GetParentMonthPaymentFee", params }),
+      providesTags: ["Payments"],
     }),
     getRecentPaymentTransactions: builder.query<
       GetRecentPaymentTransactionsResponse,
@@ -279,8 +377,8 @@ export const apiSlice = createApi({
     >({
       // Backend route attribute is `[Route("GetParentRecentTrx")]` on the
       // parents controller — keep this URL in sync with that attribute.
-      query: (params) => ({ url: '/parents/GetParentRecentTrx', params }),
-      providesTags: ['Payments'],
+      query: (params) => ({ url: "/parents/GetParentRecentTrx", params }),
+      providesTags: ["Payments"],
     }),
 
     // ═══════════════════════════════════════════════════════════
@@ -288,85 +386,168 @@ export const apiSlice = createApi({
     // ═══════════════════════════════════════════════════════════
     getChildrenListing: builder.query<
       PagedResponse<Child>,
-      PaginationRequest & { schoolId?: number; parentId?: number; onlyEnabled?: boolean }
+      PaginationRequest & {
+        schoolId?: number;
+        parentId?: number;
+        onlyEnabled?: boolean;
+      }
     >({
-      query: (params) => ({ url: '/children/GetChildrensListing', params }),
-      providesTags: ['Children'],
+      query: (params) => ({ url: "/children/GetChildrensListing", params }),
+      providesTags: ["Children"],
     }),
     getSingleChild: builder.query<ApiResponse<Child>, { childrenId: number }>({
-      query: (params) => ({ url: '/children/GetSingleChildren', params }),
-      providesTags: ['Children'],
+      query: (params) => ({ url: "/children/GetSingleChildren", params }),
+      providesTags: ["Children"],
     }),
     addChild: builder.mutation<BaseResponse, AddChildRequest>({
-      query: (data) => ({ url: '/children/AddChildren', method: 'POST', body: data }),
-      invalidatesTags: ['Children'],
+      query: (data) => ({
+        url: "/children/AddChildren",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Children"],
     }),
-    updateChild: builder.mutation<BaseResponse, {
-      childrenId: number; firstName: string; lastName: string;
-      dateOfBirth: string; fatherName?: string; parentId: number; schoolId: number;
-    }>({
-      query: (data) => ({ url: '/children/UpdateChildrenDetails', method: 'PUT', body: data }),
-      invalidatesTags: ['Children'],
+    updateChild: builder.mutation<
+      BaseResponse,
+      {
+        childrenId: number;
+        firstName: string;
+        lastName: string;
+        dateOfBirth: string;
+        fatherName?: string;
+        parentId: number;
+        schoolId: number;
+      }
+    >({
+      query: (data) => ({
+        url: "/children/UpdateChildrenDetails",
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["Children"],
     }),
-    getChildGrade: builder.query<ApiResponse<ChildGrade>, { childrenId: number }>({
-      query: (params) => ({ url: '/children/GetChildrenGrade', params }),
-      providesTags: ['Children'],
+    getChildGrade: builder.query<
+      ApiResponse<ChildGrade>,
+      { childrenId: number }
+    >({
+      query: (params) => ({ url: "/children/GetChildrenGrade", params }),
+      providesTags: ["Children"],
     }),
-    addChildGrade: builder.mutation<BaseResponse, {
-      childrenId: number; schoolGradeSectionId: number; startDate: string; endDate?: string;
-    }>({
-      query: (data) => ({ url: '/children/AddChildrenGradeToSystem', method: 'POST', body: data }),
-      invalidatesTags: ['Children'],
+    addChildGrade: builder.mutation<
+      BaseResponse,
+      {
+        childrenId: number;
+        schoolGradeSectionId: number;
+        startDate: string;
+        endDate?: string;
+      }
+    >({
+      query: (data) => ({
+        url: "/children/AddChildrenGradeToSystem",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Children"],
     }),
-    updateChildGrade: builder.mutation<BaseResponse, {
-      childGradeId: number; childrenId: number; schoolGradeSectionId: number;
-      startDate: string; endDate?: string;
-    }>({
-      query: (data) => ({ url: '/children/UpdateChildrenGrade', method: 'PUT', body: data }),
-      invalidatesTags: ['Children'],
+    updateChildGrade: builder.mutation<
+      BaseResponse,
+      {
+        childGradeId: number;
+        childrenId: number;
+        schoolGradeSectionId: number;
+        startDate: string;
+        endDate?: string;
+      }
+    >({
+      query: (data) => ({
+        url: "/children/UpdateChildrenGrade",
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["Children"],
     }),
 
     // ═══════════════════════════════════════════════════════════
     // SCHOOLS
     // ═══════════════════════════════════════════════════════════
-    getSchools: builder.query<PagedResponse<School>, PaginationRequest & { onlyEnabled?: boolean }>({
-      query: (params) => ({ url: '/school/SchoolsListing', method: 'POST', body: params }),
-      providesTags: ['Schools'],
+    getSchools: builder.query<
+      PagedResponse<School>,
+      PaginationRequest & { onlyEnabled?: boolean }
+    >({
+      query: (params) => ({
+        url: "/school/SchoolsListing",
+        method: "POST",
+        body: params,
+      }),
+      providesTags: ["Schools"],
     }),
     getSchoolDetails: builder.query<ApiResponse<School>, { schoolId: number }>({
-      query: (params) => ({ url: '/school/GetSchoolDetails', params }),
-      providesTags: ['Schools'],
+      query: (params) => ({ url: "/school/GetSchoolDetails", params }),
+      providesTags: ["Schools"],
     }),
     getSchoolGradesSections: builder.query<
       PagedResponse<SchoolGradeSection>,
       { schoolId: number; onlyEnabled?: boolean } & PaginationRequest
     >({
-      query: (params) => ({ url: '/school/GetSchoolGradesSections', params }),
-      providesTags: ['Schools'],
+      query: (params) => ({ url: "/school/GetSchoolGradesSections", params }),
+      providesTags: ["Schools"],
     }),
-    getSchoolGradeSectionDetail: builder.query<ApiResponse<SchoolGradeSection>, { schoolGradeSectionId: number }>({
-      query: (params) => ({ url: '/school/GetSchoolGradeSectionDetail', params }),
-      providesTags: ['Schools'],
+    getSchoolGradeSectionDetail: builder.query<
+      ApiResponse<SchoolGradeSection>,
+      { schoolGradeSectionId: number }
+    >({
+      query: (params) => ({
+        url: "/school/GetSchoolGradeSectionDetail",
+        params,
+      }),
+      providesTags: ["Schools"],
     }),
-    addSchoolSection: builder.mutation<BaseResponse, {
-      schoolGradeName: string; schoolGradeDescription?: string;
-      schoolGradeFee: number; schoolId: number;
-      termStartDate?: string; termEndDate?: string;
-    }>({
-      query: (data) => ({ url: '/school/AddSchoolSection', method: 'POST', body: data }),
-      invalidatesTags: ['Schools'],
+    addSchoolSection: builder.mutation<
+      BaseResponse,
+      {
+        schoolGradeName: string;
+        schoolGradeDescription?: string;
+        schoolGradeFee: number;
+        schoolId: number;
+        termStartDate?: string;
+        termEndDate?: string;
+      }
+    >({
+      query: (data) => ({
+        url: "/school/AddSchoolSection",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Schools"],
     }),
-    editSchoolSection: builder.mutation<BaseResponse, {
-      schoolGradeSectionId: number; schoolGradeName: string;
-      schoolGradeDescription?: string; schoolGradeFee: number;
-      schoolId: number; termStartDate?: string; termEndDate?: string;
-    }>({
-      query: (data) => ({ url: '/school/EditSchoolSection', method: 'POST', body: data }),
-      invalidatesTags: ['Schools'],
+    editSchoolSection: builder.mutation<
+      BaseResponse,
+      {
+        schoolGradeSectionId: number;
+        schoolGradeName: string;
+        schoolGradeDescription?: string;
+        schoolGradeFee: number;
+        schoolId: number;
+        termStartDate?: string;
+        termEndDate?: string;
+      }
+    >({
+      query: (data) => ({
+        url: "/school/EditSchoolSection",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Schools"],
     }),
-    getChildNumberBySchoolGradeSection: builder.query<ApiResponse<number>, { schoolGradeSectionId: number }>({
-      query: (params) => ({ url: '/school/GetChildNumberBySchoolGradeSection', params }),
-      providesTags: ['Schools'],
+    getChildNumberBySchoolGradeSection: builder.query<
+      ApiResponse<number>,
+      { schoolGradeSectionId: number }
+    >({
+      query: (params) => ({
+        url: "/school/GetChildNumberBySchoolGradeSection",
+        params,
+      }),
+      providesTags: ["Schools"],
     }),
 
     // Payment Cycles
@@ -374,157 +555,288 @@ export const apiSlice = createApi({
       PagedResponse<PaymentCycle>,
       { schoolGradeSectionId: number } & PaginationRequest
     >({
-      query: (params) => ({ url: '/school/GetPaymentCycles', params }),
-      providesTags: ['Schools'],
+      query: (params) => ({ url: "/school/GetPaymentCycles", params }),
+      providesTags: ["Schools"],
     }),
-    getPaymentCycleDetails: builder.query<ApiResponse<PaymentCycle>, { paymentCycleId: number }>({
-      query: (params) => ({ url: '/school/GetPaymentCycleDetails', params }),
-      providesTags: ['Schools'],
+    getPaymentCycleDetails: builder.query<
+      ApiResponse<PaymentCycle>,
+      { paymentCycleId: number }
+    >({
+      query: (params) => ({ url: "/school/GetPaymentCycleDetails", params }),
+      providesTags: ["Schools"],
     }),
-    addPaymentCycle: builder.mutation<BaseResponse, {
-      paymentCycleName: string; paymentCycleDescription?: string;
-      fk_SchoolGradeSectionId: number; paymentCycleType: string;
-      planStartDate?: string; intervalCount?: number;
-      intervalUnit?: string; installmentAmounts?: string;
-    }>({
-      query: (data) => ({ url: '/school/AddPaymentCycle', method: 'POST', body: data }),
-      invalidatesTags: ['Schools'],
+    addPaymentCycle: builder.mutation<
+      BaseResponse,
+      {
+        paymentCycleName: string;
+        paymentCycleDescription?: string;
+        fk_SchoolGradeSectionId: number;
+        paymentCycleType: string;
+        planStartDate?: string;
+        intervalCount?: number;
+        intervalUnit?: string;
+        installmentAmounts?: string;
+      }
+    >({
+      query: (data) => ({
+        url: "/school/AddPaymentCycle",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Schools"],
     }),
-    updatePaymentCycle: builder.mutation<BaseResponse, {
-      paymentCycleId: number; paymentCycleName?: string;
-      paymentCycleDescription?: string; paymentCycleType?: string;
-      schoolGradeSectionId?: number;
-    }>({
-      query: (data) => ({ url: '/school/UpdatePaymentCycle', method: 'PUT', body: data }),
-      invalidatesTags: ['Schools'],
+    updatePaymentCycle: builder.mutation<
+      BaseResponse,
+      {
+        paymentCycleId: number;
+        paymentCycleName?: string;
+        paymentCycleDescription?: string;
+        paymentCycleType?: string;
+        schoolGradeSectionId?: number;
+      }
+    >({
+      query: (data) => ({
+        url: "/school/UpdatePaymentCycle",
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["Schools"],
     }),
 
     // Child Cycle Selection
-    selectChildCycle: builder.mutation<BaseResponse, { childGradeId: number; paymentCycleId: number }>({
-      query: (data) => ({ url: '/school/SelectChildCycleSelection', method: 'POST', body: data }),
-      invalidatesTags: ['Schools', 'Children', 'Payments'],
+    selectChildCycle: builder.mutation<
+      BaseResponse,
+      { childGradeId: number; paymentCycleId: number }
+    >({
+      query: (data) => ({
+        url: "/school/SelectChildCycleSelection",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Schools", "Children", "Payments"],
     }),
-    getChildCycleSelection: builder.query<ApiResponse<ChildCycleSelection>, { childGradeId: number }>({
-      query: (params) => ({ url: '/school/GetChildCycleSelection', params }),
-      providesTags: ['Schools'],
+    getChildCycleSelection: builder.query<
+      ApiResponse<ChildCycleSelection>,
+      { childGradeId: number }
+    >({
+      query: (params) => ({ url: "/school/GetChildCycleSelection", params }),
+      providesTags: ["Schools"],
     }),
-    addChildGradeToSchool: builder.mutation<BaseResponse, {
-      childId: number; schoolGradeSectionId: number;
-      startDate: string; endDate?: string; statusId: number;
-    }>({
-      query: (data) => ({ url: '/school/AddChildGrade', method: 'POST', body: data }),
-      invalidatesTags: ['Schools', 'Children'],
+    addChildGradeToSchool: builder.mutation<
+      BaseResponse,
+      {
+        childId: number;
+        schoolGradeSectionId: number;
+        startDate: string;
+        endDate?: string;
+        statusId: number;
+      }
+    >({
+      query: (data) => ({
+        url: "/school/AddChildGrade",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Schools", "Children"],
     }),
 
     // ═══════════════════════════════════════════════════════════
     // MERCHANDISE
     // ═══════════════════════════════════════════════════════════
-    getMerchandiseCategories: builder.query<PagedResponse<SchoolMerchandiseCategory>, PaginationRequest>({
-      query: (params) => ({ url: '/school/GetMerchaniseCategories', params }),
-      providesTags: ['Merchandise'],
+    getMerchandiseCategories: builder.query<
+      PagedResponse<SchoolMerchandiseCategory>,
+      PaginationRequest
+    >({
+      query: (params) => ({ url: "/school/GetMerchaniseCategories", params }),
+      providesTags: ["Merchandise"],
     }),
     getSchoolMerchandises: builder.query<
       PagedResponse<SchoolMerchandise>,
-      { schoolId: string; categoryId?: number; all?: boolean } & PaginationRequest
+      {
+        schoolId: string;
+        categoryId?: number;
+        all?: boolean;
+      } & PaginationRequest
     >({
-      query: (params) => ({ url: '/school/GetSchoolMerchandises', params }),
-      providesTags: ['Merchandise'],
+      query: (params) => ({ url: "/school/GetSchoolMerchandises", params }),
+      providesTags: ["Merchandise"],
     }),
-    getMerchandiseById: builder.query<ApiResponse<SchoolMerchandise>, { merchandiseId: number }>({
-      query: (params) => ({ url: '/school/GetMerchandiseById', params }),
-      providesTags: ['Merchandise'],
+    getMerchandiseById: builder.query<
+      ApiResponse<SchoolMerchandise>,
+      { merchandiseId: number }
+    >({
+      query: (params) => ({ url: "/school/GetMerchandiseById", params }),
+      providesTags: ["Merchandise"],
     }),
-    addMerchandiseCategory: builder.mutation<BaseResponse, {
-      schoolMerchandiseCategoryName: string;
-      schoolMerchandiseCategoryDescription?: string;
-    }>({
-      query: (data) => ({ url: '/school/AddSchoolMerchandiseCategory', method: 'POST', body: data }),
-      invalidatesTags: ['Merchandise'],
+    addMerchandiseCategory: builder.mutation<
+      BaseResponse,
+      {
+        schoolMerchandiseCategoryName: string;
+        schoolMerchandiseCategoryDescription?: string;
+      }
+    >({
+      query: (data) => ({
+        url: "/school/AddSchoolMerchandiseCategory",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Merchandise"],
     }),
-    addSchoolMerchandise: builder.mutation<BaseResponse, {
-      schoolMerchandiseName: string; schoolMerchandiseDescription?: string;
-      schoolMerchandisePrice: number; fk_SchoolId: number;
-      fk_SchoolMerchandiseCategory: number;
-      logo?: { uri: string; name: string; type: string };
-    }>({
+    addSchoolMerchandise: builder.mutation<
+      BaseResponse,
+      {
+        schoolMerchandiseName: string;
+        schoolMerchandiseDescription?: string;
+        schoolMerchandisePrice: number;
+        fk_SchoolId: number;
+        fk_SchoolMerchandiseCategory: number;
+        logo?: { uri: string; name: string; type: string };
+      }
+    >({
       query: (data) => {
         const formData = new FormData();
-        formData.append('SchoolMerchandiseName', data.schoolMerchandiseName);
+        formData.append("SchoolMerchandiseName", data.schoolMerchandiseName);
         if (data.schoolMerchandiseDescription) {
-          formData.append('SchoolMerchandiseDescription', data.schoolMerchandiseDescription);
+          formData.append(
+            "SchoolMerchandiseDescription",
+            data.schoolMerchandiseDescription,
+          );
         }
-        formData.append('SchoolMerchandisePrice', data.schoolMerchandisePrice.toString());
-        formData.append('FK_SchoolId', data.fk_SchoolId.toString());
-        formData.append('FK_SchoolMerchandiseCategory', data.fk_SchoolMerchandiseCategory.toString());
+        formData.append(
+          "SchoolMerchandisePrice",
+          data.schoolMerchandisePrice.toString(),
+        );
+        formData.append("FK_SchoolId", data.fk_SchoolId.toString());
+        formData.append(
+          "FK_SchoolMerchandiseCategory",
+          data.fk_SchoolMerchandiseCategory.toString(),
+        );
         if (data.logo) {
-          formData.append('Logo', data.logo as any);
+          formData.append("Logo", data.logo as any);
         }
-        return { url: '/school/AddSchoolMerchandise', method: 'POST', body: formData };
+        return {
+          url: "/school/AddSchoolMerchandise",
+          method: "POST",
+          body: formData,
+        };
       },
-      invalidatesTags: ['Merchandise'],
+      invalidatesTags: ["Merchandise"],
     }),
-    updateSchoolMerchandise: builder.mutation<BaseResponse, {
-      schoolMerchandiseId: number; schoolMerchandiseName: string;
-      schoolMerchandiseDescription?: string; schoolMerchandisePrice: number;
-      fk_SchoolId: number; fk_SchoolMerchandiseCategory: number;
-      fk_StatusId: number; removeLogo?: boolean;
-    }>({
+    updateSchoolMerchandise: builder.mutation<
+      BaseResponse,
+      {
+        schoolMerchandiseId: number;
+        schoolMerchandiseName: string;
+        schoolMerchandiseDescription?: string;
+        schoolMerchandisePrice: number;
+        fk_SchoolId: number;
+        fk_SchoolMerchandiseCategory: number;
+        fk_StatusId: number;
+        removeLogo?: boolean;
+      }
+    >({
       query: (data) => {
         const formData = new FormData();
-        formData.append('SchoolMerchandiseId', data.schoolMerchandiseId.toString());
-        formData.append('SchoolMerchandiseName', data.schoolMerchandiseName);
+        formData.append(
+          "SchoolMerchandiseId",
+          data.schoolMerchandiseId.toString(),
+        );
+        formData.append("SchoolMerchandiseName", data.schoolMerchandiseName);
         if (data.schoolMerchandiseDescription) {
-          formData.append('SchoolMerchandiseDescription', data.schoolMerchandiseDescription);
+          formData.append(
+            "SchoolMerchandiseDescription",
+            data.schoolMerchandiseDescription,
+          );
         }
-        formData.append('SchoolMerchandisePrice', data.schoolMerchandisePrice.toString());
-        formData.append('FK_SchoolId', data.fk_SchoolId.toString());
-        formData.append('FK_SchoolMerchandiseCategory', data.fk_SchoolMerchandiseCategory.toString());
-        formData.append('FK_StatusId', data.fk_StatusId.toString());
+        formData.append(
+          "SchoolMerchandisePrice",
+          data.schoolMerchandisePrice.toString(),
+        );
+        formData.append("FK_SchoolId", data.fk_SchoolId.toString());
+        formData.append(
+          "FK_SchoolMerchandiseCategory",
+          data.fk_SchoolMerchandiseCategory.toString(),
+        );
+        formData.append("FK_StatusId", data.fk_StatusId.toString());
         if (data.removeLogo) {
-          formData.append('RemoveLogo', 'true');
+          formData.append("RemoveLogo", "true");
         }
-        return { url: '/school/UpdateSchoolMerchandise', method: 'PUT', body: formData };
+        return {
+          url: "/school/UpdateSchoolMerchandise",
+          method: "PUT",
+          body: formData,
+        };
       },
-      invalidatesTags: ['Merchandise'],
+      invalidatesTags: ["Merchandise"],
     }),
 
     // ═══════════════════════════════════════════════════════════
     // PAYMENTS
     // ═══════════════════════════════════════════════════════════
     getAirtelToken: builder.query<ApiResponse<string>, void>({
-      query: () => '/payments/AirtelToken',
+      query: () => "/payments/AirtelToken",
     }),
-    initiatePayment: builder.mutation<InitiatePaymentResponse, InitiatePaymentRequest>({
-      query: (data) => ({ url: '/payments/collect', method: 'POST', body: data }),
-      invalidatesTags: ['Payments'],
+    initiatePayment: builder.mutation<
+      InitiatePaymentResponse,
+      InitiatePaymentRequest
+    >({
+      query: (data) => ({
+        url: "/payments/collect",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Payments"],
     }),
     // Polls /payments/CheckPaymentStatus right after InitiatePayment with
     // the 4-char TransactionReference we generated client-side. The server
     // resolves the reference to a PaymentTransaction row and returns its
     // FK_StatusId (6=Pending, 8=Processed, 10=Failed, 11=InProgress). NOT
     // the Airtel mapId — the mobile never sees that.
-    checkPaymentStatus: builder.query<ApiResponse<any>, { transactionId: string }>({
-      query: (params) => ({ url: '/payments/CheckPaymentStatus', params }),
+    checkPaymentStatus: builder.query<
+      ApiResponse<any>,
+      { transactionId: string }
+    >({
+      query: (params) => ({ url: "/payments/CheckPaymentStatus", params }),
     }),
     getSchoolFeesPaymentHistory: builder.query<
       PagedResponse<SchoolFeesPaymentHistoryDto>,
-      { userId: string; dateFilter?: string; statusId?: number; paymentType?: string } & PaginationRequest
+      {
+        userId: string;
+        dateFilter?: string;
+        statusId?: number;
+        paymentType?: string;
+      } & PaginationRequest
     >({
       query: (params) => ({
-        url: '/payments/GetSchoolFeesPaymentHistory',
-        params: { paymentType: 'SCHOOLFEE', statusId: 8, dateFilter: 'AllTime', ...params },
+        url: "/payments/GetSchoolFeesPaymentHistory",
+        params: {
+          paymentType: "SCHOOLFEE",
+          statusId: 8,
+          dateFilter: "AllTime",
+          ...params,
+        },
       }),
-      providesTags: ['Payments'],
+      providesTags: ["Payments"],
     }),
     getMerchandisePaymentHistory: builder.query<
       PagedResponse<MerchandisePaymentHistoryDto>,
-      { userId: string; dateFilter?: string; statusId?: number; paymentType?: string } & PaginationRequest
+      {
+        userId: string;
+        dateFilter?: string;
+        statusId?: number;
+        paymentType?: string;
+      } & PaginationRequest
     >({
       query: (params) => ({
-        url: '/payments/GetMerchandisePaymentHistory',
-        params: { paymentType: 'MERCHANDISEFEE', statusId: 8, dateFilter: 'AllTime', ...params },
+        url: "/payments/GetMerchandisePaymentHistory",
+        params: {
+          paymentType: "MERCHANDISEFEE",
+          statusId: 8,
+          dateFilter: "AllTime",
+          ...params,
+        },
       }),
-      providesTags: ['Payments'],
+      providesTags: ["Payments"],
     }),
 
     // ═══════════════════════════════════════════════════════════
@@ -536,10 +848,10 @@ export const apiSlice = createApi({
     // ═══════════════════════════════════════════════════════════
     getInvoiceHistory: builder.query<
       PagedResponse<InvoiceHistoryDto>,
-      { invoiceType?: 'SCHOOLFEE' | 'MERCHANDISEFEE' } & PaginationRequest
+      { invoiceType?: "SCHOOLFEE" | "MERCHANDISEFEE" } & PaginationRequest
     >({
-      query: (params) => ({ url: '/invoice/history', params }),
-      providesTags: ['Invoices'],
+      query: (params) => ({ url: "/invoice/history", params }),
+      providesTags: ["Invoices"],
     }),
     generateInvoice: builder.mutation<
       {
@@ -555,112 +867,234 @@ export const apiSlice = createApi({
     >({
       query: ({ paymentTransactionId }) => ({
         url: `/invoice/generate/${paymentTransactionId}`,
-        method: 'POST',
+        method: "POST",
       }),
-      invalidatesTags: ['Invoices'],
+      invalidatesTags: ["Invoices"],
     }),
 
     // ═══════════════════════════════════════════════════════════
     // COLLECTING AGENTS
     // ═══════════════════════════════════════════════════════════
-    getAllAgents: builder.query<PagedResponse<CollectingAgent>, { schoolId?: number } & PaginationRequest>({
-      query: (params) => ({ url: '/collectingagent/GetCollectingAgents', params }),
-      providesTags: ['Agents'],
+    getAllAgents: builder.query<
+      PagedResponse<CollectingAgent>,
+      { schoolId?: number } & PaginationRequest
+    >({
+      query: (params) => ({
+        url: "/collectingagent/GetCollectingAgents",
+        params,
+      }),
+      providesTags: ["Agents"],
     }),
-    getAgentDetails: builder.query<ApiResponse<CollectingAgent>, { agentId: number }>({
-      query: (params) => ({ url: '/collectingagent/GetCollectingAgentDetails', params }),
-      providesTags: ['Agents'],
+    getAgentDetails: builder.query<
+      ApiResponse<CollectingAgent>,
+      { agentId: number }
+    >({
+      query: (params) => ({
+        url: "/collectingagent/GetCollectingAgentDetails",
+        params,
+      }),
+      providesTags: ["Agents"],
     }),
-    addAgent: builder.mutation<BaseResponse, {
-      schoolId: number; firstName: string; lastName: string;
-      email?: string; countryCode: string; phoneNumber: string;
-      assignedArea?: string; commissionPercentage?: number;
-    }>({
-      query: (data) => ({ url: '/collectingagent/AddCollectingAgentToSystem', method: 'POST', body: data }),
-      invalidatesTags: ['Agents'],
+    addAgent: builder.mutation<
+      BaseResponse,
+      {
+        schoolId: number;
+        firstName: string;
+        lastName: string;
+        email?: string;
+        countryCode: string;
+        phoneNumber: string;
+        assignedArea?: string;
+        commissionPercentage?: number;
+      }
+    >({
+      query: (data) => ({
+        url: "/collectingagent/AddCollectingAgentToSystem",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Agents"],
     }),
-    editAgent: builder.mutation<BaseResponse, {
-      collectingAgentId: number; schoolId: number;
-      firstName: string; lastName: string; email?: string;
-      countryCode: string; phoneNumber: string;
-      assignedArea?: string; commissionPercentage?: number; statusId: number;
-    }>({
-      query: (data) => ({ url: '/collectingagent/EditAgent', method: 'PUT', body: data }),
-      invalidatesTags: ['Agents'],
+    editAgent: builder.mutation<
+      BaseResponse,
+      {
+        collectingAgentId: number;
+        schoolId: number;
+        firstName: string;
+        lastName: string;
+        email?: string;
+        countryCode: string;
+        phoneNumber: string;
+        assignedArea?: string;
+        commissionPercentage?: number;
+        statusId: number;
+      }
+    >({
+      query: (data) => ({
+        url: "/collectingagent/EditAgent",
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["Agents"],
     }),
-    assignAgentToParent: builder.mutation<BaseResponse, {
-      collectingAgentId: number; parentId: number;
-      isActive?: boolean; assignmentNotes?: string; directorId: number;
-    }>({
-      query: (data) => ({ url: '/collectingagent/AssignCollectingAgentToParent', method: 'POST', body: data }),
-      invalidatesTags: ['Agents', 'Parents'],
+    assignAgentToParent: builder.mutation<
+      BaseResponse,
+      {
+        collectingAgentId: number;
+        parentId: number;
+        isActive?: boolean;
+        assignmentNotes?: string;
+        directorId: number;
+      }
+    >({
+      query: (data) => ({
+        url: "/collectingagent/AssignCollectingAgentToParent",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Agents", "Parents"],
     }),
-    unassignAgentFromParent: builder.mutation<BaseResponse, {
-      collectingAgentId: number; parentId: number;
-    }>({
-      query: (data) => ({ url: '/collectingagent/UnassignCollectingAgentToParent', method: 'POST', body: data }),
-      invalidatesTags: ['Agents', 'Parents'],
+    unassignAgentFromParent: builder.mutation<
+      BaseResponse,
+      {
+        collectingAgentId: number;
+        parentId: number;
+      }
+    >({
+      query: (data) => ({
+        url: "/collectingagent/UnassignCollectingAgentToParent",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Agents", "Parents"],
     }),
-    getAgentParents: builder.query<PagedResponse<Parent>, { collectingAgentId: number } & PaginationRequest>({
-      query: (params) => ({ url: '/collectingagent/GetCollectingAgentParents', params }),
-      providesTags: ['Agents', 'Parents'],
+    getAgentParents: builder.query<
+      PagedResponse<Parent>,
+      { collectingAgentId: number } & PaginationRequest
+    >({
+      query: (params) => ({
+        url: "/collectingagent/GetCollectingAgentParents",
+        params,
+      }),
+      providesTags: ["Agents", "Parents"],
     }),
-    getParentsCollectingAgents: builder.query<PagedResponse<CollectingAgentParents>, { parentId: number } & PaginationRequest>({
-      query: (params) => ({ url: '/collectingagent/GetParentsCollectingAgents', params }),
-      providesTags: ['Agents'],
+    getParentsCollectingAgents: builder.query<
+      PagedResponse<CollectingAgentParents>,
+      { parentId: number } & PaginationRequest
+    >({
+      query: (params) => ({
+        url: "/collectingagent/GetParentsCollectingAgents",
+        params,
+      }),
+      providesTags: ["Agents"],
     }),
-    requestAgentAssignment: builder.mutation<BaseResponse & { collectingAgentParentId?: number }, {
-      collectingAgentId: number; parentId: number; assignmentNotes?: string;
-    }>({
-      query: (data) => ({ url: '/collectingagent/RequestAgentAssignment', method: 'POST', body: data }),
-      invalidatesTags: ['Agents'],
+    requestAgentAssignment: builder.mutation<
+      BaseResponse & { collectingAgentParentId?: number },
+      {
+        collectingAgentId: number;
+        parentId: number;
+        assignmentNotes?: string;
+      }
+    >({
+      query: (data) => ({
+        url: "/collectingagent/RequestAgentAssignment",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Agents"],
     }),
     getPendingAgentRequests: builder.query<
       PagedResponse<CollectingAgentParents>,
       { schoolId: number } & PaginationRequest
     >({
-      query: (params) => ({ url: '/collectingagent/GetPendingAgentRequests', params }),
-      providesTags: ['Agents'],
+      query: (params) => ({
+        url: "/collectingagent/GetPendingAgentRequests",
+        params,
+      }),
+      providesTags: ["Agents"],
     }),
     getMyAgentRequests: builder.query<
       PagedResponse<CollectingAgentParents>,
       { parentId: number } & PaginationRequest
     >({
-      query: (params) => ({ url: '/collectingagent/GetMyAgentRequests', params }),
-      providesTags: ['Agents'],
+      query: (params) => ({
+        url: "/collectingagent/GetMyAgentRequests",
+        params,
+      }),
+      providesTags: ["Agents"],
     }),
-    approveAgentRequest: builder.mutation<BaseResponse, {
-      collectingAgentParentId: number; directorId: number; approvalNotes?: string;
-    }>({
-      query: (data) => ({ url: '/collectingagent/ApproveAgentRequest', method: 'POST', body: data }),
-      invalidatesTags: ['Agents', 'Parents'],
+    approveAgentRequest: builder.mutation<
+      BaseResponse,
+      {
+        collectingAgentParentId: number;
+        directorId: number;
+        approvalNotes?: string;
+      }
+    >({
+      query: (data) => ({
+        url: "/collectingagent/ApproveAgentRequest",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Agents", "Parents"],
     }),
-    rejectAgentRequest: builder.mutation<BaseResponse, {
-      collectingAgentParentId: number; directorId: number; approvalNotes?: string;
-    }>({
-      query: (data) => ({ url: '/collectingagent/RejectAgentRequest', method: 'POST', body: data }),
-      invalidatesTags: ['Agents', 'Parents'],
+    rejectAgentRequest: builder.mutation<
+      BaseResponse,
+      {
+        collectingAgentParentId: number;
+        directorId: number;
+        approvalNotes?: string;
+      }
+    >({
+      query: (data) => ({
+        url: "/collectingagent/RejectAgentRequest",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Agents", "Parents"],
     }),
-    cancelAgentRequest: builder.mutation<BaseResponse, {
-      collectingAgentParentId: number; parentId: number;
-    }>({
-      query: (data) => ({ url: '/collectingagent/CancelAgentRequest', method: 'POST', body: data }),
-      invalidatesTags: ['Agents'],
+    cancelAgentRequest: builder.mutation<
+      BaseResponse,
+      {
+        collectingAgentParentId: number;
+        parentId: number;
+      }
+    >({
+      query: (data) => ({
+        url: "/collectingagent/CancelAgentRequest",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Agents"],
     }),
     getMyActivities: builder.query<
       PagedResponse<CollectingAgentActivity>,
-      { startDate?: string; endDate?: string; activityType?: string } & PaginationRequest
+      {
+        startDate?: string;
+        endDate?: string;
+        activityType?: string;
+      } & PaginationRequest
     >({
-      query: (params) => ({ url: '/collectingagent/GetMyActivities', params }),
-      providesTags: ['Agents'],
+      query: (params) => ({ url: "/collectingagent/GetMyActivities", params }),
+      providesTags: ["Agents"],
     }),
-    logMyActivity: builder.mutation<ApiResponse<{ activityId: number }>, {
-      parentId?: number; activityType: string;
-      activityDescription: string; notes?: string;
-      relatedTransactionId?: number; relatedSupportRequestId?: number;
-    }>({
-      query: (data) => ({ url: '/collectingagent/LogActivity', method: 'POST', body: data }),
-      invalidatesTags: ['Agents'],
+    logMyActivity: builder.mutation<
+      ApiResponse<{ activityId: number }>,
+      {
+        parentId?: number;
+        activityType: string;
+        activityDescription: string;
+        notes?: string;
+        relatedTransactionId?: number;
+        relatedSupportRequestId?: number;
+      }
+    >({
+      query: (data) => ({
+        url: "/collectingagent/LogActivity",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Agents"],
     }),
 
     // ── Parent-initiated activity requests ────────────────────────────
@@ -679,158 +1113,251 @@ export const apiSlice = createApi({
       }
     >({
       query: (data) => ({
-        url: '/collectingagent/RequestActivity',
-        method: 'POST',
+        url: "/collectingagent/RequestActivity",
+        method: "POST",
         body: data,
       }),
-      invalidatesTags: ['ActivityRequests', 'Agents'],
+      invalidatesTags: ["ActivityRequests", "Agents"],
     }),
     acceptActivityRequest: builder.mutation<
       BaseResponse & { activity?: CollectingAgentActivity },
       { activityId: number }
     >({
       query: (data) => ({
-        url: '/collectingagent/AcceptActivityRequest',
-        method: 'POST',
+        url: "/collectingagent/AcceptActivityRequest",
+        method: "POST",
         body: data,
       }),
-      invalidatesTags: ['ActivityRequests', 'Agents'],
+      invalidatesTags: ["ActivityRequests", "Agents"],
     }),
     declineActivityRequest: builder.mutation<
       BaseResponse & { activity?: CollectingAgentActivity },
       { activityId: number; reason?: string }
     >({
       query: (data) => ({
-        url: '/collectingagent/DeclineActivityRequest',
-        method: 'POST',
+        url: "/collectingagent/DeclineActivityRequest",
+        method: "POST",
         body: data,
       }),
-      invalidatesTags: ['ActivityRequests', 'Agents'],
+      invalidatesTags: ["ActivityRequests", "Agents"],
     }),
     completeActivityRequest: builder.mutation<
       BaseResponse & { activity?: CollectingAgentActivity },
       { activityId: number; completionNotes?: string }
     >({
       query: (data) => ({
-        url: '/collectingagent/CompleteActivityRequest',
-        method: 'POST',
+        url: "/collectingagent/CompleteActivityRequest",
+        method: "POST",
         body: data,
       }),
-      invalidatesTags: ['ActivityRequests', 'Agents'],
+      invalidatesTags: ["ActivityRequests", "Agents"],
     }),
     cancelActivityRequest: builder.mutation<
       BaseResponse & { activity?: CollectingAgentActivity },
       { activityId: number }
     >({
       query: (data) => ({
-        url: '/collectingagent/CancelActivityRequest',
-        method: 'POST',
+        url: "/collectingagent/CancelActivityRequest",
+        method: "POST",
         body: data,
       }),
-      invalidatesTags: ['ActivityRequests', 'Agents'],
+      invalidatesTags: ["ActivityRequests", "Agents"],
     }),
     getMyActivityRequests: builder.query<
       PagedResponse<CollectingAgentActivity>,
       { status?: ActivityRequestStatus } & PaginationRequest
     >({
       query: (params) => ({
-        url: '/collectingagent/GetMyActivityRequests',
+        url: "/collectingagent/GetMyActivityRequests",
         params,
       }),
-      providesTags: ['ActivityRequests'],
+      providesTags: ["ActivityRequests"],
     }),
     getAgentActivityRequests: builder.query<
       PagedResponse<CollectingAgentActivity>,
       { status?: ActivityRequestStatus } & PaginationRequest
     >({
       query: (params) => ({
-        url: '/collectingagent/GetAgentActivityRequests',
+        url: "/collectingagent/GetAgentActivityRequests",
         params,
       }),
-      providesTags: ['ActivityRequests'],
+      providesTags: ["ActivityRequests"],
     }),
     getMyCommissions: builder.query<
-      PagedResponse<AgentCommission> & { totalEarnings: number; approvedEarnings: number; pendingEarnings: number },
-      { startDate?: string; endDate?: string; isApproved?: boolean } & PaginationRequest
+      PagedResponse<AgentCommission> & {
+        totalEarnings: number;
+        approvedEarnings: number;
+        pendingEarnings: number;
+      },
+      {
+        startDate?: string;
+        endDate?: string;
+        isApproved?: boolean;
+      } & PaginationRequest
     >({
-      query: (params) => ({ url: '/collectingagent/GetMyCommissions', params }),
-      providesTags: ['Agents'],
+      query: (params) => ({ url: "/collectingagent/GetMyCommissions", params }),
+      providesTags: ["Agents"],
     }),
-    getMyPerformance: builder.query<AgentPerformance, { startDate?: string; endDate?: string }>({
-      query: (params) => ({ url: '/collectingagent/GetMyPerformance', params }),
-      providesTags: ['Agents'],
+    getMyPerformance: builder.query<
+      AgentPerformance,
+      { startDate?: string; endDate?: string }
+    >({
+      query: (params) => ({ url: "/collectingagent/GetMyPerformance", params }),
+      providesTags: ["Agents"],
     }),
-    requestCommissionApproval: builder.mutation<BaseResponse, { commissionIds: number[]; notes?: string }>({
-      query: (data) => ({ url: '/collectingagent/RequestCommissionApproval', method: 'POST', body: data }),
-      invalidatesTags: ['Agents'],
+    requestCommissionApproval: builder.mutation<
+      BaseResponse,
+      { commissionIds: number[]; notes?: string }
+    >({
+      query: (data) => ({
+        url: "/collectingagent/RequestCommissionApproval",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Agents"],
     }),
 
     // ═══════════════════════════════════════════════════════════
     // DIRECTOR
     // ═══════════════════════════════════════════════════════════
-    getSchoolDirector: builder.query<ApiResponse<Director>, { schoolId: number }>({
-      query: (params) => ({ url: '/director/GetSchoolDirector', params }),
+    getSchoolDirector: builder.query<
+      ApiResponse<Director>,
+      { schoolId: number }
+    >({
+      query: (params) => ({ url: "/director/GetSchoolDirector", params }),
     }),
-    updateDirector: builder.mutation<BaseResponse, {
-      directorId: number; firstname?: string; lastname?: string;
-      email?: string; countryCode?: string; phoneNumber?: string; statusId?: number;
-    }>({
-      query: (data) => ({ url: '/director/UpdateDirector', method: 'PUT', body: data }),
+    updateDirector: builder.mutation<
+      BaseResponse,
+      {
+        directorId: number;
+        firstname?: string;
+        lastname?: string;
+        email?: string;
+        countryCode?: string;
+        phoneNumber?: string;
+        statusId?: number;
+      }
+    >({
+      query: (data) => ({
+        url: "/director/UpdateDirector",
+        method: "PUT",
+        body: data,
+      }),
     }),
-    getPendingChildren: builder.query<PagedResponse<Child>, { schoolId: number } & PaginationRequest>({
-      query: (params) => ({ url: '/director/GetPendingChildren', params }),
-      providesTags: ['Children'],
+    getPendingChildren: builder.query<
+      PagedResponse<Child>,
+      { schoolId: number } & PaginationRequest
+    >({
+      query: (params) => ({ url: "/director/GetPendingChildren", params }),
+      providesTags: ["Children"],
     }),
     approveChild: builder.mutation<BaseResponse, number>({
-      query: (childId) => ({ url: `/director/ApproveChildren?childId=${childId}`, method: 'POST' }),
-      invalidatesTags: ['Children'],
+      query: (childId) => ({
+        url: `/director/ApproveChildren?childId=${childId}`,
+        method: "POST",
+      }),
+      invalidatesTags: ["Children"],
     }),
-    rejectChild: builder.mutation<BaseResponse, { childId: number; reason?: string }>({
-      query: (data) => ({ url: '/director/RejectChildren', method: 'POST', body: data }),
-      invalidatesTags: ['Children'],
+    rejectChild: builder.mutation<
+      BaseResponse,
+      { childId: number; reason?: string }
+    >({
+      query: (data) => ({
+        url: "/director/RejectChildren",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Children"],
     }),
     getAgentActivities: builder.query<
       PagedResponse<CollectingAgentActivity>,
-      { collectingAgentId: number; startDate?: string; endDate?: string; activityType?: string } & PaginationRequest
+      {
+        collectingAgentId: number;
+        startDate?: string;
+        endDate?: string;
+        activityType?: string;
+      } & PaginationRequest
     >({
-      query: (params) => ({ url: '/director/GetAgentActivities', params }),
-      providesTags: ['Agents'],
+      query: (params) => ({ url: "/director/GetAgentActivities", params }),
+      providesTags: ["Agents"],
     }),
     getSchoolAgentActivities: builder.query<
       PagedResponse<CollectingAgentActivity>,
-      { schoolId?: number; collectingAgentId?: number; activityType?: string; startDate?: string; endDate?: string } & PaginationRequest
+      {
+        schoolId?: number;
+        collectingAgentId?: number;
+        activityType?: string;
+        startDate?: string;
+        endDate?: string;
+      } & PaginationRequest
     >({
-      query: (params) => ({ url: '/director/GetSchoolAgentActivities', params }),
-      providesTags: ['Agents'],
+      query: (params) => ({
+        url: "/director/GetSchoolAgentActivities",
+        params,
+      }),
+      providesTags: ["Agents"],
     }),
-    logAgentActivity: builder.mutation<BaseResponse, {
-      collectingAgentId: number; parentId?: number; activityType: string;
-      activityDescription: string; notes?: string;
-    }>({
-      query: (data) => ({ url: '/director/LogAgentActivity', method: 'POST', body: data }),
-      invalidatesTags: ['Agents'],
+    logAgentActivity: builder.mutation<
+      BaseResponse,
+      {
+        collectingAgentId: number;
+        parentId?: number;
+        activityType: string;
+        activityDescription: string;
+        notes?: string;
+      }
+    >({
+      query: (data) => ({
+        url: "/director/LogAgentActivity",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Agents"],
     }),
     getAgentCommissions: builder.query<
       PagedResponse<AgentCommission> & { totalCommissionAmount: number },
-      { collectingAgentId: number; startDate?: string; endDate?: string } & PaginationRequest
+      {
+        collectingAgentId: number;
+        startDate?: string;
+        endDate?: string;
+      } & PaginationRequest
     >({
-      query: (params) => ({ url: '/director/GetAgentCommissions', params }),
-      providesTags: ['Agents'],
+      query: (params) => ({ url: "/director/GetAgentCommissions", params }),
+      providesTags: ["Agents"],
     }),
-    addCommission: builder.mutation<ApiResponse<{ commissionId: number }>, {
-      collectingAgentId: number; directorId: number;
-      paymentTransactionId: number; commissionAmount: number;
-      commissionRate: number; description?: string;
-    }>({
-      query: (data) => ({ url: '/director/AddCommission', method: 'POST', body: data }),
-      invalidatesTags: ['Agents'],
+    addCommission: builder.mutation<
+      ApiResponse<{ commissionId: number }>,
+      {
+        collectingAgentId: number;
+        directorId: number;
+        paymentTransactionId: number;
+        commissionAmount: number;
+        commissionRate: number;
+        description?: string;
+      }
+    >({
+      query: (data) => ({
+        url: "/director/AddCommission",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Agents"],
     }),
-    approveCommission: builder.mutation<BaseResponse, {
-      commissionId: number; directorId: number;
-      isApproved: boolean; approvalNotes?: string;
-    }>({
-      query: (data) => ({ url: '/director/ApproveCommission', method: 'PUT', body: data }),
-      invalidatesTags: ['Agents'],
+    approveCommission: builder.mutation<
+      BaseResponse,
+      {
+        commissionId: number;
+        directorId: number;
+        isApproved: boolean;
+        approvalNotes?: string;
+      }
+    >({
+      query: (data) => ({
+        url: "/director/ApproveCommission",
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["Agents"],
     }),
 
     // ═══════════════════════════════════════════════════════════
@@ -839,28 +1366,62 @@ export const apiSlice = createApi({
     getAllSupportRequests: builder.query<
       PagedResponse<SupportRequest>,
       {
-        source?: string; parentId?: number; agentId?: number;
-        schoolId?: number; supportRequestType?: string;
+        source?: string;
+        parentId?: number;
+        agentId?: number;
+        schoolId?: number;
+        supportRequestType?: string;
         filterByCurrentUser?: boolean;
       } & PaginationRequest
     >({
-      query: (params) => ({ url: '/supportrequest/GetAllSupportRequests', params }),
-      providesTags: ['Support'],
+      query: (params) => ({
+        url: "/supportrequest/GetAllSupportRequests",
+        params,
+      }),
+      providesTags: ["Support"],
     }),
-    getSupportRequestById: builder.query<ApiResponse<SupportRequest>, { supportRequestId: number }>({
-      query: (params) => ({ url: '/supportrequest/GetSupportRequestById', params }),
-      providesTags: ['Support'],
+    getSupportRequestById: builder.query<
+      ApiResponse<SupportRequest>,
+      { supportRequestId: number }
+    >({
+      query: (params) => ({
+        url: "/supportrequest/GetSupportRequestById",
+        params,
+      }),
+      providesTags: ["Support"],
     }),
-    addSupportRequest: builder.mutation<BaseResponse, AddSupportRequestPayload>({
-      query: (data) => ({ url: '/supportrequest/AddSupportRequest', method: 'POST', body: data }),
-      invalidatesTags: ['Support'],
+    addSupportRequest: builder.mutation<BaseResponse, AddSupportRequestPayload>(
+      {
+        query: (data) => ({
+          url: "/supportrequest/AddSupportRequest",
+          method: "POST",
+          body: data,
+        }),
+        invalidatesTags: ["Support"],
+      },
+    ),
+    updateSupportRequestStatus: builder.mutation<
+      BaseResponse,
+      {
+        supportRequestId: number;
+        newStatusId: number;
+        resultNotes?: string;
+        message?: string;
+      }
+    >({
+      query: (data) => ({
+        url: "/supportrequest/UpdateSupportRequestStatus",
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["Support"],
     }),
-    updateSupportRequestStatus: builder.mutation<BaseResponse, {
-      supportRequestId: number; newStatusId: number;
-      resultNotes?: string; message?: string;
-    }>({
-      query: (data) => ({ url: '/supportrequest/UpdateSupportRequestStatus', method: 'PUT', body: data }),
-      invalidatesTags: ['Support'],
+
+    // ═══════════════════════════════════════════════════════════
+    // MWANABOT
+    // ═══════════════════════════════════════════════════════════
+    sendMwanaBotMessage: builder.mutation<MwanaBotResponse, MwanaBotRequest>({
+      query: (data) => ({ url: "/chat/mwana-bot", method: "POST", body: data }),
     }),
 
     // ═══════════════════════════════════════════════════════════
@@ -870,77 +1431,141 @@ export const apiSlice = createApi({
       PagedResponse<AppNotification>,
       { userId: string; type?: string } & PaginationRequest
     >({
-      query: (params) => ({ url: '/notifications/GetNotifications', params }),
-      providesTags: ['Notifications'],
+      query: (params) => ({ url: "/notifications/GetNotifications", params }),
+      providesTags: ["Notifications"],
     }),
-    getNotificationById: builder.query<ApiResponse<AppNotification>, { notificationId: number }>({
-      query: (params) => ({ url: '/notifications/GetNotificationById', params }),
-      providesTags: ['Notifications'],
+    getNotificationById: builder.query<
+      ApiResponse<AppNotification>,
+      { notificationId: number }
+    >({
+      query: (params) => ({
+        url: "/notifications/GetNotificationById",
+        params,
+      }),
+      providesTags: ["Notifications"],
     }),
-    markAllNotificationsAsRead: builder.mutation<BaseResponse, { userId: string; type?: string }>({
-      query: (data) => ({ url: '/notifications/MarkAllAsRead', method: 'POST', body: data }),
-      invalidatesTags: ['Notifications'],
+    markAllNotificationsAsRead: builder.mutation<
+      BaseResponse,
+      { userId: string; type?: string }
+    >({
+      query: (data) => ({
+        url: "/notifications/MarkAllAsRead",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Notifications"],
     }),
-    sendNotification: builder.mutation<BaseResponse, {
-      userId: string; title: string; message: string; type: string; isRead?: boolean;
-    }>({
-      query: (data) => ({ url: '/notifications/SendNotification', method: 'POST', body: data }),
-      invalidatesTags: ['Notifications'],
+    sendNotification: builder.mutation<
+      BaseResponse,
+      {
+        userId: string;
+        title: string;
+        message: string;
+        type: string;
+        isRead?: boolean;
+      }
+    >({
+      query: (data) => ({
+        url: "/notifications/SendNotification",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Notifications"],
     }),
 
     // ═══════════════════════════════════════════════════════════
     // REPORTS
     // ═══════════════════════════════════════════════════════════
-    getStudentCountBySchool: builder.query<ApiResponse<StudentCountReport>, { schoolId: number; statusId?: number }>({
-      query: (params) => ({ url: '/reports/GetStudentCountBySchool', params: { statusId: 1, ...params } }),
-      providesTags: ['Reports'],
+    getStudentCountBySchool: builder.query<
+      ApiResponse<StudentCountReport>,
+      { schoolId: number; statusId?: number }
+    >({
+      query: (params) => ({
+        url: "/reports/GetStudentCountBySchool",
+        params: { statusId: 1, ...params },
+      }),
+      providesTags: ["Reports"],
     }),
-    getInstallmentsPendingPaymentsTotal: builder.query<ApiResponse<PendingPaymentsReport>, { schoolId: number; excludedStatus?: number }>({
-      query: (params) => ({ url: '/reports/GetInstallmentsPendingPaymentsTotal', params: { excludedStatus: 8, ...params } }),
-      providesTags: ['Reports'],
+    getInstallmentsPendingPaymentsTotal: builder.query<
+      ApiResponse<PendingPaymentsReport>,
+      { schoolId: number; excludedStatus?: number }
+    >({
+      query: (params) => ({
+        url: "/reports/GetInstallmentsPendingPaymentsTotal",
+        params: { excludedStatus: 8, ...params },
+      }),
+      providesTags: ["Reports"],
     }),
-    getTotalActiveParentInSchool: builder.query<ApiResponse<ActiveParentsReport>, { schoolId: number; statusId?: number }>({
-      query: (params) => ({ url: '/reports/GetTotalActiveParentInSchool', params: { statusId: 1, ...params } }),
-      providesTags: ['Reports'],
+    getTotalActiveParentInSchool: builder.query<
+      ApiResponse<ActiveParentsReport>,
+      { schoolId: number; statusId?: number }
+    >({
+      query: (params) => ({
+        url: "/reports/GetTotalActiveParentInSchool",
+        params: { statusId: 1, ...params },
+      }),
+      providesTags: ["Reports"],
     }),
     getSchoolPaymentTrend: builder.query<
       ApiResponse<PaymentTrendPoint[]>,
       { schoolId: number; period?: ReportPeriod; statusId?: number }
     >({
-      query: (params) => ({ url: '/reports/GetSchoolPaymentTrend', params: { statusId: 8, period: 'month', ...params } }),
-      providesTags: ['Reports'],
+      query: (params) => ({
+        url: "/reports/GetSchoolPaymentTrend",
+        params: { statusId: 8, period: "month", ...params },
+      }),
+      providesTags: ["Reports"],
     }),
     getSchoolAgentCollectionSummary: builder.query<
       ApiResponse<AgentCollectionSummary[]>,
       { schoolId: number; period?: ReportPeriod; statusId?: number }
     >({
-      query: (params) => ({ url: '/reports/GetSchoolAgentCollectionSummary', params: { statusId: 8, period: 'month', ...params } }),
-      providesTags: ['Reports'],
+      query: (params) => ({
+        url: "/reports/GetSchoolAgentCollectionSummary",
+        params: { statusId: 8, period: "month", ...params },
+      }),
+      providesTags: ["Reports"],
     }),
     getSchoolPaymentMethodBreakdown: builder.query<
       ApiResponse<PaymentMethodBreakdown[]>,
       { schoolId: number; period?: ReportPeriod; statusId?: number }
     >({
-      query: (params) => ({ url: '/reports/GetSchoolPaymentMethodBreakdown', params: { statusId: 8, period: 'month', ...params } }),
-      providesTags: ['Reports'],
+      query: (params) => ({
+        url: "/reports/GetSchoolPaymentMethodBreakdown",
+        params: { statusId: 8, period: "month", ...params },
+      }),
+      providesTags: ["Reports"],
     }),
 
     // ═══════════════════════════════════════════════════════════
     // COMMON
     // ═══════════════════════════════════════════════════════════
-    alterModuleStatus: builder.mutation<BaseResponse, {
-      moduleName:
-        | 'schools'
-        | 'schoolgradesection'
-        | 'schoolparentssection'
-        | 'schoolchildrensection'
-        | 'schoolagentssection'
-        | 'schoolmerchandisessection';
-      actionType: 'enable' | 'disable' | 'deleted';
-      moduleItemsIds: string;
-    }>({
-      query: (data) => ({ url: '/common/AlterModuleStatus', method: 'POST', body: data }),
-      invalidatesTags: ['Schools', 'Children', 'Parents', 'Agents', 'Merchandise'],
+    alterModuleStatus: builder.mutation<
+      BaseResponse,
+      {
+        moduleName:
+          | "schools"
+          | "schoolgradesection"
+          | "schoolparentssection"
+          | "schoolchildrensection"
+          | "schoolagentssection"
+          | "schoolmerchandisessection";
+        actionType: "enable" | "disable" | "deleted";
+        moduleItemsIds: string;
+      }
+    >({
+      query: (data) => ({
+        url: "/common/AlterModuleStatus",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: [
+        "Schools",
+        "Children",
+        "Parents",
+        "Agents",
+        "Merchandise",
+      ],
     }),
 
     // ─── Commission rates (platform + providers) ───────────────
@@ -964,7 +1589,7 @@ export const apiSlice = createApi({
       }>,
       void
     >({
-      query: () => ({ url: '/common/GetActiveCommissionRates' }),
+      query: () => ({ url: "/common/GetActiveCommissionRates" }),
     }),
 
     // ═══════════════════════════════════════════════════════════
@@ -983,8 +1608,8 @@ export const apiSlice = createApi({
      * agents.
      */
     getMyLoyalty: builder.query<ApiResponse<MyLoyaltySummaryDto[]>, void>({
-      query: () => ({ url: '/loyalty/me' }),
-      providesTags: ['Loyalty'],
+      query: () => ({ url: "/loyalty/me" }),
+      providesTags: ["Loyalty"],
     }),
 
     getMyLoyaltyLedger: builder.query<
@@ -992,10 +1617,14 @@ export const apiSlice = createApi({
       { loyaltyMemberId: number; pageNumber?: number; pageSize?: number }
     >({
       query: ({ loyaltyMemberId, pageNumber = 1, pageSize = 20 }) => ({
-        url: '/loyalty/me/ledger',
-        params: { LoyaltyMemberId: loyaltyMemberId, PageNumber: pageNumber, PageSize: pageSize },
+        url: "/loyalty/me/ledger",
+        params: {
+          LoyaltyMemberId: loyaltyMemberId,
+          PageNumber: pageNumber,
+          PageSize: pageSize,
+        },
       }),
-      providesTags: ['LoyaltyLedger'],
+      providesTags: ["LoyaltyLedger"],
     }),
 
     /**
@@ -1010,13 +1639,13 @@ export const apiSlice = createApi({
       { loyaltyProgramId: number; loyaltyMemberId?: number }
     >({
       query: ({ loyaltyProgramId, loyaltyMemberId }) => ({
-        url: '/loyalty/me/rewards',
+        url: "/loyalty/me/rewards",
         params: {
           LoyaltyProgramId: loyaltyProgramId,
           ...(loyaltyMemberId ? { LoyaltyMemberId: loyaltyMemberId } : {}),
         },
       }),
-      providesTags: ['LoyaltyRewards'],
+      providesTags: ["LoyaltyRewards"],
     }),
 
     /**
@@ -1029,10 +1658,10 @@ export const apiSlice = createApi({
       { loyaltyProgramId: number }
     >({
       query: ({ loyaltyProgramId }) => ({
-        url: '/loyalty/me/rules',
+        url: "/loyalty/me/rules",
         params: { LoyaltyProgramId: loyaltyProgramId },
       }),
-      providesTags: ['LoyaltyRewards'],
+      providesTags: ["LoyaltyRewards"],
     }),
 
     getMyLoyaltyRedemptions: builder.query<
@@ -1040,10 +1669,14 @@ export const apiSlice = createApi({
       { loyaltyMemberId: number; pageNumber?: number; pageSize?: number }
     >({
       query: ({ loyaltyMemberId, pageNumber = 1, pageSize = 20 }) => ({
-        url: '/loyalty/me/redemptions',
-        params: { LoyaltyMemberId: loyaltyMemberId, PageNumber: pageNumber, PageSize: pageSize },
+        url: "/loyalty/me/redemptions",
+        params: {
+          LoyaltyMemberId: loyaltyMemberId,
+          PageNumber: pageNumber,
+          PageSize: pageSize,
+        },
       }),
-      providesTags: ['LoyaltyLedger'],
+      providesTags: ["LoyaltyLedger"],
     }),
 
     /**
@@ -1058,8 +1691,8 @@ export const apiSlice = createApi({
       RequestLoyaltyRedemptionPayload
     >({
       query: (payload) => ({
-        url: '/loyalty/me/redeem',
-        method: 'POST',
+        url: "/loyalty/me/redeem",
+        method: "POST",
         body: {
           LoyaltyMemberId: payload.loyaltyMemberId,
           LoyaltyRewardId: payload.loyaltyRewardId,
@@ -1067,7 +1700,7 @@ export const apiSlice = createApi({
           RequestNotes: payload.requestNotes,
         },
       }),
-      invalidatesTags: ['Loyalty', 'LoyaltyLedger', 'LoyaltyRewards'],
+      invalidatesTags: ["Loyalty", "LoyaltyLedger", "LoyaltyRewards"],
     }),
 
     cancelMyLoyaltyRedemption: builder.mutation<
@@ -1075,11 +1708,11 @@ export const apiSlice = createApi({
       { loyaltyRedemptionId: number }
     >({
       query: (payload) => ({
-        url: '/loyalty/me/cancel-redemption',
-        method: 'POST',
+        url: "/loyalty/me/cancel-redemption",
+        method: "POST",
         body: { LoyaltyRedemptionId: payload.loyaltyRedemptionId },
       }),
-      invalidatesTags: ['Loyalty', 'LoyaltyLedger', 'LoyaltyRewards'],
+      invalidatesTags: ["Loyalty", "LoyaltyLedger", "LoyaltyRewards"],
     }),
   }),
 });
@@ -1193,6 +1826,8 @@ export const {
   useGetSupportRequestByIdQuery,
   useAddSupportRequestMutation,
   useUpdateSupportRequestStatusMutation,
+  // MwanaBot
+  useSendMwanaBotMessageMutation,
   // Notifications
   useGetNotificationsQuery,
   useGetNotificationByIdQuery,
@@ -1223,7 +1858,7 @@ export const {
 // The PDF itself is served as a static file under wwwroot, NOT
 // through /api. API_BASE_URL ends with "/api" so we strip that
 // suffix to build the static origin.
-const STATIC_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, '');
+const STATIC_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, "");
 
 /**
  * Full public URL for an invoice PDF, given its stored `filePath`
@@ -1232,8 +1867,8 @@ const STATIC_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, '');
  * obscure by InvoiceNumber but not protected at the static layer.
  */
 export const getInvoicePdfUrl = (filePath: string): string => {
-  if (!filePath) return '';
-  const normalized = filePath.startsWith('/') ? filePath : `/${filePath}`;
+  if (!filePath) return "";
+  const normalized = filePath.startsWith("/") ? filePath : `/${filePath}`;
   return `${STATIC_ORIGIN}${normalized}`;
 };
 
