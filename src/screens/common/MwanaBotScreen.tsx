@@ -12,15 +12,19 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useTheme } from '../../theme';
-import { ScreenContainer, ThemedText } from '../../components';
+import { ScreenContainer, ThemedText, MwanaBotToolResultCard } from '../../components';
 import { useAppSelector } from '../../hooks';
 import { streamMwanaBotMessage, type MwanaBotStreamSubscription } from '../../services/mwanaBot/stream';
-import type { MwanaBotChatMessage, MwanaBotSource } from '../../types';
+import type { MwanaBotChatMessage, MwanaBotSource, MwanaBotToolResult } from '../../types';
 
 type ChatMessage = MwanaBotChatMessage & {
     id: string;
     isTyping?: boolean;
     sources?: MwanaBotSource[];
+    // Structured tool outputs attached to this assistant message. We
+    // render them as cards under the bot's text — they replace the
+    // markdown-y lists the model used to spit out as plain text.
+    toolResults?: MwanaBotToolResult[];
 };
 
 const SUGGESTIONS = [
@@ -40,11 +44,39 @@ const createConversationId = () =>
 
 const FRIENDLY_ERROR = 'MwanaBot est momentanément indisponible. Veuillez réessayer dans un instant.';
 
+/**
+ * Strip the markdown emphasis the model occasionally sneaks into its
+ * answers (`**bold**`, `*italic*`, leading `# `, etc.). The streamed
+ * answer is rendered as plain text — markdown wouldn't render correctly
+ * and would leak as literal asterisks. Keep newlines and bullets so the
+ * structure of the prose survives.
+ */
+const stripMarkdown = (raw: string): string => {
+    if (!raw) return raw;
+    return raw
+        // Bold / italic markers (** __ * _) — keep the inner text
+        .replace(/\*\*(.+?)\*\*/g, '$1')
+        .replace(/__(.+?)__/g, '$1')
+        .replace(/(^|[^*])\*(?!\s)(.+?)(?<!\s)\*(?!\*)/g, '$1$2')
+        .replace(/(^|[^_])_(?!\s)(.+?)(?<!\s)_(?!_)/g, '$1$2')
+        // Inline code → plain
+        .replace(/`([^`]+)`/g, '$1')
+        // Heading markers at line start
+        .replace(/^#{1,6}\s+/gm, '')
+        // Strip lone backticks / triple-backticks fences
+        .replace(/```[a-zA-Z]*\n?/g, '')
+        .replace(/```/g, '');
+};
+
 export default function MwanaBotScreen() {
     const { theme } = useTheme();
     const tabBarHeight = useBottomTabBarHeight();
     const listRef = useRef<FlatList<ChatMessage>>(null);
     const user = useAppSelector((state) => state.auth.user);
+    // Token forwarded to MwanaBot so its SchoolFees tools can call the
+    // backend on behalf of this same authenticated user. We never log
+    // it client-side and only send it inside the SSE POST body.
+    const authToken = useAppSelector((state) => state.auth.token);
     const streamRef = useRef<MwanaBotStreamSubscription | null>(null);
     const conversationIdRef = useRef(createConversationId());
     const [messages, setMessages] = useState<ChatMessage[]>([
@@ -117,6 +149,10 @@ export default function MwanaBotScreen() {
                 userId: user?.id ?? 'anonymous-mobile-user',
                 username: user?.name,
                 conversationId: conversationIdRef.current,
+                authToken,
+                entityUserId: user?.entityUserId,
+                role: user?.role,
+                schoolId: user?.schoolId,
                 onStart: (payload) => {
                     if (payload.conversation_id) {
                         conversationIdRef.current = payload.conversation_id;
@@ -125,6 +161,18 @@ export default function MwanaBotScreen() {
                 },
                 onSources: (sources) => {
                     updateAssistantMessage(assistantMessage.id, (message) => ({ ...message, sources }));
+                },
+                onToolResult: (toolResult) => {
+                    // Structured tool payloads arrive BEFORE the answer
+                    // streaming starts. We append them to the message so
+                    // the FlatList re-renders the rich cards above the
+                    // streamed prose. Dedupe on tool name so a backend
+                    // re-emit doesn't double-render.
+                    updateAssistantMessage(assistantMessage.id, (message) => {
+                        const previous = message.toolResults ?? [];
+                        const filtered = previous.filter((tr) => tr.name !== toolResult.name);
+                        return { ...message, toolResults: [...filtered, toolResult] };
+                    });
                 },
                 onToken: (content) => {
                     updateAssistantMessage(assistantMessage.id, (message) => ({
@@ -141,6 +189,13 @@ export default function MwanaBotScreen() {
                         ...message,
                         text: payload.answer ?? message.text,
                         isTyping: false,
+                        // Backend echoes tool_results in the `done` event
+                        // as a safety net; only adopt them if we somehow
+                        // missed a mid-stream event.
+                        toolResults:
+                            (message.toolResults ?? []).length > 0
+                                ? message.toolResults
+                                : payload.tool_results,
                     }));
                     setIsStreaming(false);
                     streamRef.current = null;
@@ -175,6 +230,9 @@ export default function MwanaBotScreen() {
             );
         }
 
+        const cleanText = isUser ? item.text : stripMarkdown(item.text);
+        const toolResults = !isUser ? item.toolResults ?? [] : [];
+
         return (
             <View style={[styles.messageRow, isUser ? styles.userRow : styles.botRow]}>
                 {!isUser && (
@@ -184,23 +242,37 @@ export default function MwanaBotScreen() {
                 )}
                 <View
                     style={[
-                        styles.bubble,
-                        {
-                            backgroundColor: isUser ? theme.colors.primary : theme.colors.surface,
-                            borderColor: isUser ? theme.colors.primary : theme.colors.borderLight,
-                            borderRadius: theme.borderRadius.xl,
-                        },
+                        styles.messageColumn,
+                        isUser ? styles.messageColumnUser : styles.messageColumnBot,
                     ]}
                 >
-                    {!!item.text && (
-                        <ThemedText
-                            variant="bodySmall"
-                            color={isUser ? '#FFFFFF' : theme.colors.text}
-                            style={styles.messageText}
+                    {!!cleanText && (
+                        <View
+                            style={[
+                                styles.bubble,
+                                {
+                                    backgroundColor: isUser ? theme.colors.primary : theme.colors.surface,
+                                    borderColor: isUser ? theme.colors.primary : theme.colors.borderLight,
+                                    borderRadius: theme.borderRadius.xl,
+                                    alignSelf: isUser ? 'flex-end' : 'flex-start',
+                                },
+                            ]}
                         >
-                            {item.text}
-                        </ThemedText>
+                            <ThemedText
+                                variant="bodySmall"
+                                color={isUser ? '#FFFFFF' : theme.colors.text}
+                                style={styles.messageText}
+                            >
+                                {cleanText}
+                            </ThemedText>
+                        </View>
                     )}
+                    {toolResults.map((toolResult) => (
+                        <MwanaBotToolResultCard
+                            key={`${item.id}-${toolResult.name}`}
+                            result={toolResult}
+                        />
+                    ))}
                 </View>
             </View>
         );
@@ -356,8 +428,21 @@ const styles = StyleSheet.create({
         marginRight: 8,
         marginTop: 2,
     },
-    bubble: {
+    messageColumn: {
+        // Holds the bubble + any tool result cards so they stack
+        // visually under the same speaker.
+        gap: 4,
+    },
+    messageColumnBot: {
+        // Bot side gets full breathing room for cards (max 90% of row).
+        flex: 1,
+        maxWidth: '90%',
+    },
+    messageColumnUser: {
+        // User side hugs its content to the right.
         maxWidth: '82%',
+    },
+    bubble: {
         borderWidth: 1,
         paddingHorizontal: 14,
         paddingVertical: 10,

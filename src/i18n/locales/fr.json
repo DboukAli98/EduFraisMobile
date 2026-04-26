@@ -671,6 +671,45 @@
     "confirmPurchaseMessage": "Acheter {{quantity}} article(s) pour {{amount}} via Airtel Money ?",
     "confirmPurchase": "Acheter"
   },
+  "mwanabot": {
+    "tool": {
+      "children": {
+        "title": "Mes enfants",
+        "empty": "Aucun enfant enregistré."
+      },
+      "schools": {
+        "title": "Mes écoles"
+      },
+      "installments": {
+        "allTitle": "Vos versements",
+        "upcomingTitle": "Prochains versements",
+        "overdueTitle": "Versements en retard",
+        "emptyAll": "Aucun versement.",
+        "emptyUpcoming": "Tout est à jour.",
+        "emptyOverdue": "Aucun retard. Tout est en ordre.",
+        "paid": "Payé",
+        "toPay": "À payer",
+        "overdueDays_one": "{{count}} j de retard",
+        "overdueDays_other": "{{count}} j de retard"
+      },
+      "balance": {
+        "title": "Votre solde scolaire",
+        "total": "Total",
+        "paid": "Payé",
+        "pending": "Reste à payer",
+        "overdueCount_one": "{{count}} en retard",
+        "overdueCount_other": "{{count}} en retard"
+      },
+      "recentPayments": {
+        "title": "Paiements récents"
+      },
+      "loyalty": {
+        "title": "Programme de fidélité",
+        "ready": "Seuil de rachat atteint",
+        "remaining": "encore {{count}} {{label}} avant rachat"
+      }
+    }
+  },
   "loyalty": {
     "title": "Programme de fidélité",
     "balance": "Solde",

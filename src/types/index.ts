@@ -109,6 +109,96 @@ export interface MwanaBotChatMessage {
 
 export type MwanaBotSource = Record<string, unknown>;
 
+// Deep-link CTA emitted by a tool. The mobile renders one button per
+// action under the matching tool result card, and routes the user to
+// `route` (with optional `params`) when tapped.
+export type MwanaBotActionSeverity = "default" | "primary" | "warning";
+
+export interface MwanaBotAction {
+  type: "navigate"; // room for "external" later
+  label: string;
+  route: string; // expo-router pathname, e.g. "/(app)/payments"
+  params?: Record<string, string>;
+  severity?: MwanaBotActionSeverity;
+}
+
+// ─── MwanaBot tool result data shapes ───────────────────────────
+// Each tool emits a payload with a discriminated `kind` so the renderer
+// can pick the right component without a giant switch on tool name.
+
+export interface MwanaBotChildSummary {
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  schoolName: string;
+  gradeName?: string | null;
+  status: "approved" | "pending" | "rejected";
+  statusLabel: string;
+}
+
+export interface MwanaBotInstallmentSummary {
+  amount: number;
+  lateFee: number;
+  dueDate?: string | null;
+  isPaid: boolean;
+  isOverdue: boolean;
+  daysLate: number;
+  childName: string;
+  schoolName?: string;
+  gradeName?: string;
+}
+
+export interface MwanaBotRecentPaymentSummary {
+  amount: number;
+  paidDate?: string | null;
+  paymentMethod: string;
+  transactionReference: string;
+  childName: string;
+}
+
+export interface MwanaBotLoyaltyMembership {
+  schoolName: string;
+  programName: string;
+  pointsLabel: string;
+  balance: number;
+  lifetimeEarned: number;
+  lifetimeRedeemed: number;
+  minimumRedeemPoints: number;
+  remainingToRedeem: number;
+}
+
+export type MwanaBotToolData =
+  | { kind: "children"; items: MwanaBotChildSummary[]; totalCount?: number }
+  | { kind: "schools"; items: { schoolName: string }[] }
+  | {
+      kind: "installments";
+      focus: "all" | "upcoming" | "overdue";
+      items: MwanaBotInstallmentSummary[];
+    }
+  | {
+      kind: "balance";
+      total: number;
+      paid: number;
+      pending: number;
+      overdueCount: number;
+    }
+  | {
+      kind: "recent_payments";
+      items: MwanaBotRecentPaymentSummary[];
+      totalCount?: number;
+    }
+  | { kind: "loyalty"; memberships: MwanaBotLoyaltyMembership[] }
+  // Fallback for forward-compat: a kind the mobile doesn't know yet
+  // still parses, just renders as a degraded card with the summary.
+  | { kind: string; [key: string]: unknown };
+
+export interface MwanaBotToolResult {
+  name: string; // tool identifier
+  summary: string; // short French text — used as fallback if data.kind is unknown
+  data: MwanaBotToolData;
+  actions: MwanaBotAction[];
+}
+
 // ─── School ─────────────────────────────────────────────────────
 export interface School {
   schoolId: number;

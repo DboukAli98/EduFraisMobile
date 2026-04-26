@@ -671,6 +671,45 @@
     "confirmPurchaseMessage": "Buy {{quantity}} item(s) for {{amount}} via Airtel Money?",
     "confirmPurchase": "Buy"
   },
+  "mwanabot": {
+    "tool": {
+      "children": {
+        "title": "My children",
+        "empty": "No children registered."
+      },
+      "schools": {
+        "title": "My schools"
+      },
+      "installments": {
+        "allTitle": "Your installments",
+        "upcomingTitle": "Upcoming installments",
+        "overdueTitle": "Overdue installments",
+        "emptyAll": "No installments.",
+        "emptyUpcoming": "You're all caught up.",
+        "emptyOverdue": "No overdue payments. All clear.",
+        "paid": "Paid",
+        "toPay": "To pay",
+        "overdueDays_one": "{{count}} day overdue",
+        "overdueDays_other": "{{count}} days overdue"
+      },
+      "balance": {
+        "title": "Your school balance",
+        "total": "Total",
+        "paid": "Paid",
+        "pending": "Remaining",
+        "overdueCount_one": "{{count}} overdue",
+        "overdueCount_other": "{{count}} overdue"
+      },
+      "recentPayments": {
+        "title": "Recent payments"
+      },
+      "loyalty": {
+        "title": "Loyalty program",
+        "ready": "Redeem threshold reached",
+        "remaining": "{{count}} {{label}} to go before redeem"
+      }
+    }
+  },
   "loyalty": {
     "title": "Loyalty program",
     "balance": "Balance",
