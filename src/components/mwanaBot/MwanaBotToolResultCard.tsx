@@ -260,7 +260,12 @@ const InstallmentsCard: React.FC<{
                 { backgroundColor: tone + "20", borderColor: tone },
               ]}
             >
-              <ThemedText variant="caption" color={tone} style={styles.statusText}>
+              <ThemedText
+                variant="caption"
+                color={tone}
+                style={styles.statusText}
+                numberOfLines={1}
+              >
                 {statusLabel}
               </ThemedText>
             </View>
@@ -676,13 +681,18 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   avatar: {
+    // Fixed-size circle — never shrinks even when the body grabs all
+    // remaining flex space.
     width: 32,
     height: 32,
     borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
   },
   rowBody: {
+    // Grows to fill remaining space AND can shrink so neighbours
+    // (avatar, status pill) keep their intrinsic width.
     flex: 1,
     minWidth: 0,
   },
@@ -694,6 +704,10 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 999,
     borderWidth: 1,
+    // Critical: without this the second-and-later rows squeeze the
+    // pill so "À payer" got truncated to just "À". flexShrink:0 forces
+    // RN to size the pill to its text content on every row.
+    flexShrink: 0,
   },
   statusText: {
     fontSize: 10,
@@ -704,6 +718,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 6,
     backgroundColor: "rgba(128,128,128,0.1)",
+    flexShrink: 0,
   },
   // Balance card
   balanceTopRow: {
