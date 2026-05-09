@@ -107,7 +107,10 @@ export default function ParentsManagementScreen() {
     }
 
     try {
-      const localPhone = form.phoneNumber.replace(/\D/g, '').replace(/^0+/, '');
+      // Keep only digits but PRESERVE the leading 0 — it's part of how
+      // local users write their number and the backend stores it as-is
+      // (CountryCode + phoneNumber).
+      const localPhone = form.phoneNumber.replace(/\D/g, '');
       await addParent({
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),

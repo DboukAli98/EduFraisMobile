@@ -28,7 +28,9 @@ const toLocalPhone = (raw: string): string => {
   let d = (raw || '').replace(/\D/g, '');
   if (d.startsWith('00')) d = d.slice(2);
   if (d.startsWith(COUNTRY_CODE)) d = d.slice(COUNTRY_CODE.length);
-  return d.replace(/^0+/, '');
+  // Preserve the leading 0 — it's part of how the user wrote the
+  // number originally and we want it back when we re-display.
+  return d;
 };
 
 /**

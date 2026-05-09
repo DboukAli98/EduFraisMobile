@@ -90,19 +90,23 @@ export const normalizePhoneToE164 = (
 };
 
 /**
- * Inverse of normalizePhoneToE164 — returns just the local digits with no
- * country-code prefix and no leading zeros, suitable for prefilling an
- * input that displays the prefix as a separate label.
+ * Inverse of normalizePhoneToE164 — returns the local digits with the
+ * country-code prefix removed, but PRESERVES any leading zero the user
+ * originally typed. We used to strip leading 0s here for E.164
+ * canonicalisation, but per product decision the trunk prefix "0" is
+ * part of how Congo-Brazzaville users write their number ("0651 23 456")
+ * and we want it back when re-displaying a stored phone.
  *
  *   "242812345678"        → "812345678"
+ *   "242065123456"        → "065123456"   (leading 0 preserved)
  *   "812345678"           → "812345678"
- *   "0812345678"          → "812345678"
+ *   "0812345678"          → "0812345678"  (leading 0 preserved)
  */
 export const extractLocalDigits = (
   input: string,
   countryCode = "242",
 ): string => {
-  let digits = (input || "").replace(/\D/g, "").replace(/^0+/, "");
+  let digits = (input || "").replace(/\D/g, "");
   while (digits.startsWith(countryCode)) {
     digits = digits.slice(countryCode.length);
   }

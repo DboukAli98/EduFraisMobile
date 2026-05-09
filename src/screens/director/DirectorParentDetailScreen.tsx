@@ -243,7 +243,8 @@ const DirectorParentDetailScreen: React.FC = () => {
       Alert.alert(t('common.error', 'Error'), t('director.parents.requiredFields', 'First name and last name are required.'));
       return;
     }
-    const localPhone = editForm.phoneNumber.replace(/\D/g, '').replace(/^0+/, '');
+    // Preserve the leading 0 — backend stores phones as-typed.
+    const localPhone = editForm.phoneNumber.replace(/\D/g, '');
 
     try {
       await updateParent({

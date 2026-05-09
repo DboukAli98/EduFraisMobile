@@ -354,8 +354,12 @@ const SignUpScreen: React.FC = () => {
           label={t('auth.phone')}
           value={phone}
           onChangeText={(text) => {
-            // Keep only digits, and drop a leading zero so "0566..." becomes "566...".
-            const digits = text.replace(/\D/g, '').replace(/^0+/, '');
+            // Keep only digits — DO NOT strip the leading 0. Congo-
+            // Brazzaville users write their number with the trunk
+            // prefix ("06 51 23 456…"), and we want to store + show
+            // exactly what they typed so the same value works on
+            // login.
+            const digits = text.replace(/\D/g, '');
             setPhone(digits);
             clearError('phone');
           }}

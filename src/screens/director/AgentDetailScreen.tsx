@@ -51,12 +51,18 @@ const formatAgentPhone = (countryCode?: string, phoneNumber?: string): string =>
   return cc ? `+${cc} ${num}` : num;
 };
 
-/** Strip the country-code prefix and leading zeros from a stored phone. */
+/**
+ * Strip the country-code prefix from a stored phone but PRESERVE the
+ * leading 0 trunk prefix the user originally typed. We used to strip
+ * leading 0s here for E.164 canonicalisation, but per product decision
+ * the 0 is part of how Congo-Brazzaville users write their number and
+ * we want it back when re-displaying.
+ */
 const toLocalDigits = (countryCode: string | undefined, phoneNumber: string | undefined): string => {
   const cc = (countryCode || '').replace(/\D/g, '');
   let digits = (phoneNumber || '').replace(/\D/g, '');
   if (cc && digits.startsWith(cc)) digits = digits.slice(cc.length);
-  return digits.replace(/^0+/, '');
+  return digits;
 };
 
 interface AgentFormState {
@@ -273,8 +279,9 @@ const AgentDetailScreen: React.FC = () => {
 
     try {
       // Send local digits only; country code is provided separately.
+      // Preserve the leading 0 — backend stores phones as-typed.
       const countryCode = agent.countryCode || COUNTRY_CODE;
-      const localPhone = agentForm.phoneNumber.replace(/\D/g, '').replace(/^0+/, '');
+      const localPhone = agentForm.phoneNumber.replace(/\D/g, '');
 
       await editAgent({
         collectingAgentId: agent.collectingAgentId,

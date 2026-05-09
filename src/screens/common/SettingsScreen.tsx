@@ -499,7 +499,8 @@ export default function SettingsScreen() {
     }
 
     try {
-      const localPhone = profilePhone.replace(/\D/g, '').replace(/^0+/, '');
+      // Preserve the leading 0 — backend stores phones as-typed.
+      const localPhone = profilePhone.replace(/\D/g, '');
       if (isParent && parentData?.data) {
         await updateParent({
           parentId: parentData.data.parentId,

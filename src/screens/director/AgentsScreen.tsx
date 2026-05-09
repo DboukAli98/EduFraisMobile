@@ -239,8 +239,10 @@ const AgentsScreen: React.FC = () => {
     }
 
     try {
-      // Send local digits only; country code is provided separately.
-      const localPhone = agentForm.phoneNumber.replace(/\D/g, '').replace(/^0+/, '');
+      // Send local digits — including the leading 0 as the user typed.
+      // The backend stores phones as `CountryCode + phoneNumber` and
+      // doesn't strip the trunk prefix.
+      const localPhone = agentForm.phoneNumber.replace(/\D/g, '');
 
       await addAgent({
         schoolId,

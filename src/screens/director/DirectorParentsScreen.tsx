@@ -142,7 +142,8 @@ const DirectorParentsScreen: React.FC = () => {
       );
       return;
     }
-    const localPhone = form.phoneNumber.replace(/\D/g, '').replace(/^0+/, '');
+    // Preserve the leading 0 — see ParentsManagementScreen note.
+    const localPhone = form.phoneNumber.replace(/\D/g, '');
     if (!localPhone) {
       Alert.alert(
         t('common.error', 'Error'),
