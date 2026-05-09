@@ -83,6 +83,7 @@ export default function AppLayout() {
 
   return (
     <Tabs
+      backBehavior="history"
       tabBar={(props) => <AnimatedTabBar {...props} />}
       screenOptions={{
         headerShown: false,

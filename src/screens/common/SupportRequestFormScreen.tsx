@@ -14,7 +14,6 @@ import {
   ThemedText,
   ThemedButton,
   ThemedInput,
-  SectionHeader,
 } from '../../components';
 import { useAddSupportRequestMutation, useGetSchoolDirectorQuery } from '../../services/api/apiSlice';
 import {
@@ -25,6 +24,7 @@ import {
 
 type RequestType = 'General' | 'Payment' | 'Help';
 type Priority = keyof typeof SUPPORT_PRIORITIES;
+type SupportSectionKey = 'details' | 'category' | 'review';
 
 const REQUEST_TYPES: { key: RequestType; icon: keyof typeof Ionicons.glyphMap }[] = [
   { key: 'General', icon: 'chatbubble-outline' },
@@ -38,6 +38,56 @@ const PRIORITIES: { key: Priority; color: (colors: any) => string }[] = [
   { key: 'High', color: (c) => c.accent },
   { key: 'Urgent', color: (c) => c.error },
 ];
+
+const AccordionSection: React.FC<{
+  id: SupportSectionKey;
+  title: string;
+  description: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  isOpen: boolean;
+  isComplete?: boolean;
+  onPress: (id: SupportSectionKey) => void;
+  children: React.ReactNode;
+}> = ({ id, title, description, icon, isOpen, isComplete = false, onPress, children }) => {
+  const { theme } = useTheme();
+
+  return (
+    <View
+      style={[
+        styles.accordionCard,
+        {
+          backgroundColor: theme.colors.surface,
+          borderColor: isOpen ? theme.colors.primary : theme.colors.borderLight,
+          borderRadius: theme.borderRadius.xl,
+        },
+      ]}
+    >
+      <Pressable
+        onPress={() => onPress(id)}
+        style={styles.accordionHeader}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: isOpen }}
+      >
+        <View style={[styles.accordionIcon, { backgroundColor: theme.colors.primary + '14' }]}>
+          <Ionicons name={icon} size={20} color={theme.colors.primary} />
+        </View>
+        <View style={styles.accordionHeaderText}>
+          <View style={styles.accordionTitleRow}>
+            <ThemedText variant="body" style={styles.accordionTitle} numberOfLines={1}>
+              {title}
+            </ThemedText>
+            {isComplete && <Ionicons name="checkmark-circle" size={18} color={theme.colors.success} />}
+          </View>
+          <ThemedText variant="caption" color={theme.colors.textSecondary} numberOfLines={1}>
+            {description}
+          </ThemedText>
+        </View>
+        <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={20} color={theme.colors.textSecondary} />
+      </Pressable>
+      {isOpen && <View style={styles.accordionBody}>{children}</View>}
+    </View>
+  );
+};
 
 const AnimatedSection: React.FC<{
   index: number;
@@ -75,6 +125,7 @@ export default function SupportRequestFormScreen() {
   const [description, setDescription] = useState('');
   const [selectedType, setSelectedType] = useState<RequestType | null>(null);
   const [selectedPriority, setSelectedPriority] = useState<Priority | null>('Medium');
+  const [activeSection, setActiveSection] = useState<SupportSectionKey>('details');
 
   const requestDirection = useMemo(() => {
     if (isAgent) {
@@ -91,6 +142,17 @@ export default function SupportRequestFormScreen() {
     !!selectedType &&
     !!selectedPriority &&
     !isSubmitting;
+
+  const detailsComplete = Boolean(title.trim() && description.trim());
+  const categoryComplete = Boolean(selectedType && selectedPriority);
+  const reviewComplete = detailsComplete && categoryComplete;
+  const categorySummary = categoryComplete
+    ? `${t(`support.${selectedType!.toLowerCase()}`, selectedType!)} · ${t(`support.${selectedPriority!.toLowerCase()}`, selectedPriority!)}`
+    : t('support.categoryStepDesc', 'Type and priority');
+
+  const handleToggleSection = (section: SupportSectionKey) => {
+    setActiveSection((current) => (current === section ? current : section));
+  };
 
   const handleSubmit = async () => {
     if (!canSubmit) {
@@ -160,113 +222,137 @@ export default function SupportRequestFormScreen() {
   return (
     <ScreenContainer>
       <AnimatedSection index={0}>
-        <ThemedInput
-          label={t('support.subject', 'Title')}
-          value={title}
-          onChangeText={setTitle}
-          placeholder={t('support.subjectPlaceholder', 'Briefly describe your issue')}
-          containerStyle={styles.topInput}
-        />
-      </AnimatedSection>
+        <AccordionSection
+          id="details"
+          title={t('support.details', 'Details')}
+          description={detailsComplete ? title.trim() : t('support.detailsStepDesc', 'Title and description')}
+          icon="document-text-outline"
+          isOpen={activeSection === 'details'}
+          isComplete={detailsComplete}
+          onPress={handleToggleSection}
+        >
+          <ThemedInput
+            label={t('support.subject', 'Title')}
+            value={title}
+            onChangeText={setTitle}
+            placeholder={t('support.subjectPlaceholder', 'Briefly describe your issue')}
+          />
 
-      <AnimatedSection index={1}>
-        <SectionHeader title={t('support.requestType', 'Type')} style={styles.sectionLabel} />
-        <View style={styles.chipRow}>
-          {REQUEST_TYPES.map((type) => {
-            const isSelected = selectedType === type.key;
-            return (
-              <Pressable
-                key={type.key}
-                onPress={() => setSelectedType(type.key)}
-                style={[
-                  styles.typeChip,
-                  {
-                    backgroundColor: isSelected
-                      ? theme.colors.primary
-                      : theme.colors.inputBackground,
-                    borderRadius: theme.borderRadius.lg,
-                    borderWidth: isSelected ? 0 : 1,
-                    borderColor: theme.colors.borderLight,
-                  },
-                ]}
-              >
-                <Ionicons
-                  name={type.icon}
-                  size={18}
-                  color={isSelected ? '#FFFFFF' : theme.colors.textSecondary}
-                />
-                <ThemedText
-                  variant="bodySmall"
-                  color={isSelected ? '#FFFFFF' : theme.colors.textSecondary}
-                  style={{ fontWeight: '600', marginLeft: 6 }}
+          <ThemedInput
+            label={t('support.description', 'Description')}
+            value={description}
+            onChangeText={setDescription}
+            placeholder={t('support.descriptionPlaceholder', 'Provide details about your issue...')}
+            multiline
+            numberOfLines={5}
+            containerStyle={styles.descriptionInput}
+          />
+
+          <ThemedButton
+            title={t('common.next', 'Next')}
+            onPress={() => setActiveSection('category')}
+            variant="secondary"
+            size="md"
+            fullWidth
+          />
+        </AccordionSection>
+
+        <AccordionSection
+          id="category"
+          title={t('support.category', 'Category')}
+          description={categorySummary}
+          icon="options-outline"
+          isOpen={activeSection === 'category'}
+          isComplete={categoryComplete}
+          onPress={handleToggleSection}
+        >
+          <ThemedText variant="bodySmall" color={theme.colors.textSecondary} style={styles.inlineLabel}>
+            {t('support.requestType', 'Type')}
+          </ThemedText>
+          <View style={styles.chipRow}>
+            {REQUEST_TYPES.map((type) => {
+              const isSelected = selectedType === type.key;
+              return (
+                <Pressable
+                  key={type.key}
+                  onPress={() => setSelectedType(type.key)}
+                  style={[
+                    styles.typeChip,
+                    {
+                      backgroundColor: isSelected ? theme.colors.primary : theme.colors.inputBackground,
+                      borderRadius: theme.borderRadius.lg,
+                      borderWidth: isSelected ? 0 : 1,
+                      borderColor: theme.colors.borderLight,
+                    },
+                  ]}
                 >
-                  {t(`support.${type.key.toLowerCase()}`, type.key)}
-                </ThemedText>
-              </Pressable>
-            );
-          })}
-        </View>
-      </AnimatedSection>
+                  <Ionicons name={type.icon} size={18} color={isSelected ? '#FFFFFF' : theme.colors.textSecondary} />
+                  <ThemedText variant="bodySmall" color={isSelected ? '#FFFFFF' : theme.colors.textSecondary} style={{ fontWeight: '600', marginLeft: 6 }}>
+                    {t(`support.${type.key.toLowerCase()}`, type.key)}
+                  </ThemedText>
+                </Pressable>
+              );
+            })}
+          </View>
 
-      <AnimatedSection index={2}>
-        <SectionHeader title={t('support.priority', 'Priority')} style={styles.sectionLabel} />
-        <View style={styles.chipRow}>
-          {PRIORITIES.map((priority) => {
-            const isSelected = selectedPriority === priority.key;
-            const color = priority.color(theme.colors);
-            return (
-              <Pressable
-                key={priority.key}
-                onPress={() => setSelectedPriority(priority.key)}
-                style={[
-                  styles.priorityChip,
-                  {
-                    backgroundColor: isSelected ? color : color + '12',
-                    borderRadius: theme.borderRadius.full,
-                    borderWidth: isSelected ? 0 : 1,
-                    borderColor: color + '30',
-                  },
-                ]}
-              >
-                <ThemedText
-                  variant="caption"
-                  color={isSelected ? '#FFFFFF' : color}
-                  style={{ fontWeight: '700' }}
+          <ThemedText variant="bodySmall" color={theme.colors.textSecondary} style={styles.inlineLabel}>
+            {t('support.priority', 'Priority')}
+          </ThemedText>
+          <View style={styles.chipRow}>
+            {PRIORITIES.map((priority) => {
+              const isSelected = selectedPriority === priority.key;
+              const color = priority.color(theme.colors);
+              return (
+                <Pressable
+                  key={priority.key}
+                  onPress={() => setSelectedPriority(priority.key)}
+                  style={[
+                    styles.priorityChip,
+                    {
+                      backgroundColor: isSelected ? color : color + '12',
+                      borderRadius: theme.borderRadius.full,
+                      borderWidth: isSelected ? 0 : 1,
+                      borderColor: color + '30',
+                    },
+                  ]}
                 >
-                  {t(`support.${priority.key.toLowerCase()}`, priority.key)}
-                </ThemedText>
-              </Pressable>
-            );
-          })}
-        </View>
-      </AnimatedSection>
+                  <ThemedText variant="caption" color={isSelected ? '#FFFFFF' : color} style={{ fontWeight: '700' }}>
+                    {t(`support.${priority.key.toLowerCase()}`, priority.key)}
+                  </ThemedText>
+                </Pressable>
+              );
+            })}
+          </View>
 
-      <AnimatedSection index={3}>
-        <ThemedInput
-          label={t('support.description', 'Description')}
-          value={description}
-          onChangeText={setDescription}
-          placeholder={t(
-            'support.descriptionPlaceholder',
-            'Provide details about your issue...',
-          )}
-          multiline
-          numberOfLines={5}
-          containerStyle={styles.descriptionInput}
-        />
-      </AnimatedSection>
+          <ThemedButton
+            title={t('support.review', 'Review')}
+            onPress={() => setActiveSection('review')}
+            variant="secondary"
+            size="md"
+            fullWidth
+          />
+        </AccordionSection>
 
-      <AnimatedSection index={4}>
-        <ThemedButton
-          title={isSubmitting ? t('common.loading', 'Submitting...') : t('support.submitRequest', 'Submit Request')}
-          onPress={handleSubmit}
-          variant="primary"
-          size="lg"
-          fullWidth
-          disabled={!canSubmit}
-          icon={<Ionicons name="send" size={18} color="#FFFFFF" />}
-          style={styles.submitButton}
-        />
+        <AccordionSection
+          id="review"
+          title={t('support.review', 'Review')}
+          description={canSubmit ? t('support.readyToSubmit', 'Ready to submit') : t('support.reviewStepDesc', 'Check required fields')}
+          icon="checkmark-done-outline"
+          isOpen={activeSection === 'review'}
+          isComplete={reviewComplete}
+          onPress={handleToggleSection}
+        >
+          <ThemedButton
+            title={isSubmitting ? t('common.loading', 'Submitting...') : t('support.submitRequest', 'Submit Request')}
+            onPress={handleSubmit}
+            variant="primary"
+            size="lg"
+            fullWidth
+            disabled={!canSubmit}
+            icon={<Ionicons name="send" size={18} color="#FFFFFF" />}
+            style={styles.submitButton}
+          />
+        </AccordionSection>
       </AnimatedSection>
 
       <View style={{ height: 32 }} />
@@ -279,12 +365,46 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 12,
   },
-  topInput: {
+  accordionCard: {
+    borderWidth: 1,
     marginTop: 8,
+    marginBottom: 12,
+    overflow: 'hidden',
   },
-  sectionLabel: {
-    marginTop: 8,
-    marginBottom: 0,
+  accordionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  accordionIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  accordionHeaderText: {
+    flex: 1,
+    marginRight: 8,
+  },
+  accordionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  accordionTitle: {
+    flex: 1,
+    fontWeight: '700',
+  },
+  accordionBody: {
+    paddingHorizontal: 14,
+    paddingBottom: 14,
+  },
+  inlineLabel: {
+    marginBottom: 6,
+    fontWeight: '600',
   },
   chipRow: {
     flexDirection: 'row',

@@ -9,7 +9,7 @@
     "newArchEnabled": true,
     "scheme": "edufrais",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#4B49AC"
     },

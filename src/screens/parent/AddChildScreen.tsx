@@ -28,6 +28,76 @@ import {
 } from '../../services/api/apiSlice';
 import type { School } from '../../types';
 
+type AddChildSectionKey = 'identity' | 'school' | 'review';
+
+type AccordionSectionProps = {
+  id: AddChildSectionKey;
+  title: string;
+  description: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  isOpen: boolean;
+  isComplete?: boolean;
+  onPress: (id: AddChildSectionKey) => void;
+  children: React.ReactNode;
+};
+
+const AccordionSection: React.FC<AccordionSectionProps> = ({
+  id,
+  title,
+  description,
+  icon,
+  isOpen,
+  isComplete = false,
+  onPress,
+  children,
+}) => {
+  const { theme } = useTheme();
+
+  return (
+    <View
+      style={[
+        styles.accordionCard,
+        {
+          backgroundColor: theme.colors.surface,
+          borderColor: isOpen ? theme.colors.primary : theme.colors.borderLight,
+          borderRadius: theme.borderRadius.xl,
+        },
+      ]}
+    >
+      <Pressable
+        onPress={() => onPress(id)}
+        style={styles.accordionHeader}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: isOpen }}
+      >
+        <View style={[styles.accordionIcon, { backgroundColor: theme.colors.primary + '14' }]}>
+          <Ionicons name={icon} size={20} color={theme.colors.primary} />
+        </View>
+        <View style={styles.accordionHeaderText}>
+          <View style={styles.accordionTitleRow}>
+            <ThemedText variant="body" style={styles.accordionTitle} numberOfLines={1}>
+              {title}
+            </ThemedText>
+            {isComplete && (
+              <Ionicons name="checkmark-circle" size={18} color={theme.colors.success} />
+            )}
+          </View>
+          <ThemedText variant="caption" color={theme.colors.textSecondary} numberOfLines={1}>
+            {description}
+          </ThemedText>
+        </View>
+        <Ionicons
+          name={isOpen ? 'chevron-up' : 'chevron-down'}
+          size={20}
+          color={theme.colors.textSecondary}
+        />
+      </Pressable>
+
+      {isOpen && <View style={styles.accordionBody}>{children}</View>}
+    </View>
+  );
+};
+
 export default function AddChildScreen() {
   const { theme } = useTheme();
   const { t } = useTranslation();
@@ -51,6 +121,7 @@ export default function AddChildScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [activeSection, setActiveSection] = useState<AddChildSectionKey>('identity');
 
   // School picker state
   const [showSchoolPicker, setShowSchoolPicker] = useState(false);
@@ -74,8 +145,26 @@ export default function AddChildScreen() {
     if (!dateOfBirth) e.dateOfBirth = t('children.dobRequired', 'Date of birth is required');
     if (!selectedSchool) e.school = t('children.schoolRequired', 'Please select a school');
     setErrors(e);
+    if (e.firstName || e.lastName) {
+      setActiveSection('identity');
+    } else if (e.dateOfBirth || e.school) {
+      setActiveSection('school');
+    }
     return Object.keys(e).length === 0;
   }, [firstName, lastName, dateOfBirth, selectedSchool, t]);
+
+  const resetForm = useCallback(() => {
+    setFirstName('');
+    setLastName('');
+    setFatherName('');
+    setDateOfBirth(null);
+    setSelectedSchool(null);
+    setErrors({});
+    setSchoolSearch('');
+    setShowDatePicker(false);
+    setShowSchoolPicker(false);
+    setActiveSection('identity');
+  }, []);
 
   const handleSubmit = useCallback(async () => {
     if (!validate()) return;
@@ -91,6 +180,7 @@ export default function AddChildScreen() {
       console.log('[AddChild] payload:', payload);
       const result = await addChild(payload).unwrap();
       console.log('[AddChild] success:', result);
+      resetForm();
       Alert.alert(
         t('common.success', 'Success'),
         t('children.addSuccess', 'Child added successfully. Pending director approval.'),
@@ -118,13 +208,31 @@ export default function AddChildScreen() {
             : t('children.addError', 'Failed to add child.'));
       Alert.alert(t('common.error', 'Error'), String(message));
     }
-  }, [validate, addChild, firstName, lastName, dateOfBirth, fatherName, parentId, selectedSchool, router, t]);
+  }, [validate, addChild, firstName, lastName, dateOfBirth, fatherName, parentId, selectedSchool, resetForm, router, t]);
 
   const handleSelectSchool = useCallback((school: School) => {
     setSelectedSchool(school);
     setShowSchoolPicker(false);
     setSchoolSearch('');
   }, []);
+
+  const handleToggleSection = useCallback((section: AddChildSectionKey) => {
+    setActiveSection((current) => (current === section ? current : section));
+  }, []);
+
+  const identityComplete = Boolean(firstName.trim() && lastName.trim());
+  const schoolComplete = Boolean(dateOfBirth && selectedSchool);
+  const reviewComplete = identityComplete && schoolComplete;
+
+  const identitySummary = identityComplete
+    ? `${firstName.trim()} ${lastName.trim()}`
+    : t('children.identityStepDesc', 'Name and family information');
+  const schoolSummary = schoolComplete
+    ? selectedSchool!.schoolName
+    : t('children.schoolStepDesc', 'Birth date and school selection');
+  const reviewSummary = reviewComplete
+    ? t('children.reviewStepReady', 'Ready to send for approval')
+    : t('children.reviewStepDesc', 'Check the request before submitting');
 
   const renderSchoolItem = useCallback(
     ({ item }: { item: School }) => (
@@ -184,177 +292,243 @@ export default function AddChildScreen() {
           {t('children.addChild', 'Add Child')}
         </ThemedText>
 
-        <ThemedInput
-          label={t('auth.firstName', 'First Name')}
-          value={firstName}
-          onChangeText={setFirstName}
-          placeholder={t('auth.firstName', 'First Name')}
-          error={errors.firstName}
-        />
-
-        <ThemedInput
-          label={t('auth.lastName', 'Last Name')}
-          value={lastName}
-          onChangeText={setLastName}
-          placeholder={t('auth.lastName', 'Last Name')}
-          error={errors.lastName}
-        />
-
-        <ThemedInput
-          label={t('children.fatherName', 'Father Name')}
-          value={fatherName}
-          onChangeText={setFatherName}
-          placeholder={t('children.fatherName', 'Father Name')}
-        />
-
-        {/* Date of Birth Picker */}
-        <ThemedText
-          variant="bodySmall"
-          color={theme.colors.textSecondary}
-          style={styles.label}
+        <AccordionSection
+          id="identity"
+          title={t('children.identityStepTitle', 'Child details')}
+          description={identitySummary}
+          icon="person-outline"
+          isOpen={activeSection === 'identity'}
+          isComplete={identityComplete}
+          onPress={handleToggleSection}
         >
-          {t('children.dateOfBirth', 'Date of Birth')}
-        </ThemedText>
-        <Pressable
-          onPress={() => setShowDatePicker(true)}
-          style={[
-            styles.dateSelector,
-            {
-              backgroundColor: theme.colors.inputBackground,
-              borderColor: errors.dateOfBirth ? theme.colors.error : theme.colors.border,
-              borderRadius: theme.borderRadius.md,
-            },
-          ]}
-        >
-          <Ionicons
-            name="calendar-outline"
-            size={20}
-            color={dateOfBirth ? theme.colors.text : theme.colors.textTertiary}
-            style={styles.selectorIcon}
+          <ThemedInput
+            label={t('auth.firstName', 'First Name')}
+            value={firstName}
+            onChangeText={setFirstName}
+            placeholder={t('auth.firstName', 'First Name')}
+            error={errors.firstName}
           />
-          <ThemedText
-            variant="body"
-            color={dateOfBirth ? theme.colors.text : theme.colors.textTertiary}
-            style={styles.selectorText}
-          >
-            {dateOfBirth
-              ? dateOfBirth.toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })
-              : t('children.selectDate', 'Select date')}
-          </ThemedText>
-        </Pressable>
-        {errors.dateOfBirth && (
-          <ThemedText variant="caption" color={theme.colors.error} style={styles.errorText}>
-            {errors.dateOfBirth}
-          </ThemedText>
-        )}
 
-        {showDatePicker && (
-          Platform.OS === 'ios' ? (
-            <Modal transparent animationType="fade" onRequestClose={() => setShowDatePicker(false)}>
-              <Pressable style={styles.dateModalOverlay} onPress={() => setShowDatePicker(false)}>
-                <View
-                  style={[
-                    styles.dateModalContent,
-                    { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.xl },
-                  ]}
-                >
-                  <View style={[styles.dateModalHeader, { borderBottomColor: theme.colors.borderLight }]}>
-                    <Pressable onPress={() => setShowDatePicker(false)}>
-                      <ThemedText variant="body" color={theme.colors.textSecondary}>
-                        {t('common.cancel', 'Cancel')}
-                      </ThemedText>
-                    </Pressable>
-                    <ThemedText variant="subtitle">
-                      {t('children.dateOfBirth', 'Date of Birth')}
-                    </ThemedText>
-                    <Pressable onPress={() => setShowDatePicker(false)}>
-                      <ThemedText variant="body" color={theme.colors.primary}>
-                        {t('common.done', 'Done')}
-                      </ThemedText>
-                    </Pressable>
-                  </View>
-                  <DateTimePicker
-                    value={dateOfBirth || new Date(2010, 0, 1)}
-                    mode="date"
-                    display="spinner"
-                    maximumDate={new Date()}
-                    onChange={(_event: DateTimePickerEvent, selected?: Date) => {
-                      if (selected) setDateOfBirth(selected);
-                    }}
-                  />
-                </View>
-              </Pressable>
-            </Modal>
-          ) : (
-            <DateTimePicker
-              value={dateOfBirth || new Date(2010, 0, 1)}
-              mode="date"
-              display="default"
-              maximumDate={new Date()}
-              onChange={(_event: DateTimePickerEvent, selected?: Date) => {
-                setShowDatePicker(false);
-                if (selected) setDateOfBirth(selected);
-              }}
+          <ThemedInput
+            label={t('auth.lastName', 'Last Name')}
+            value={lastName}
+            onChangeText={setLastName}
+            placeholder={t('auth.lastName', 'Last Name')}
+            error={errors.lastName}
+          />
+
+          <ThemedInput
+            label={t('children.fatherName', 'Father Name')}
+            value={fatherName}
+            onChangeText={setFatherName}
+            placeholder={t('children.fatherName', 'Father Name')}
+          />
+
+          <ThemedButton
+            title={t('common.next', 'Next')}
+            onPress={() => setActiveSection('school')}
+            variant="secondary"
+            size="md"
+            fullWidth
+          />
+        </AccordionSection>
+
+        <AccordionSection
+          id="school"
+          title={t('children.schoolStepTitle', 'School information')}
+          description={schoolSummary}
+          icon="school-outline"
+          isOpen={activeSection === 'school'}
+          isComplete={schoolComplete}
+          onPress={handleToggleSection}
+        >
+          {/* Date of Birth Picker */}
+          <ThemedText
+            variant="bodySmall"
+            color={theme.colors.textSecondary}
+            style={styles.label}
+          >
+            {t('children.dateOfBirth', 'Date of Birth')}
+          </ThemedText>
+          <Pressable
+            onPress={() => setShowDatePicker(true)}
+            style={[
+              styles.dateSelector,
+              {
+                backgroundColor: theme.colors.inputBackground,
+                borderColor: errors.dateOfBirth ? theme.colors.error : theme.colors.border,
+                borderRadius: theme.borderRadius.md,
+              },
+            ]}
+          >
+            <Ionicons
+              name="calendar-outline"
+              size={20}
+              color={dateOfBirth ? theme.colors.text : theme.colors.textTertiary}
+              style={styles.selectorIcon}
             />
-          )
-        )}
+            <ThemedText
+              variant="body"
+              color={dateOfBirth ? theme.colors.text : theme.colors.textTertiary}
+              style={styles.selectorText}
+            >
+              {dateOfBirth
+                ? dateOfBirth.toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })
+                : t('children.selectDate', 'Select date')}
+            </ThemedText>
+          </Pressable>
+          {errors.dateOfBirth && (
+            <ThemedText variant="caption" color={theme.colors.error} style={styles.errorText}>
+              {errors.dateOfBirth}
+            </ThemedText>
+          )}
 
-        {/* School Selection */}
-        <ThemedText variant="bodySmall" style={styles.label}>
-          {t('children.school', 'School')}
-        </ThemedText>
-        <Pressable
-          onPress={() => setShowSchoolPicker(true)}
-          style={[
-            styles.schoolSelector,
-            {
-              backgroundColor: theme.colors.inputBackground,
-              borderColor: errors.school ? theme.colors.error : theme.colors.border,
-              borderRadius: theme.borderRadius.md,
-            },
-          ]}
-        >
-          <Ionicons
-            name="school-outline"
-            size={20}
-            color={selectedSchool ? theme.colors.text : theme.colors.textTertiary}
-            style={styles.selectorIcon}
-          />
-          <ThemedText
-            variant="body"
-            color={selectedSchool ? theme.colors.text : theme.colors.textTertiary}
-            style={styles.selectorText}
-            numberOfLines={1}
+          {showDatePicker && (
+            Platform.OS === 'ios' ? (
+              <Modal transparent animationType="fade" onRequestClose={() => setShowDatePicker(false)}>
+                <Pressable style={styles.dateModalOverlay} onPress={() => setShowDatePicker(false)}>
+                  <View
+                    style={[
+                      styles.dateModalContent,
+                      { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.xl },
+                    ]}
+                  >
+                    <View style={[styles.dateModalHeader, { borderBottomColor: theme.colors.borderLight }]}>
+                      <Pressable onPress={() => setShowDatePicker(false)}>
+                        <ThemedText variant="body" color={theme.colors.textSecondary}>
+                          {t('common.cancel', 'Cancel')}
+                        </ThemedText>
+                      </Pressable>
+                      <ThemedText variant="subtitle">
+                        {t('children.dateOfBirth', 'Date of Birth')}
+                      </ThemedText>
+                      <Pressable onPress={() => setShowDatePicker(false)}>
+                        <ThemedText variant="body" color={theme.colors.primary}>
+                          {t('common.done', 'Done')}
+                        </ThemedText>
+                      </Pressable>
+                    </View>
+                    <DateTimePicker
+                      value={dateOfBirth || new Date(2010, 0, 1)}
+                      mode="date"
+                      display="spinner"
+                      maximumDate={new Date()}
+                      onChange={(_event: DateTimePickerEvent, selected?: Date) => {
+                        if (selected) setDateOfBirth(selected);
+                      }}
+                    />
+                  </View>
+                </Pressable>
+              </Modal>
+            ) : (
+              <DateTimePicker
+                value={dateOfBirth || new Date(2010, 0, 1)}
+                mode="date"
+                display="default"
+                maximumDate={new Date()}
+                onChange={(_event: DateTimePickerEvent, selected?: Date) => {
+                  setShowDatePicker(false);
+                  if (selected) setDateOfBirth(selected);
+                }}
+              />
+            )
+          )}
+
+          {/* School Selection */}
+          <ThemedText variant="bodySmall" style={styles.label}>
+            {t('children.school', 'School')}
+          </ThemedText>
+          <Pressable
+            onPress={() => setShowSchoolPicker(true)}
+            style={[
+              styles.schoolSelector,
+              {
+                backgroundColor: theme.colors.inputBackground,
+                borderColor: errors.school ? theme.colors.error : theme.colors.border,
+                borderRadius: theme.borderRadius.md,
+              },
+            ]}
           >
-            {selectedSchool
-              ? selectedSchool.schoolName
-              : t('children.selectSchool', 'Select a school...')}
-          </ThemedText>
-          <Ionicons name="chevron-down" size={20} color={theme.colors.textTertiary} />
-        </Pressable>
-        {errors.school && (
-          <ThemedText variant="caption" color={theme.colors.error} style={styles.errorText}>
-            {errors.school}
-          </ThemedText>
-        )}
+            <Ionicons
+              name="school-outline"
+              size={20}
+              color={selectedSchool ? theme.colors.text : theme.colors.textTertiary}
+              style={styles.selectorIcon}
+            />
+            <ThemedText
+              variant="body"
+              color={selectedSchool ? theme.colors.text : theme.colors.textTertiary}
+              style={styles.selectorText}
+              numberOfLines={1}
+            >
+              {selectedSchool
+                ? selectedSchool.schoolName
+                : t('children.selectSchool', 'Select a school...')}
+            </ThemedText>
+            <Ionicons name="chevron-down" size={20} color={theme.colors.textTertiary} />
+          </Pressable>
+          {errors.school && (
+            <ThemedText variant="caption" color={theme.colors.error} style={styles.errorText}>
+              {errors.school}
+            </ThemedText>
+          )}
 
-        <View style={styles.spacer} />
+          <ThemedButton
+            title={t('children.reviewStepTitle', 'Review')}
+            onPress={() => setActiveSection('review')}
+            variant="secondary"
+            size="md"
+            fullWidth
+            style={styles.sectionActionBtn}
+          />
+        </AccordionSection>
 
-        <ThemedButton
-          title={isLoading ? t('common.loading', 'Loading...') : t('children.addChild', 'Add Child')}
-          onPress={handleSubmit}
-          disabled={isLoading}
-          variant="primary"
-          size="lg"
-        />
+        <AccordionSection
+          id="review"
+          title={t('children.reviewStepTitle', 'Review')}
+          description={reviewSummary}
+          icon="checkmark-done-outline"
+          isOpen={activeSection === 'review'}
+          isComplete={reviewComplete}
+          onPress={handleToggleSection}
+        >
+          <View style={[styles.reviewBox, { backgroundColor: theme.colors.inputBackground, borderRadius: theme.borderRadius.lg }]}>
+            <View style={styles.reviewRow}>
+              <ThemedText variant="caption" color={theme.colors.textSecondary}>{t('auth.firstName', 'First Name')}</ThemedText>
+              <ThemedText variant="bodySmall" style={styles.reviewValue}>{firstName.trim() || '-'}</ThemedText>
+            </View>
+            <View style={styles.reviewRow}>
+              <ThemedText variant="caption" color={theme.colors.textSecondary}>{t('auth.lastName', 'Last Name')}</ThemedText>
+              <ThemedText variant="bodySmall" style={styles.reviewValue}>{lastName.trim() || '-'}</ThemedText>
+            </View>
+            <View style={styles.reviewRow}>
+              <ThemedText variant="caption" color={theme.colors.textSecondary}>{t('children.dateOfBirth', 'Date of Birth')}</ThemedText>
+              <ThemedText variant="bodySmall" style={styles.reviewValue}>
+                {dateOfBirth ? dateOfBirth.toLocaleDateString('fr-FR') : '-'}
+              </ThemedText>
+            </View>
+            <View style={styles.reviewRow}>
+              <ThemedText variant="caption" color={theme.colors.textSecondary}>{t('children.school', 'School')}</ThemedText>
+              <ThemedText variant="bodySmall" style={styles.reviewValue}>{selectedSchool?.schoolName || '-'}</ThemedText>
+            </View>
+          </View>
 
-        <ThemedButton
-          title={t('common.cancel', 'Cancel')}
-          onPress={() => router.back()}
-          variant="ghost"
-          size="md"
-          style={styles.cancelBtn}
-        />
+          <ThemedButton
+            title={isLoading ? t('common.loading', 'Loading...') : t('children.addChild', 'Add Child')}
+            onPress={handleSubmit}
+            disabled={isLoading}
+            variant="primary"
+            size="lg"
+          />
+
+          <ThemedButton
+            title={t('common.cancel', 'Cancel')}
+            onPress={() => router.back()}
+            variant="ghost"
+            size="md"
+            style={styles.cancelBtn}
+          />
+        </AccordionSection>
       </ScrollView>
 
       {/* School Picker Modal */}
@@ -446,7 +620,43 @@ const styles = StyleSheet.create({
   },
   title: {
     marginTop: 16,
-    marginBottom: 24,
+    marginBottom: 16,
+  },
+  accordionCard: {
+    borderWidth: 1,
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
+  accordionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  accordionIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  accordionHeaderText: {
+    flex: 1,
+    marginRight: 8,
+  },
+  accordionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  accordionTitle: {
+    flex: 1,
+    fontWeight: '700',
+  },
+  accordionBody: {
+    paddingHorizontal: 14,
+    paddingBottom: 14,
   },
   label: {
     marginBottom: 8,
@@ -496,6 +706,20 @@ const styles = StyleSheet.create({
   },
   spacer: {
     height: 24,
+  },
+  sectionActionBtn: {
+    marginTop: 12,
+  },
+  reviewBox: {
+    padding: 12,
+    marginBottom: 14,
+  },
+  reviewRow: {
+    marginBottom: 10,
+  },
+  reviewValue: {
+    marginTop: 2,
+    fontWeight: '700',
   },
   cancelBtn: {
     marginTop: 8,

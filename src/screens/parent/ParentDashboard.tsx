@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -268,22 +268,27 @@ const ParentDashboard: React.FC = () => {
 
       {/* Quick Actions */}
       <Animated.View style={[styles.qaRow, qaAnim]}>
-        <QuickAction icon="wallet-outline" label={t('parent.dashboard.payNow', 'Pay Now')} color={theme.colors.primary} onPress={() => router.push('/(app)/payments')} index={0} />
-        <QuickAction icon="time-outline" label={t('parent.dashboard.history', 'History')} color={theme.colors.secondary} onPress={() => router.push('/(app)/payment-history')} index={1} />
-        <QuickAction icon="person-add-outline" label={t('parent.dashboard.myAgents', 'My Agents')} color="#8B5CF6" onPress={() => router.push('/(app)/my-agents')} index={2} />
-        {primaryLoyalty ? (
-          <QuickAction
-            icon="star-outline"
-            // Show "350 Points" so the parent sees their balance at a
-            // glance — no need to tap through to learn the number.
-            label={`${primaryLoyalty.member.currentPointsBalance} ${primaryLoyalty.program.pointsLabel || t('loyalty.title', 'Points')}`}
-            color="#F59E0B"
-            onPress={() => router.push('/(app)/loyalty')}
-            index={3}
-          />
-        ) : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.qaScrollContent}
+        >
+          <QuickAction icon="wallet-outline" label={t('parent.dashboard.payNow', 'Pay Now')} color={theme.colors.primary} onPress={() => router.push('/(app)/payments')} index={0} />
+          <QuickAction icon="time-outline" label={t('parent.dashboard.history', 'History')} color={theme.colors.secondary} onPress={() => router.push('/(app)/payment-history')} index={1} />
+          <QuickAction icon="person-add-outline" label={t('parent.dashboard.myAgents', 'My Agents')} color="#8B5CF6" onPress={() => router.push('/(app)/my-agents')} index={2} />
           <QuickAction icon="help-circle-outline" label={t('parent.dashboard.support', 'Support')} color={theme.colors.accent} onPress={() => router.push('/(app)/support')} index={3} />
-        )}
+          {primaryLoyalty ? (
+            <QuickAction
+              icon="star-outline"
+              // Show "350 Points" so the parent sees their balance at a
+              // glance — no need to tap through to learn the number.
+              label={`${primaryLoyalty.member.currentPointsBalance} ${primaryLoyalty.program.pointsLabel || t('loyalty.title', 'Points')}`}
+              color="#F59E0B"
+              onPress={() => router.push('/(app)/loyalty')}
+              index={4}
+            />
+          ) : null}
+        </ScrollView>
       </Animated.View>
 
       {/* Upcoming Dues */}
@@ -407,8 +412,9 @@ const styles = StyleSheet.create({
   progressBg: { height: 6, backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: 3, overflow: 'hidden' },
   progressFill: { height: 6, backgroundColor: '#FFFFFF', borderRadius: 3 },
 
-  qaRow: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 32 },
-  qaWrapper: { alignItems: 'center' },
+  qaRow: { marginBottom: 32 },
+  qaScrollContent: { flexDirection: 'row', alignItems: 'flex-start', gap: 24, paddingHorizontal: 4, paddingVertical: 2 },
+  qaWrapper: { alignItems: 'center', width: 82 },
   qaPressable: { alignItems: 'center' },
   qaCircle: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
   qaLabel: { marginTop: 4 },
