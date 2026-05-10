@@ -162,7 +162,16 @@ export default function PortfolioScreen() {
         ) : (
           filtered.map((parent, index) => (
             <AnimatedSection key={parent.parentId} index={index + 1}>
-              <ThemedCard variant="elevated" style={styles.parentCard}>
+              <ThemedCard
+                variant="elevated"
+                style={styles.parentCard}
+                onPress={() =>
+                  router.push({
+                    pathname: '/(app)/agent-parent-detail',
+                    params: { parentId: String(parent.parentId) },
+                  })
+                }
+              >
                 <View style={styles.parentHeader}>
                   <Avatar
                     firstName={parent.firstName}

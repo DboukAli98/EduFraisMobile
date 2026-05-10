@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -16,7 +16,7 @@ import {
 } from '../../components';
 import { useTheme } from '../../theme';
 import { useGetMyActivityRequestsQuery } from '../../services/api/apiSlice';
-import { formatDateTimeCongo } from '../../utils';
+import { formatDateTimeCongo, normalizeRequestStatus } from '../../utils';
 import type { ActivityRequestStatus, CollectingAgentActivity } from '../../types';
 
 type BadgeTheme = { bg: string; fg: string; label: string };
@@ -72,10 +72,22 @@ const ActivityRequestDetailScreen: React.FC = () => {
     const activityId = parseInt(params.activityId || '0', 10);
     const statusTheme = useRequestStatusTheme();
 
-    const { data, isLoading } = useGetMyActivityRequestsQuery({
-        pageNumber: 1,
-        pageSize: 100,
-    });
+    const { data, isLoading, refetch } = useGetMyActivityRequestsQuery(
+        {
+            pageNumber: 1,
+            pageSize: 100,
+        },
+        {
+            refetchOnFocus: true,
+            refetchOnReconnect: true,
+        },
+    );
+
+    useFocusEffect(
+        useCallback(() => {
+            refetch();
+        }, [refetch]),
+    );
 
     const request = useMemo(
         () => (data?.data ?? []).find((item) => item.activityId === activityId),
@@ -108,11 +120,9 @@ const ActivityRequestDetailScreen: React.FC = () => {
         );
     }
 
-    const status =
-        (typeof request.requestStatus === 'string' ? request.requestStatus : undefined) ||
-        'Requested';
-    const badge = statusTheme[status as ActivityRequestStatus];
-    const timeline = activityRequestTimeline(status as ActivityRequestStatus);
+    const status = normalizeRequestStatus(request.requestStatus) ?? 'Requested';
+    const badge = statusTheme[status];
+    const timeline = activityRequestTimeline(status);
     const agentName = getAgentName(request);
     const dateRows = [
         {

@@ -328,6 +328,12 @@ export default function AppLayout() {
         name="director-child-detail"
         options={{ href: null }}
       />
+      {/* Agent's view of one parent in their portfolio — hidden,
+          entered from the Portefeuille tab by tapping a parent card. */}
+      <Tabs.Screen
+        name="agent-parent-detail"
+        options={{ href: null }}
+      />
       {/* Loyalty (parents + agents). Hidden from the tab bar — entered
           via a quick-action tile on each role's home screen, or by
           deep link. */}

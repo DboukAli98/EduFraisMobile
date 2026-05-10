@@ -1269,6 +1269,22 @@
       "emptyDesc": "Your director hasn't assigned any parents to you yet. Once assigned, they'll appear here.",
       "searchEmptyTitle": "No results",
       "searchEmptyDesc": "No parent matches your search."
+    },
+    "parentDetail": {
+      "title": "Parent details",
+      "fatherName": "Father",
+      "call": "Call",
+      "whatsapp": "WhatsApp",
+      "logActivity": "Log activity",
+      "childrenTitle": "Children",
+      "noChildren": "This parent has no children enrolled.",
+      "activitiesTitle": "Activities with this parent",
+      "noActivitiesTitle": "No activity",
+      "noActivitiesDesc": "You haven't logged any activity with this parent yet.",
+      "notFoundTitle": "Parent not found",
+      "notFoundDesc": "This parent doesn't exist or is no longer available.",
+      "outOfScopeTitle": "Outside your portfolio",
+      "outOfScopeDesc": "This parent wasn't assigned to you. Contact your director to request access."
     }
   }
 }

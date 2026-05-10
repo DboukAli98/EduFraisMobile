@@ -1269,6 +1269,22 @@
       "emptyDesc": "Le directeur ne vous a pas encore assigné de parent. Une fois assignés, ils apparaîtront ici.",
       "searchEmptyTitle": "Aucun résultat",
       "searchEmptyDesc": "Aucun parent ne correspond à votre recherche."
+    },
+    "parentDetail": {
+      "title": "Détails du parent",
+      "fatherName": "Père",
+      "call": "Appeler",
+      "whatsapp": "WhatsApp",
+      "logActivity": "Enregistrer une activité",
+      "childrenTitle": "Enfants",
+      "noChildren": "Ce parent n'a aucun enfant inscrit.",
+      "activitiesTitle": "Activités avec ce parent",
+      "noActivitiesTitle": "Aucune activité",
+      "noActivitiesDesc": "Vous n'avez encore enregistré aucune activité avec ce parent.",
+      "notFoundTitle": "Parent introuvable",
+      "notFoundDesc": "Ce parent n'existe pas ou n'est plus disponible.",
+      "outOfScopeTitle": "Hors de votre portefeuille",
+      "outOfScopeDesc": "Ce parent ne vous a pas été assigné. Contactez votre directeur pour demander l'accès."
     }
   }
 }
