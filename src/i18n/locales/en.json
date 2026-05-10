@@ -865,7 +865,8 @@
     },
     "cycleTotal": "Total to pay",
     "cycleScheduleEstimated": "Estimated preview — the exact amount per installment is set by the school.",
-    "installmentLabel": "Installment {{num}}"
+    "installmentLabel": "Installment {{num}}",
+    "installmentDue": "due {{date}}"
   },
   "time": {
     "today": "Today",
@@ -1087,6 +1088,17 @@
     "cycleDesc": "Description (optional)",
     "cycleDescPlaceholder": "Brief description...",
     "cycleType": "Payment Type",
+    "amount": "Amount",
+    "pickDate": "Pick due date",
+    "addInstallment": "+ Add installment",
+    "customInstallmentsLabel": "Custom installments",
+    "customInstallmentsHelp": "Add each installment with its amount and due date. The total must equal the grade fee.",
+    "customInstallmentsEmpty": "No installments yet — add at least one below.",
+    "customInstallmentsTotal": "Total of installments",
+    "customInstallmentsRequired": "Add at least one installment.",
+    "customInstallmentAmountInvalid": "Installment {{index}}: invalid amount.",
+    "customInstallmentDateRequired": "Installment {{index}}: pick a due date.",
+    "customInstallmentsSumMismatch": "Total ({{sum}}) must equal the grade fee ({{fee}}).",
     "cycleNameRequired": "Plan name is required",
     "cycleAdded": "Payment plan added successfully",
     "cycleAddFailed": "Failed to add payment plan",

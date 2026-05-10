@@ -865,7 +865,8 @@
     },
     "cycleTotal": "Total à payer",
     "cycleScheduleEstimated": "Aperçu indicatif — le montant exact de chaque versement est fixé par l'école.",
-    "installmentLabel": "Versement {{num}}"
+    "installmentLabel": "Versement {{num}}",
+    "installmentDue": "échéance {{date}}"
   },
   "time": {
     "today": "Aujourd'hui",
@@ -1087,6 +1088,17 @@
     "cycleDesc": "Description (facultatif)",
     "cycleDescPlaceholder": "Brève description...",
     "cycleType": "Type de paiement",
+    "amount": "Montant",
+    "pickDate": "Choisir l'échéance",
+    "addInstallment": "+ Ajouter un versement",
+    "customInstallmentsLabel": "Versements personnalisés",
+    "customInstallmentsHelp": "Ajoutez chaque versement avec son montant et sa date d'échéance. Le total doit correspondre aux frais de la classe.",
+    "customInstallmentsEmpty": "Aucun versement pour le moment — ajoutez-en au moins un ci-dessous.",
+    "customInstallmentsTotal": "Total des versements",
+    "customInstallmentsRequired": "Ajoutez au moins un versement.",
+    "customInstallmentAmountInvalid": "Versement {{index}} : montant invalide.",
+    "customInstallmentDateRequired": "Versement {{index}} : choisissez une date d'échéance.",
+    "customInstallmentsSumMismatch": "Le total ({{sum}}) doit correspondre aux frais de la classe ({{fee}}).",
     "cycleNameRequired": "Le nom du plan est requis",
     "cycleAdded": "Plan de paiement ajouté avec succès",
     "cycleAddFailed": "Échec de l'ajout du plan de paiement",

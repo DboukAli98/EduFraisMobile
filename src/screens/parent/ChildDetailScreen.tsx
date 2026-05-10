@@ -179,43 +179,73 @@ const CycleCard: React.FC<{
   );
 
   // Derive the installment breakdown. Priority order:
-  //   1. explicit `installmentAmounts` from the director
-  //   2. synthesized split from the grade fee when the type implies a
+  //   1. cycle.customInstallments — new free-form (amount, dueDate) list
+  //      that the director declared explicitly. Custom cycles created
+  //      with the new flow take this path.
+  //   2. cycle.installmentAmounts — legacy CSV of amounts (no per-row
+  //      dates). Used by Full/Monthly/Quarterly/Weekly when the
+  //      director overrode the equal-split.
+  //   3. Synthesized split from the grade fee when the type implies a
   //      fixed number of installments (Full=1, Monthly=12, Weekly=52,
   //      Quarterly=4); Custom + no data → no breakdown.
-  const explicitInstallments = cycle.installmentAmounts
-    ? cycle.installmentAmounts
-        .split(',')
-        .map((v) => Number(v.trim()))
-        .filter((n) => !Number.isNaN(n) && n > 0)
-    : [];
+  type InstallmentRow = { amount: number; dueDate?: string | null };
+
+  const directorDefinedInstallments: InstallmentRow[] =
+    Array.isArray(cycle.customInstallments) && cycle.customInstallments.length > 0
+      ? cycle.customInstallments.map((ci) => ({
+          amount: ci.amount,
+          dueDate: ci.dueDate,
+        }))
+      : [];
+
+  const explicitAmountsOnly: InstallmentRow[] =
+    directorDefinedInstallments.length === 0 && cycle.installmentAmounts
+      ? cycle.installmentAmounts
+          .split(',')
+          .map((v) => Number(v.trim()))
+          .filter((n) => !Number.isNaN(n) && n > 0)
+          .map((amount) => ({ amount }))
+      : [];
 
   const impliedCount: number | null = (() => {
-    if (explicitInstallments.length > 0) return null;
+    if (directorDefinedInstallments.length > 0 || explicitAmountsOnly.length > 0) return null;
     if (cycleTypeName === 'Full') return 1;
     if (cycleTypeName === 'Monthly') return 12;
     if (cycleTypeName === 'Weekly') return 52;
     if (cycleTypeName === 'Quarterly') return 4;
-    // Custom: we could compute from intervalCount + intervalUnit + term
-    // dates, but the wire data is ambiguous, so keep it as a summary line
-    // and let the parent see "Personnalisé" without a fake schedule.
+    // Custom + no data: leave it to the parent to see the type label
+    // alone (no fake schedule).
     return null;
   })();
 
-  const impliedInstallments: number[] =
+  const impliedInstallments: InstallmentRow[] =
     impliedCount && grade?.schoolGradeFee
-      ? Array.from({ length: impliedCount }, () =>
-          Math.round((grade.schoolGradeFee / impliedCount) * 100) / 100,
-        )
+      ? Array.from({ length: impliedCount }, () => ({
+          amount: Math.round((grade.schoolGradeFee / impliedCount) * 100) / 100,
+        }))
       : [];
 
-  const installments = explicitInstallments.length > 0 ? explicitInstallments : impliedInstallments;
-  const isSynthesized = explicitInstallments.length === 0 && impliedInstallments.length > 0;
+  const installments: InstallmentRow[] =
+    directorDefinedInstallments.length > 0
+      ? directorDefinedInstallments
+      : explicitAmountsOnly.length > 0
+        ? explicitAmountsOnly
+        : impliedInstallments;
+
+  // The schedule is "real" when we got it from the director — either via
+  // customInstallments (best, has per-row dates) or via the legacy CSV.
+  // Synthesized = parent should treat it as an estimate.
+  const isSynthesized =
+    directorDefinedInstallments.length === 0 &&
+    explicitAmountsOnly.length === 0 &&
+    impliedInstallments.length > 0;
 
   const total =
-    explicitInstallments.length > 0
-      ? explicitInstallments.reduce((s, n) => s + n, 0)
-      : grade?.schoolGradeFee ?? 0;
+    directorDefinedInstallments.length > 0
+      ? directorDefinedInstallments.reduce((s, r) => s + r.amount, 0)
+      : explicitAmountsOnly.length > 0
+        ? explicitAmountsOnly.reduce((s, r) => s + r.amount, 0)
+        : grade?.schoolGradeFee ?? 0;
 
   // Summary line shown under the title: "12 versements mensuels · démarre le …"
   const summaryParts: string[] = [];
@@ -319,13 +349,22 @@ const CycleCard: React.FC<{
               )}
             </ThemedText>
           )}
-          {installments.map((amt, i) => (
+          {installments.map((row, i) => (
             <View key={i} style={styles.installmentRow}>
-              <ThemedText variant="caption" color={theme.colors.textSecondary}>
-                {t('childDetail.installmentLabel', 'Versement {{num}}', { num: i + 1 })}
-              </ThemedText>
+              <View style={{ flexShrink: 1 }}>
+                <ThemedText variant="caption" color={theme.colors.textSecondary}>
+                  {t('childDetail.installmentLabel', 'Versement {{num}}', { num: i + 1 })}
+                </ThemedText>
+                {row.dueDate ? (
+                  <ThemedText variant="caption" color={theme.colors.textTertiary}>
+                    {t('childDetail.installmentDue', 'échéance {{date}}', {
+                      date: formatDate(row.dueDate),
+                    })}
+                  </ThemedText>
+                ) : null}
+              </View>
               <ThemedText variant="caption" color={theme.colors.text} style={{ fontWeight: '600' }}>
-                {formatCurrency(amt)}
+                {formatCurrency(row.amount)}
               </ThemedText>
             </View>
           ))}

@@ -365,6 +365,16 @@ export type PaymentCycleType =
 // Backend IntervalUnit enum: Day=0, Week=1, Month=2, Year=3.
 export type IntervalUnitName = "Day" | "Week" | "Month" | "Year";
 
+/**
+ * Single director-defined installment for a Custom payment cycle.
+ * Matches the backend `CustomInstallmentDto` 1:1.
+ */
+export interface CustomInstallmentDto {
+  amount: number;
+  /** ISO date string (e.g. "2026-09-30T00:00:00Z"). */
+  dueDate: string;
+}
+
 export interface PaymentCycle {
   paymentCycleId: number;
   paymentCycleName: string;
@@ -375,6 +385,16 @@ export interface PaymentCycle {
   intervalCount?: number | null;
   intervalUnit?: IntervalUnitName | number | null;
   installmentAmounts?: string | null;
+  /**
+   * Free-form list of director-defined installments. Populated only for
+   * `paymentCycleType === 'Custom'` cycles created (or migrated to) the
+   * new flow. The legacy interval-based generator still drives Custom
+   * cycles whose `customInstallments` is null/empty.
+   */
+  customInstallments?: CustomInstallmentDto[] | null;
+  /** Raw JSON column straight from the DB — exposed by the backend for
+   * tooling. The mobile reads `customInstallments` instead. */
+  customInstallmentsJson?: string | null;
   createdOn?: string;
   modifiedOn?: string;
 }

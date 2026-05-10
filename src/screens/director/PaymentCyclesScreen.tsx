@@ -261,6 +261,23 @@ export default function PaymentCyclesScreen() {
   const [intervalUnit, setIntervalUnit] = useState<string>('Month');
   const [customAmounts, setCustomAmounts] = useState('');
 
+  // ── Free-form installment editor (Custom cycle) ─────────────
+  // The director adds entries one by one. Sum of `amount` values must
+  // equal the active grade fee at submit time — the backend enforces
+  // this too, but we surface a live total + delta in the UI so they
+  // can correct before tapping Save.
+  type CustomInstallmentDraft = {
+    /** Local-only id for FlatList keys; never sent to the server. */
+    id: string;
+    /** Free text so the user can type while we parse on submit. */
+    amount: string;
+    /** Native Date or null while still un-set. */
+    dueDate: Date | null;
+  };
+  const [customInstallments, setCustomInstallments] = useState<CustomInstallmentDraft[]>([]);
+  // Index of the row whose date picker is currently open. -1 = none.
+  const [openDatePickerIndex, setOpenDatePickerIndex] = useState<number>(-1);
+
   // Queries
   const {
     data: gradesData,
@@ -341,7 +358,61 @@ export default function PaymentCyclesScreen() {
     setIntervalCount('');
     setIntervalUnit('Month');
     setCustomAmounts('');
+    setCustomInstallments([]);
+    setOpenDatePickerIndex(-1);
     setShowCycleModal(true);
+  }, []);
+
+  // Live sum of the typed amounts. Used to render the validity badge
+  // on the Custom installments editor.
+  const customInstallmentsTotal = useMemo(() => {
+    return customInstallments.reduce((sum, ci) => {
+      const n = parseFloat(ci.amount.replace(/\s/g, '').replace(',', '.'));
+      return Number.isFinite(n) && n > 0 ? sum + n : sum;
+    }, 0);
+  }, [customInstallments]);
+
+  const customInstallmentsValid = useMemo(() => {
+    if (cycleType !== 'Custom') return true;
+    if (customInstallments.length === 0) return false;
+    const fee = activeGrade?.schoolGradeFee ?? 0;
+    if (customInstallments.some((ci) => {
+      const n = parseFloat(ci.amount.replace(/\s/g, '').replace(',', '.'));
+      return !Number.isFinite(n) || n <= 0;
+    })) {
+      return false;
+    }
+    if (customInstallments.some((ci) => !ci.dueDate)) return false;
+    // Allow a 1 XAF rounding tolerance (the backend uses strict equality
+    // but we also clamp to 2 decimals).
+    return Math.abs(customInstallmentsTotal - fee) < 0.5;
+  }, [cycleType, customInstallments, customInstallmentsTotal, activeGrade]);
+
+  const addCustomInstallmentRow = useCallback(() => {
+    setCustomInstallments((prev) => [
+      ...prev,
+      {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        amount: '',
+        dueDate: null,
+      },
+    ]);
+  }, []);
+
+  const removeCustomInstallmentRow = useCallback((id: string) => {
+    setCustomInstallments((prev) => prev.filter((ci) => ci.id !== id));
+  }, []);
+
+  const updateCustomInstallmentAmount = useCallback((id: string, amount: string) => {
+    setCustomInstallments((prev) =>
+      prev.map((ci) => (ci.id === id ? { ...ci, amount } : ci)),
+    );
+  }, []);
+
+  const updateCustomInstallmentDate = useCallback((id: string, dueDate: Date) => {
+    setCustomInstallments((prev) =>
+      prev.map((ci) => (ci.id === id ? { ...ci, dueDate } : ci)),
+    );
   }, []);
 
   const handleAddCycle = useCallback(async () => {
@@ -359,25 +430,58 @@ export default function PaymentCyclesScreen() {
     };
 
     if (cycleType === 'Custom') {
-      const ic = parseInt(intervalCount);
-      if (isNaN(ic) || ic <= 0) {
-        Alert.alert(t('common.error'), t('cycles.intervalRequired', 'Please enter a valid interval count'));
+      // New flow: free-form (amount, dueDate) list. Validate locally so
+      // the director gets an instant explanation; the backend re-checks.
+      if (customInstallments.length === 0) {
+        Alert.alert(
+          t('common.error'),
+          t('cycles.customInstallmentsRequired', 'Add at least one installment.'),
+        );
         return;
       }
-      payload.intervalCount = ic;
-      payload.intervalUnit = intervalUnit;
-    }
-
-    if (customAmounts.trim()) {
+      const parsed: { amount: number; dueDate: Date }[] = [];
+      for (let i = 0; i < customInstallments.length; i++) {
+        const ci = customInstallments[i];
+        const amount = parseFloat(ci.amount.replace(/\s/g, '').replace(',', '.'));
+        if (!Number.isFinite(amount) || amount <= 0) {
+          Alert.alert(
+            t('common.error'),
+            t('cycles.customInstallmentAmountInvalid', 'Installment {{index}}: invalid amount.', {
+              index: i + 1,
+            }),
+          );
+          return;
+        }
+        if (!ci.dueDate) {
+          Alert.alert(
+            t('common.error'),
+            t('cycles.customInstallmentDateRequired', 'Installment {{index}}: pick a due date.', {
+              index: i + 1,
+            }),
+          );
+          return;
+        }
+        parsed.push({ amount, dueDate: ci.dueDate });
+      }
+      const fee = activeGrade?.schoolGradeFee ?? 0;
+      const sum = parsed.reduce((s, p) => s + p.amount, 0);
+      if (Math.abs(sum - fee) >= 0.5) {
+        Alert.alert(
+          t('common.error'),
+          t('cycles.customInstallmentsSumMismatch', 'Total ({{sum}}) must equal the grade fee ({{fee}}).', {
+            sum: sum.toLocaleString(),
+            fee: fee.toLocaleString(),
+          }),
+        );
+        return;
+      }
+      // Backend expects ISO strings (camelCase keys).
+      payload.customInstallments = parsed
+        .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime())
+        .map((p) => ({ amount: p.amount, dueDate: p.dueDate.toISOString() }));
+      // Don't send the legacy interval / amounts fields for Custom.
+    } else if (customAmounts.trim()) {
       payload.installmentAmounts = customAmounts.trim();
-      if (cycleType === 'Custom') {
-        // already set above
-      } else {
-        // installmentAmounts requires intervalCount + intervalUnit even for non-custom
-        // Backend validates this — so we skip custom amounts for non-custom types
-        Alert.alert(t('common.error'), t('cycles.customAmountsOnlyForCustom', 'Custom installment amounts can only be used with Custom type'));
-        return;
-      }
     }
 
     try {
@@ -388,24 +492,29 @@ export default function PaymentCyclesScreen() {
     } catch (err: any) {
       Alert.alert(t('common.error'), err?.data?.message || err?.data?.error || t('cycles.cycleAddFailed', 'Failed to add payment cycle'));
     }
-  }, [cycleName, cycleDesc, cycleType, selectedGradeId, intervalCount, intervalUnit, customAmounts, addCycle, refetchCycles, t]);
+  }, [
+    cycleName,
+    cycleDesc,
+    cycleType,
+    selectedGradeId,
+    customAmounts,
+    customInstallments,
+    activeGrade,
+    addCycle,
+    refetchCycles,
+    t,
+  ]);
 
-  // Computed expected installment count for preview
+  // Computed expected installment count for preview (non-Custom only).
+  // For Custom we display the actual list length below.
   const expectedCount = useMemo(() => {
     if (cycleType === 'Full') return 1;
     if (cycleType === 'Monthly') return 12;
     if (cycleType === 'Quarterly') return 4;
     if (cycleType === 'Weekly') return 52;
-    if (cycleType === 'Custom') {
-      const ic = parseInt(intervalCount);
-      if (isNaN(ic) || ic <= 0) return 0;
-      if (intervalUnit === 'Day') return Math.ceil(365 / ic);
-      if (intervalUnit === 'Week') return Math.ceil(52 / ic);
-      if (intervalUnit === 'Month') return Math.ceil(12 / ic);
-      if (intervalUnit === 'Year') return 1;
-    }
+    if (cycleType === 'Custom') return customInstallments.length;
     return 0;
-  }, [cycleType, intervalCount, intervalUnit]);
+  }, [cycleType, customInstallments.length]);
 
   const perInstallment = useMemo(() => {
     if (!activeGrade || expectedCount <= 0) return 0;
@@ -962,58 +1071,168 @@ export default function PaymentCyclesScreen() {
                   ]}
                 >
                   <ThemedText variant="bodySmall" style={styles.label}>
-                    {t('cycles.customInterval', 'Interval')}
+                    {t('cycles.customInstallmentsLabel', 'Installments')}
                   </ThemedText>
-                  <View style={styles.customRow}>
-                    <View style={styles.customIntervalInput}>
-                      <ThemedInput
-                        label={t('cycles.every', 'Every')}
-                        value={intervalCount}
-                        onChangeText={setIntervalCount}
-                        placeholder="2"
-                        keyboardType="numeric"
-                      />
-                    </View>
-                    <View style={styles.customUnitColumn}>
-                      <ThemedText variant="caption" color={theme.colors.textTertiary} style={{ marginBottom: 6 }}>
-                        {t('cycles.unit', 'Unit')}
-                      </ThemedText>
-                      <View style={styles.unitRow}>
-                        {INTERVAL_UNITS.map((u) => {
-                          const isActive = intervalUnit === u;
-                          return (
-                            <Pressable
-                              key={u}
-                              onPress={() => setIntervalUnit(u)}
-                              style={[
-                                styles.unitChip,
-                                {
-                                  backgroundColor: isActive ? theme.colors.primary : theme.colors.card,
-                                  borderColor: isActive ? theme.colors.primary : theme.colors.border,
-                                  borderRadius: theme.borderRadius.sm,
-                                },
-                              ]}
+                  <ThemedText
+                    variant="caption"
+                    color={theme.colors.textSecondary}
+                    style={{ marginBottom: 8 }}
+                  >
+                    {t(
+                      'cycles.customInstallmentsHelp',
+                      'Add each installment with its amount and due date. The total must equal the grade fee.',
+                    )}
+                  </ThemedText>
+
+                  {customInstallments.length === 0 ? (
+                    <ThemedText
+                      variant="caption"
+                      color={theme.colors.textTertiary}
+                      style={{ marginBottom: 12, textAlign: 'center' }}
+                    >
+                      {t(
+                        'cycles.customInstallmentsEmpty',
+                        'No installments yet — add at least one below.',
+                      )}
+                    </ThemedText>
+                  ) : (
+                    customInstallments.map((ci, idx) => (
+                      <View
+                        key={ci.id}
+                        style={[
+                          styles.customInstallmentRow,
+                          {
+                            borderColor: theme.colors.border,
+                            borderRadius: theme.borderRadius.md,
+                            backgroundColor: theme.colors.card,
+                          },
+                        ]}
+                      >
+                        <View style={styles.customInstallmentIndex}>
+                          <ThemedText
+                            variant="caption"
+                            color={theme.colors.textTertiary}
+                          >
+                            #{idx + 1}
+                          </ThemedText>
+                        </View>
+                        <View style={styles.customInstallmentInputs}>
+                          <ThemedInput
+                            label={t('cycles.amount', 'Amount')}
+                            value={ci.amount}
+                            onChangeText={(v) => updateCustomInstallmentAmount(ci.id, v)}
+                            placeholder="50000"
+                            keyboardType="numeric"
+                            containerStyle={styles.customInstallmentField}
+                          />
+                          <Pressable
+                            onPress={() => setOpenDatePickerIndex(idx)}
+                            style={[
+                              styles.customDateBtn,
+                              {
+                                backgroundColor: theme.colors.surface,
+                                borderColor: theme.colors.border,
+                                borderRadius: theme.borderRadius.sm,
+                              },
+                            ]}
+                          >
+                            <Ionicons
+                              name="calendar-outline"
+                              size={14}
+                              color={theme.colors.textSecondary}
+                            />
+                            <ThemedText
+                              variant="caption"
+                              color={ci.dueDate ? theme.colors.text : theme.colors.textTertiary}
+                              style={{ marginLeft: 6 }}
                             >
-                              <ThemedText
-                                variant="caption"
-                                color={isActive ? '#fff' : theme.colors.text}
-                                style={{ fontWeight: isActive ? '600' : '400', fontSize: 11 }}
-                              >
-                                {t(`cycles.unit${u}`, u)}
-                              </ThemedText>
-                            </Pressable>
-                          );
-                        })}
+                              {ci.dueDate
+                                ? formatDate(ci.dueDate.toISOString())
+                                : t('cycles.pickDate', 'Pick due date')}
+                            </ThemedText>
+                          </Pressable>
+                        </View>
+                        <Pressable
+                          onPress={() => removeCustomInstallmentRow(ci.id)}
+                          style={styles.customRemoveBtn}
+                          hitSlop={6}
+                        >
+                          <Ionicons
+                            name="trash-outline"
+                            size={18}
+                            color={theme.colors.error}
+                          />
+                        </Pressable>
+
+                        {openDatePickerIndex === idx && (
+                          <DateTimePicker
+                            value={ci.dueDate ?? new Date()}
+                            mode="date"
+                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                            minimumDate={new Date()}
+                            onChange={(_event: DateTimePickerEvent, picked?: Date) => {
+                              setOpenDatePickerIndex(-1);
+                              if (picked) updateCustomInstallmentDate(ci.id, picked);
+                            }}
+                          />
+                        )}
+                      </View>
+                    ))
+                  )}
+
+                  <ThemedButton
+                    title={t('cycles.addInstallment', '+ Add installment')}
+                    variant="secondary"
+                    size="sm"
+                    onPress={addCustomInstallmentRow}
+                    style={{ marginTop: 8 }}
+                  />
+
+                  {/* Live total + delta against grade fee */}
+                  {activeGrade ? (
+                    <View
+                      style={[
+                        styles.customTotalsRow,
+                        {
+                          backgroundColor: customInstallmentsValid
+                            ? theme.colors.success + '15'
+                            : theme.colors.warning + '15',
+                          borderRadius: theme.borderRadius.md,
+                        },
+                      ]}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <ThemedText
+                          variant="caption"
+                          color={theme.colors.textSecondary}
+                        >
+                          {t('cycles.customInstallmentsTotal', 'Total of installments')}
+                        </ThemedText>
+                        <ThemedText
+                          variant="subtitle"
+                          color={
+                            customInstallmentsValid
+                              ? theme.colors.success
+                              : theme.colors.warning
+                          }
+                        >
+                          {formatCurrency(customInstallmentsTotal)}
+                        </ThemedText>
+                      </View>
+                      <View style={styles.customTotalsDivider} />
+                      <View style={{ flex: 1 }}>
+                        <ThemedText
+                          variant="caption"
+                          color={theme.colors.textSecondary}
+                        >
+                          {t('cycles.gradeFee', 'Grade fee')}
+                        </ThemedText>
+                        <ThemedText variant="subtitle">
+                          {formatCurrency(activeGrade.schoolGradeFee)}
+                        </ThemedText>
                       </View>
                     </View>
-                  </View>
-
-                  <ThemedInput
-                    label={t('cycles.customAmounts', 'Custom Amounts (optional, comma-separated)')}
-                    value={customAmounts}
-                    onChangeText={setCustomAmounts}
-                    placeholder={t('cycles.customAmountsPlaceholder', 'e.g. 50000,40000,30000')}
-                  />
+                  ) : null}
                 </View>
               )}
 
@@ -1418,6 +1637,50 @@ const styles = StyleSheet.create({
   },
   customUnitColumn: {
     flex: 1.55,
+  },
+  // Free-form Custom installments editor — one row per (amount, dueDate) pair
+  customInstallmentRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    padding: 10,
+    marginBottom: 8,
+    borderWidth: 1,
+  },
+  customInstallmentIndex: {
+    width: 28,
+    paddingTop: 26,
+    alignItems: 'center',
+  },
+  customInstallmentInputs: {
+    flex: 1,
+    gap: 8,
+  },
+  customInstallmentField: {
+    marginBottom: 0,
+  },
+  customDateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    borderWidth: 1,
+  },
+  customRemoveBtn: {
+    paddingTop: 26,
+    paddingHorizontal: 6,
+  },
+  customTotalsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    marginTop: 12,
+  },
+  customTotalsDivider: {
+    width: 1,
+    alignSelf: 'stretch',
+    backgroundColor: 'rgba(128,128,128,0.2)',
+    marginHorizontal: 12,
   },
   previewBoxModern: {
     borderWidth: 1,

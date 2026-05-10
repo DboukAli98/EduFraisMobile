@@ -136,6 +136,7 @@ import type {
   SchoolMerchandiseCategory,
   SchoolMerchandise,
   PaymentCycle,
+  CustomInstallmentDto,
   InitiatePaymentRequest,
   InitiatePaymentResponse,
   SchoolFeesPaymentHistoryDto,
@@ -574,6 +575,12 @@ export const apiSlice = createApi({
         intervalCount?: number;
         intervalUnit?: string;
         installmentAmounts?: string;
+        /**
+         * REQUIRED when paymentCycleType === 'Custom'. Each entry maps
+         * to one billed installment (Amount + DueDate). Backend rejects
+         * the request if the sum doesn't equal the section's grade fee.
+         */
+        customInstallments?: CustomInstallmentDto[];
       }
     >({
       query: (data) => ({
@@ -591,6 +598,9 @@ export const apiSlice = createApi({
         paymentCycleDescription?: string;
         paymentCycleType?: string;
         schoolGradeSectionId?: number;
+        /** Same shape + same constraint as on add. The new list REPLACES
+         * the previous one (no merge). */
+        customInstallments?: CustomInstallmentDto[];
       }
     >({
       query: (data) => ({
