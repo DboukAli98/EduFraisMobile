@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
-  View, StyleSheet, Pressable, FlatList, TextInput } from 'react-native';
+  View, StyleSheet, Pressable, FlatList, TextInput
+} from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -15,7 +16,6 @@ import {
   EmptyState,
   ScreenSkeleton,
   ThemedButton,
-  SectionHeader,
 } from '../../components';
 import { useTheme } from '../../theme';
 import { useAnimatedEntry, staggerDelay, useAppSelector } from '../../hooks';
@@ -26,6 +26,8 @@ import {
   useRequestAgentAssignmentMutation,
 } from '../../services/api/apiSlice';
 import type { CollectingAgent } from '../../types';
+
+type RequestAgentSectionKey = 'agent' | 'notes' | 'review';
 
 // ---------------------------------------------------------------------------
 // AgentCard (extracted so hooks are valid)
@@ -76,6 +78,56 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, index, isSelected, onSelec
   );
 };
 
+const AccordionSection: React.FC<{
+  id: RequestAgentSectionKey;
+  title: string;
+  description: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  isOpen: boolean;
+  isComplete?: boolean;
+  onPress: (id: RequestAgentSectionKey) => void;
+  children: React.ReactNode;
+}> = ({ id, title, description, icon, isOpen, isComplete = false, onPress, children }) => {
+  const { theme } = useTheme();
+
+  return (
+    <View
+      style={[
+        styles.accordionCard,
+        {
+          backgroundColor: theme.colors.surface,
+          borderColor: isOpen ? theme.colors.primary : theme.colors.borderLight,
+          borderRadius: theme.borderRadius.xl,
+        },
+      ]}
+    >
+      <Pressable
+        onPress={() => onPress(id)}
+        style={styles.accordionHeader}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: isOpen }}
+      >
+        <View style={[styles.accordionIcon, { backgroundColor: theme.colors.primary + '14' }]}>
+          <Ionicons name={icon} size={20} color={theme.colors.primary} />
+        </View>
+        <View style={styles.accordionHeaderText}>
+          <View style={styles.accordionTitleRow}>
+            <ThemedText variant="body" style={styles.accordionTitle} numberOfLines={1}>
+              {title}
+            </ThemedText>
+            {isComplete ? <Ionicons name="checkmark-circle" size={18} color={theme.colors.success} /> : null}
+          </View>
+          <ThemedText variant="caption" color={theme.colors.textSecondary} numberOfLines={1}>
+            {description}
+          </ThemedText>
+        </View>
+        <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={20} color={theme.colors.textSecondary} />
+      </Pressable>
+      {isOpen ? <View style={styles.accordionBody}>{children}</View> : null}
+    </View>
+  );
+};
+
 // ---------------------------------------------------------------------------
 // Screen
 // ---------------------------------------------------------------------------
@@ -91,6 +143,7 @@ const RequestAgentScreen: React.FC = () => {
 
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [notes, setNotes] = useState('');
+  const [activeSection, setActiveSection] = useState<RequestAgentSectionKey>('agent');
 
   const { data: agentsData, isLoading: agentsLoading } = useGetAllAgentsQuery(
     { schoolId, pageNumber: 1, pageSize: 100 },
@@ -129,8 +182,18 @@ const RequestAgentScreen: React.FC = () => {
 
   const headerAnim = useAnimatedEntry({ type: 'slideUp', delay: staggerDelay(0) });
 
+  const selectAgent = (agentId: number) => {
+    setSelectedId(agentId);
+    setActiveSection('notes');
+  };
+
+  const handleToggleSection = (section: RequestAgentSectionKey) => {
+    setActiveSection((current) => (current === section ? current : section));
+  };
+
   const handleSubmit = async () => {
     if (!selectedId) {
+      setActiveSection('agent');
       Alert.alert(
         t('common.error', 'Error'),
         t('parent.agents.selectAgentFirst', 'Please select an agent first'),
@@ -176,15 +239,6 @@ const RequestAgentScreen: React.FC = () => {
     );
   }
 
-  const renderAgent = ({ item, index }: { item: CollectingAgent; index: number }) => (
-    <AgentCard
-      agent={item}
-      index={index}
-      isSelected={item.collectingAgentId === selectedId}
-      onSelect={() => setSelectedId(item.collectingAgentId)}
-    />
-  );
-
   return (
     <ScreenContainer scrollable={false}>
       <Animated.View style={[styles.headerRow, headerAnim]}>
@@ -201,56 +255,117 @@ const RequestAgentScreen: React.FC = () => {
         )}
       </ThemedText>
 
-      <SectionHeader title={t('parent.agents.availableAgents', 'Available Agents')} />
-      {availableAgents.length === 0 ? (
-        <EmptyState
-          icon="person-remove-outline"
-          title={t('parent.agents.noneAvailableTitle', 'No Agents Available')}
-          description={t(
-            'parent.agents.noneAvailableDesc',
-            'All available agents are already linked to you or pending approval.',
-          )}
-        />
-      ) : (
-        <FlatList
-          data={availableAgents}
-          keyExtractor={(item) => String(item.collectingAgentId)}
-          renderItem={renderAgent}
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+      <FlatList
+        data={[{ key: 'form' }]}
+        keyExtractor={(item) => item.key}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.formList}
+        keyboardShouldPersistTaps="handled"
+        renderItem={() => (
+          <>
+            <AccordionSection
+              id="agent"
+              title={t('parent.agents.availableAgents', 'Available Agents')}
+              description={selectedAgent ? `${selectedAgent.firstName} ${selectedAgent.lastName}` : t('parent.agents.pickAgentStep', 'Choose the agent to request')}
+              icon="people-outline"
+              isOpen={activeSection === 'agent'}
+              isComplete={!!selectedAgent}
+              onPress={handleToggleSection}
+            >
+              {availableAgents.length === 0 ? (
+                <EmptyState
+                  icon="person-remove-outline"
+                  title={t('parent.agents.noneAvailableTitle', 'No Agents Available')}
+                  description={t(
+                    'parent.agents.noneAvailableDesc',
+                    'All available agents are already linked to you or pending approval.',
+                  )}
+                />
+              ) : (
+                <View style={styles.agentList}>
+                  {availableAgents.map((agent, index) => (
+                    <AgentCard
+                      key={agent.collectingAgentId}
+                      agent={agent}
+                      index={index}
+                      isSelected={agent.collectingAgentId === selectedId}
+                      onSelect={() => selectAgent(agent.collectingAgentId)}
+                    />
+                  ))}
+                </View>
+              )}
+            </AccordionSection>
 
-      {selectedAgent ? (
-        <View style={styles.footer}>
-          <ThemedText variant="caption" color={theme.colors.textSecondary} style={styles.notesLabel}>
-            {t('parent.agents.notesLabel', 'Notes (optional)')}
-          </ThemedText>
-          <TextInput
-            value={notes}
-            onChangeText={setNotes}
-            placeholder={t('parent.agents.notesPlaceholder', 'Tell the director why you need this agent')}
-            placeholderTextColor={theme.colors.textTertiary}
-            multiline
-            style={[
-              styles.notesInput,
-              {
-                backgroundColor: theme.colors.surface,
-                color: theme.colors.text,
-                borderColor: theme.colors.border,
-                borderRadius: theme.borderRadius.md,
-              },
-            ]}
-          />
-          <ThemedButton
-            title={t('parent.agents.sendRequest', 'Send Request')}
-            variant="primary"
-            onPress={handleSubmit}
-            loading={submitting}
-            style={styles.submitBtn}
-          />
-        </View>
-      ) : null}
+            <AccordionSection
+              id="notes"
+              title={t('parent.agents.notesLabel', 'Notes (optional)')}
+              description={notes.trim() ? notes.trim() : t('parent.agents.notesStep', 'Add context for the director')}
+              icon="document-text-outline"
+              isOpen={activeSection === 'notes'}
+              isComplete={!!selectedAgent}
+              onPress={handleToggleSection}
+            >
+              <ThemedText variant="caption" color={theme.colors.textSecondary} style={styles.notesLabel}>
+                {t('parent.agents.notesLabel', 'Notes (optional)')}
+              </ThemedText>
+              <TextInput
+                value={notes}
+                onChangeText={setNotes}
+                placeholder={t('parent.agents.notesPlaceholder', 'Tell the director why you need this agent')}
+                placeholderTextColor={theme.colors.textTertiary}
+                multiline
+                style={[
+                  styles.notesInput,
+                  {
+                    backgroundColor: theme.colors.surface,
+                    color: theme.colors.text,
+                    borderColor: theme.colors.border,
+                    borderRadius: theme.borderRadius.md,
+                  },
+                ]}
+              />
+              <ThemedButton
+                title={t('parent.agents.reviewRequest', 'Review Request')}
+                variant="secondary"
+                onPress={() => setActiveSection('review')}
+                disabled={!selectedAgent}
+              />
+            </AccordionSection>
+
+            <AccordionSection
+              id="review"
+              title={t('parent.agents.reviewRequest', 'Review Request')}
+              description={selectedAgent ? t('parent.agents.readyToSend', 'Ready to send for approval') : t('parent.agents.reviewStep', 'Select an agent first')}
+              icon="checkmark-done-outline"
+              isOpen={activeSection === 'review'}
+              isComplete={!!selectedAgent}
+              onPress={handleToggleSection}
+            >
+              <View style={[styles.reviewBox, { backgroundColor: theme.colors.inputBackground, borderRadius: theme.borderRadius.lg }]}>
+                <ThemedText variant="caption" color={theme.colors.textSecondary}>
+                  {t('parent.agents.selectedAgent', 'Selected Agent')}
+                </ThemedText>
+                <ThemedText variant="bodySmall" style={styles.reviewValue}>
+                  {selectedAgent ? `${selectedAgent.firstName} ${selectedAgent.lastName}` : '-'}
+                </ThemedText>
+                <ThemedText variant="caption" color={theme.colors.textSecondary} style={styles.reviewLabel}>
+                  {t('parent.agents.notesLabel', 'Notes (optional)')}
+                </ThemedText>
+                <ThemedText variant="bodySmall" style={styles.reviewValue}>
+                  {notes.trim() || '-'}
+                </ThemedText>
+              </View>
+              <ThemedButton
+                title={t('parent.agents.sendRequest', 'Send Request')}
+                variant="primary"
+                onPress={handleSubmit}
+                loading={submitting}
+                style={styles.submitBtn}
+              />
+            </AccordionSection>
+          </>
+        )}
+      />
     </ScreenContainer>
   );
 };
@@ -269,8 +384,47 @@ const styles = StyleSheet.create({
   intro: {
     marginBottom: 16,
   },
-  list: {
+  formList: {
     paddingBottom: 24,
+  },
+  accordionCard: {
+    borderWidth: 1,
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
+  accordionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  accordionIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  accordionHeaderText: {
+    flex: 1,
+    marginRight: 8,
+  },
+  accordionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  accordionTitle: {
+    flex: 1,
+    fontWeight: '700',
+  },
+  accordionBody: {
+    paddingHorizontal: 14,
+    paddingBottom: 14,
+  },
+  agentList: {
+    gap: 4,
   },
   card: {
     marginBottom: 12,
@@ -282,11 +436,6 @@ const styles = StyleSheet.create({
   },
   info: {
     flex: 1,
-  },
-  footer: {
-    paddingTop: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(0,0,0,0.08)',
   },
   notesLabel: {
     marginBottom: 6,
@@ -300,6 +449,17 @@ const styles = StyleSheet.create({
   },
   submitBtn: {
     marginBottom: 12,
+  },
+  reviewBox: {
+    padding: 12,
+    marginBottom: 14,
+  },
+  reviewLabel: {
+    marginTop: 10,
+  },
+  reviewValue: {
+    marginTop: 2,
+    fontWeight: '700',
   },
 });
 

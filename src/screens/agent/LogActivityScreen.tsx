@@ -10,7 +10,6 @@ import {
   ThemedCard,
   Avatar,
   ThemedButton,
-  SectionHeader,
   useAlert,
 } from '../../components';
 import { useTheme } from '../../theme';
@@ -28,6 +27,8 @@ type ActivityKey =
   | 'PhoneCall'
   | 'Other';
 
+type LogActivitySectionKey = 'type' | 'parent' | 'details' | 'review';
+
 const TYPE_OPTIONS: {
   key: ActivityKey;
   label: string;
@@ -42,6 +43,56 @@ const TYPE_OPTIONS: {
     { key: 'Other', label: 'Other', icon: 'ellipse-outline', requiresParent: false },
   ];
 
+const AccordionSection: React.FC<{
+  id: LogActivitySectionKey;
+  title: string;
+  description: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  isOpen: boolean;
+  isComplete?: boolean;
+  onPress: (id: LogActivitySectionKey) => void;
+  children: React.ReactNode;
+}> = ({ id, title, description, icon, isOpen, isComplete = false, onPress, children }) => {
+  const { theme } = useTheme();
+
+  return (
+    <View
+      style={[
+        styles.accordionCard,
+        {
+          backgroundColor: theme.colors.surface,
+          borderColor: isOpen ? theme.colors.primary : theme.colors.borderLight,
+          borderRadius: theme.borderRadius.xl,
+        },
+      ]}
+    >
+      <Pressable
+        onPress={() => onPress(id)}
+        style={styles.accordionHeader}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: isOpen }}
+      >
+        <View style={[styles.accordionIcon, { backgroundColor: theme.colors.primary + '14' }]}>
+          <Ionicons name={icon} size={20} color={theme.colors.primary} />
+        </View>
+        <View style={styles.accordionHeaderText}>
+          <View style={styles.accordionTitleRow}>
+            <ThemedText variant="body" style={styles.accordionTitle} numberOfLines={1}>
+              {title}
+            </ThemedText>
+            {isComplete ? <Ionicons name="checkmark-circle" size={18} color={theme.colors.success} /> : null}
+          </View>
+          <ThemedText variant="caption" color={theme.colors.textSecondary} numberOfLines={1}>
+            {description}
+          </ThemedText>
+        </View>
+        <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={20} color={theme.colors.textSecondary} />
+      </Pressable>
+      {isOpen ? <View style={styles.accordionBody}>{children}</View> : null}
+    </View>
+  );
+};
+
 const LogActivityScreen: React.FC = () => {
   const { theme } = useTheme();
   const { t } = useTranslation();
@@ -55,6 +106,7 @@ const LogActivityScreen: React.FC = () => {
   const [selectedParentId, setSelectedParentId] = useState<number | null>(null);
   const [description, setDescription] = useState('');
   const [notes, setNotes] = useState('');
+  const [activeSection, setActiveSection] = useState<LogActivitySectionKey>('type');
 
   const { data: parentsData, isLoading: parentsLoading } = useGetAgentParentsQuery(
     { collectingAgentId: agentId, pageNumber: 1, pageSize: 100 },
@@ -75,10 +127,31 @@ const LogActivityScreen: React.FC = () => {
     [assignedParents, selectedParentId],
   );
 
+  const selectedTypeLabel = t(`agent.activities.types.${selectedTypeMeta.key}`, selectedTypeMeta.label);
+  const parentComplete = !selectedTypeMeta.requiresParent || !!selectedParentId;
+  const detailsComplete = Boolean(description.trim());
+  const activityComplete = parentComplete && detailsComplete;
+
+  const handleToggleSection = (section: LogActivitySectionKey) => {
+    setActiveSection((current) => (current === section ? current : section));
+  };
+
+  const handleSelectType = (type: ActivityKey) => {
+    const meta = TYPE_OPTIONS.find((o) => o.key === type) ?? TYPE_OPTIONS[0];
+    setSelectedType(type);
+    setActiveSection(meta.requiresParent ? 'parent' : 'details');
+  };
+
+  const handleSelectParent = (parentId: number) => {
+    setSelectedParentId(parentId);
+    setActiveSection('details');
+  };
+
   const handleSubmit = async () => {
     const trimmedDescription = description.trim();
 
     if (!trimmedDescription) {
+      setActiveSection('details');
       showAlert({
         type: 'warning',
         title: t('common.error', 'Error'),
@@ -88,6 +161,7 @@ const LogActivityScreen: React.FC = () => {
     }
 
     if (selectedTypeMeta.requiresParent && !selectedParentId) {
+      setActiveSection('parent');
       showAlert({
         type: 'warning',
         title: t('common.error', 'Error'),
@@ -139,45 +213,54 @@ const LogActivityScreen: React.FC = () => {
         </ThemedText>
       </View>
 
-      <SectionHeader title={t('agent.logActivity.typeSection', 'Activity Type')} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.typeRow}>
-        {TYPE_OPTIONS.map((opt) => {
-          const selected = selectedType === opt.key;
-          return (
-            <Pressable
-              key={opt.key}
-              onPress={() => setSelectedType(opt.key)}
-              style={[
-                styles.typeChip,
-                {
-                  borderRadius: theme.borderRadius.md,
-                  borderColor: selected ? theme.colors.primary : theme.colors.border,
-                  backgroundColor: selected ? theme.colors.primary + '15' : theme.colors.surface,
-                },
-              ]}
-            >
-              <Ionicons
-                name={opt.icon}
-                size={18}
-                color={selected ? theme.colors.primary : theme.colors.textSecondary}
-              />
-              <ThemedText
-                variant="caption"
-                color={selected ? theme.colors.primary : theme.colors.text}
-                style={styles.typeLabel}
+      <AccordionSection
+        id="type"
+        title={t('agent.logActivity.typeSection', 'Activity Type')}
+        description={selectedTypeLabel}
+        icon="options-outline"
+        isOpen={activeSection === 'type'}
+        isComplete
+        onPress={handleToggleSection}
+      >
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.typeRow}>
+          {TYPE_OPTIONS.map((opt) => {
+            const selected = selectedType === opt.key;
+            return (
+              <Pressable
+                key={opt.key}
+                onPress={() => handleSelectType(opt.key)}
+                style={[
+                  styles.typeChip,
+                  {
+                    borderRadius: theme.borderRadius.md,
+                    borderColor: selected ? theme.colors.primary : theme.colors.border,
+                    backgroundColor: selected ? theme.colors.primary + '15' : theme.colors.surface,
+                  },
+                ]}
               >
-                {t(`agent.activities.types.${opt.key}`, opt.label)}
-              </ThemedText>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+                <Ionicons name={opt.icon} size={18} color={selected ? theme.colors.primary : theme.colors.textSecondary} />
+                <ThemedText
+                  variant="caption"
+                  color={selected ? theme.colors.primary : theme.colors.text}
+                  style={styles.typeLabel}
+                >
+                  {t(`agent.activities.types.${opt.key}`, opt.label)}
+                </ThemedText>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </AccordionSection>
 
-      <>
-        <SectionHeader
-          title={t('agent.logActivity.parentSection', 'Parent')}
-          style={styles.sectionSpacing}
-        />
+      <AccordionSection
+        id="parent"
+        title={t('agent.logActivity.parentSection', 'Parent')}
+        description={selectedParent ? `${selectedParent.firstName} ${selectedParent.lastName}` : selectedTypeMeta.requiresParent ? t('agent.logActivity.pickParentStep', 'Choose the parent') : t('agent.logActivity.parentOptionalStep', 'Parent is optional for this type')}
+        icon="person-outline"
+        isOpen={activeSection === 'parent'}
+        isComplete={parentComplete}
+        onPress={handleToggleSection}
+      >
         {parentsLoading ? (
           <ThemedText variant="caption" color={theme.colors.textSecondary}>
             {t('common.loading', 'Loading…')}
@@ -201,7 +284,7 @@ const LogActivityScreen: React.FC = () => {
             {assignedParents.map((p) => {
               const selected = selectedParentId === p.parentId;
               return (
-                <Pressable key={p.parentId} onPress={() => setSelectedParentId(p.parentId)}>
+                <Pressable key={p.parentId} onPress={() => handleSelectParent(p.parentId)}>
                   <ThemedCard
                     variant={selected ? 'elevated' : 'outlined'}
                     style={{
@@ -235,64 +318,85 @@ const LogActivityScreen: React.FC = () => {
             })}
           </View>
         )}
-      </>
+      </AccordionSection>
 
-      <SectionHeader
+      <AccordionSection
+        id="details"
         title={t('agent.logActivity.descriptionSection', 'Description')}
-        style={styles.sectionSpacing}
-      />
-      <TextInput
-        value={description}
-        onChangeText={setDescription}
-        placeholder={t(
-          'agent.logActivity.descriptionPlaceholder',
-          'What happened? (required)',
-        )}
-        placeholderTextColor={theme.colors.textTertiary}
-        multiline
-        style={[
-          styles.input,
-          {
-            backgroundColor: theme.colors.surface,
-            borderColor: theme.colors.border,
-            color: theme.colors.text,
-            borderRadius: theme.borderRadius.md,
-          },
-        ]}
-      />
+        description={detailsComplete ? description.trim() : t('agent.logActivity.detailsStep', 'Describe the activity')}
+        icon="document-text-outline"
+        isOpen={activeSection === 'details'}
+        isComplete={detailsComplete}
+        onPress={handleToggleSection}
+      >
+        <TextInput
+          value={description}
+          onChangeText={setDescription}
+          placeholder={t('agent.logActivity.descriptionPlaceholder', 'What happened? (required)')}
+          placeholderTextColor={theme.colors.textTertiary}
+          multiline
+          style={[
+            styles.input,
+            {
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.border,
+              color: theme.colors.text,
+              borderRadius: theme.borderRadius.md,
+            },
+          ]}
+        />
 
-      <SectionHeader
-        title={t('agent.logActivity.notesSection', 'Notes (optional)')}
-        style={styles.sectionSpacing}
-      />
-      <TextInput
-        value={notes}
-        onChangeText={setNotes}
-        placeholder={t(
-          'agent.logActivity.notesPlaceholder',
-          'Any extra context for your records',
-        )}
-        placeholderTextColor={theme.colors.textTertiary}
-        multiline
-        style={[
-          styles.input,
-          {
-            backgroundColor: theme.colors.surface,
-            borderColor: theme.colors.border,
-            color: theme.colors.text,
-            borderRadius: theme.borderRadius.md,
-          },
-        ]}
-      />
+        <TextInput
+          value={notes}
+          onChangeText={setNotes}
+          placeholder={t('agent.logActivity.notesPlaceholder', 'Any extra context for your records')}
+          placeholderTextColor={theme.colors.textTertiary}
+          multiline
+          style={[
+            styles.input,
+            {
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.border,
+              color: theme.colors.text,
+              borderRadius: theme.borderRadius.md,
+            },
+          ]}
+        />
 
-      <ThemedButton
-        title={t('agent.logActivity.submit', 'Save Activity')}
-        variant="primary"
-        onPress={handleSubmit}
-        loading={submitting}
-        disabled={selectedTypeMeta.requiresParent && assignedParents.length === 0}
-        style={styles.submitBtn}
-      />
+        <ThemedButton
+          title={t('agent.logActivity.reviewActivity', 'Review Activity')}
+          variant="secondary"
+          onPress={() => setActiveSection('review')}
+          disabled={!detailsComplete}
+        />
+      </AccordionSection>
+
+      <AccordionSection
+        id="review"
+        title={t('agent.logActivity.reviewActivity', 'Review Activity')}
+        description={activityComplete ? t('agent.logActivity.readyToSave', 'Ready to save') : t('agent.logActivity.reviewStep', 'Check required fields')}
+        icon="checkmark-done-outline"
+        isOpen={activeSection === 'review'}
+        isComplete={activityComplete}
+        onPress={handleToggleSection}
+      >
+        <View style={[styles.reviewBox, { backgroundColor: theme.colors.inputBackground, borderRadius: theme.borderRadius.lg }]}>
+          <ThemedText variant="caption" color={theme.colors.textSecondary}>{t('agent.logActivity.typeSection', 'Activity Type')}</ThemedText>
+          <ThemedText variant="bodySmall" style={styles.reviewValue}>{selectedTypeLabel}</ThemedText>
+          <ThemedText variant="caption" color={theme.colors.textSecondary} style={styles.reviewLabel}>{t('agent.logActivity.parentSection', 'Parent')}</ThemedText>
+          <ThemedText variant="bodySmall" style={styles.reviewValue}>{selectedParent ? `${selectedParent.firstName} ${selectedParent.lastName}` : '-'}</ThemedText>
+          <ThemedText variant="caption" color={theme.colors.textSecondary} style={styles.reviewLabel}>{t('agent.logActivity.descriptionSection', 'Description')}</ThemedText>
+          <ThemedText variant="bodySmall" style={styles.reviewValue}>{description.trim() || '-'}</ThemedText>
+        </View>
+        <ThemedButton
+          title={t('agent.logActivity.submit', 'Save Activity')}
+          variant="primary"
+          onPress={handleSubmit}
+          loading={submitting}
+          disabled={selectedTypeMeta.requiresParent && assignedParents.length === 0}
+          style={styles.submitBtn}
+        />
+      </AccordionSection>
 
       {selectedParent ? (
         <ThemedText variant="caption" color={theme.colors.textTertiary} style={styles.footerHint}>
@@ -317,6 +421,42 @@ const styles = StyleSheet.create({
   headerTitle: {
     flex: 1,
   },
+  accordionCard: {
+    borderWidth: 1,
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
+  accordionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  accordionIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  accordionHeaderText: {
+    flex: 1,
+    marginRight: 8,
+  },
+  accordionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  accordionTitle: {
+    flex: 1,
+    fontWeight: '700',
+  },
+  accordionBody: {
+    paddingHorizontal: 14,
+    paddingBottom: 14,
+  },
   typeRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -336,9 +476,6 @@ const styles = StyleSheet.create({
   typeLabel: {
     fontWeight: '600',
     includeFontPadding: false,
-  },
-  sectionSpacing: {
-    marginTop: 16,
   },
   parentList: {
     gap: 8,
@@ -366,6 +503,17 @@ const styles = StyleSheet.create({
   },
   submitBtn: {
     marginTop: 20,
+  },
+  reviewBox: {
+    padding: 12,
+    marginBottom: 14,
+  },
+  reviewLabel: {
+    marginTop: 10,
+  },
+  reviewValue: {
+    marginTop: 2,
+    fontWeight: '700',
   },
   footerHint: {
     marginTop: 8,

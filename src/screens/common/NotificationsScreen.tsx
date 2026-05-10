@@ -9,8 +9,6 @@ import { useAnimatedEntry, staggerDelay, useAppSelector, useAppDispatch } from '
 import {
   ScreenContainer,
   ThemedText,
-  SectionHeader,
-  NotificationItem,
   EmptyState,
 } from '../../components';
 import {
@@ -37,6 +35,112 @@ function isSameDay(a: string, b: string) {
   return a.slice(0, 10) === b.slice(0, 10);
 }
 
+const getRelativeTime = (dateString: string): string => {
+  const now = new Date();
+  const date = new Date(dateString);
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.max(0, Math.floor(diffMs / 60000));
+  const diffHour = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHour / 24);
+
+  if (diffMin < 1) return 'maintenant';
+  if (diffMin < 60) return `${diffMin} min`;
+  if (diffHour < 24) return `${diffHour} h`;
+  if (diffDay < 7) return `${diffDay} j`;
+  return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+};
+
+const getNotificationVisual = (
+  type: string,
+  colors: ReturnType<typeof useTheme>['theme']['colors'],
+): { icon: keyof typeof Ionicons.glyphMap; color: string; label: string } => {
+  const normalized = type.toLowerCase();
+
+  if (normalized.includes('payment') || normalized.includes('paiement')) {
+    return { icon: 'card-outline', color: colors.primary, label: type };
+  }
+  if (normalized.includes('reminder') || normalized.includes('rappel')) {
+    return { icon: 'alarm-outline', color: colors.warning, label: type };
+  }
+  if (normalized.includes('support') || normalized.includes('assistance')) {
+    return { icon: 'chatbubble-ellipses-outline', color: colors.info, label: type };
+  }
+  if (normalized.includes('approval') || normalized.includes('approbation')) {
+    return { icon: 'checkmark-circle-outline', color: colors.success, label: type };
+  }
+  if (normalized.includes('reject') || normalized.includes('rejet')) {
+    return { icon: 'close-circle-outline', color: colors.error, label: type };
+  }
+  if (normalized.includes('agent')) {
+    return { icon: 'person-add-outline', color: colors.accent, label: type };
+  }
+
+  return { icon: 'notifications-outline', color: colors.primary, label: type };
+};
+
+const NotificationCard: React.FC<{
+  notification: AppNotification;
+  onPress: (notification: AppNotification) => void;
+}> = ({ notification, onPress }) => {
+  const { theme } = useTheme();
+  const visual = useMemo(
+    () => getNotificationVisual(notification.type, theme.colors),
+    [notification.type, theme.colors],
+  );
+  const relativeTime = useMemo(() => getRelativeTime(notification.createdAt), [notification.createdAt]);
+
+  return (
+    <Pressable
+      onPress={() => onPress(notification)}
+      style={({ pressed }) => [
+        styles.notificationCard,
+        {
+          backgroundColor: notification.isRead ? theme.colors.surface : visual.color + '08',
+          borderColor: notification.isRead ? theme.colors.borderLight : visual.color + '35',
+          borderRadius: theme.borderRadius.xl,
+        },
+        pressed && styles.pressedCard,
+      ]}
+    >
+      {!notification.isRead ? <View style={[styles.unreadRail, { backgroundColor: visual.color }]} /> : null}
+
+      <View style={[styles.notificationIcon, { backgroundColor: visual.color + '15', borderRadius: theme.borderRadius.lg }]}>
+        <Ionicons name={visual.icon} size={20} color={visual.color} />
+      </View>
+
+      <View style={styles.notificationContent}>
+        <View style={styles.notificationTopRow}>
+          <ThemedText
+            variant="body"
+            numberOfLines={1}
+            style={[styles.notificationTitle, { fontWeight: notification.isRead ? '600' : '800' }]}
+          >
+            {notification.title}
+          </ThemedText>
+          <ThemedText variant="caption" color={theme.colors.textTertiary} style={styles.timeText}>
+            {relativeTime}
+          </ThemedText>
+        </View>
+
+        <ThemedText variant="bodySmall" color={theme.colors.textSecondary} numberOfLines={2} style={styles.notificationMessage}>
+          {notification.message}
+        </ThemedText>
+
+        <View style={styles.notificationFooter}>
+          <View style={[styles.typePill, { backgroundColor: visual.color + '12', borderRadius: theme.borderRadius.full }]}>
+            <ThemedText variant="caption" color={visual.color} style={styles.typePillText} numberOfLines={1}>
+              {visual.label}
+            </ThemedText>
+          </View>
+          {!notification.isRead ? <View style={[styles.newDot, { backgroundColor: visual.color }]} /> : null}
+        </View>
+      </View>
+
+      <Ionicons name="chevron-forward" size={18} color={theme.colors.textTertiary} style={styles.chevron} />
+    </Pressable>
+  );
+};
+
 export default function NotificationsScreen() {
   const { theme } = useTheme();
   const { t } = useTranslation();
@@ -58,7 +162,18 @@ export default function NotificationsScreen() {
   const [markAllAsReadMutation, { isLoading: isMarkingRead }] =
     useMarkAllNotificationsAsReadMutation();
 
-  const notifications = notificationsData?.data ?? [];
+  const notifications = useMemo(
+    () =>
+      [...(notificationsData?.data ?? [])].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      ),
+    [notificationsData?.data],
+  );
+
+  const unreadCount = useMemo(
+    () => notifications.filter((notification) => !notification.isRead).length,
+    [notifications],
+  );
 
   // Sync API notifications into Redux for badge count
   useEffect(() => {
@@ -137,22 +252,54 @@ export default function NotificationsScreen() {
       >
         {/* Header */}
         <AnimatedSection index={0}>
-          <View style={styles.header}>
-            <ThemedText variant="h2">
-              {t('notifications.title', 'Notifications')}
-            </ThemedText>
+          <View
+            style={[
+              styles.headerCard,
+              { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderLight, borderRadius: theme.borderRadius.xl },
+            ]}
+          >
+            <View style={styles.headerTitleRow}>
+              <View>
+                <ThemedText variant="h2">
+                  {t('notifications.title', 'Notifications')}
+                </ThemedText>
+                <ThemedText variant="caption" color={theme.colors.textSecondary} style={styles.headerSubtitle}>
+                  {t('notifications.newestFirst', 'Les plus recentes en premier')}
+                </ThemedText>
+              </View>
+              <View style={[styles.unreadBadge, { backgroundColor: theme.colors.primary + '14', borderRadius: theme.borderRadius.full }]}>
+                <Ionicons name="mail-unread-outline" size={16} color={theme.colors.primary} />
+                <ThemedText variant="caption" color={theme.colors.primary} style={styles.unreadBadgeText}>
+                  {unreadCount}
+                </ThemedText>
+              </View>
+            </View>
+
             {hasNotifications && (
               <Pressable
                 onPress={handleMarkAllRead}
                 hitSlop={8}
-                disabled={isMarkingRead}
+                disabled={isMarkingRead || unreadCount === 0}
+                style={({ pressed }) => [
+                  styles.markAllButton,
+                  {
+                    backgroundColor: unreadCount === 0 ? theme.colors.inputBackground : theme.colors.primary,
+                    borderRadius: theme.borderRadius.full,
+                    opacity: isMarkingRead || pressed ? 0.7 : 1,
+                  },
+                ]}
               >
+                <Ionicons
+                  name="checkmark-done-outline"
+                  size={16}
+                  color={unreadCount === 0 ? theme.colors.textSecondary : '#FFFFFF'}
+                />
                 <ThemedText
-                  variant="bodySmall"
-                  color={theme.colors.primary}
-                  style={{ fontWeight: '600', opacity: isMarkingRead ? 0.5 : 1 }}
+                  variant="caption"
+                  color={unreadCount === 0 ? theme.colors.textSecondary : '#FFFFFF'}
+                  style={styles.markAllText}
                 >
-                  {t('notifications.markAllRead', 'Mark all read')}
+                  {t('notifications.markAllRead', 'Tout marquer comme lu')}
                 </ThemedText>
               </Pressable>
             )}
@@ -173,12 +320,11 @@ export default function NotificationsScreen() {
             {/* Today Section */}
             {todayNotifications.length > 0 && (
               <AnimatedSection index={1}>
-                <SectionHeader
-                  title={t('notifications.today', 'Today')}
-                  style={styles.sectionHeader}
-                />
+                <ThemedText variant="subtitle" style={styles.sectionTitle}>
+                  {t('notifications.today', 'Today')}
+                </ThemedText>
                 {todayNotifications.map((notification) => (
-                  <NotificationItem
+                  <NotificationCard
                     key={notification.notificationId}
                     notification={notification}
                     onPress={handleNotificationPress}
@@ -190,12 +336,11 @@ export default function NotificationsScreen() {
             {/* Earlier Section */}
             {earlierNotifications.length > 0 && (
               <AnimatedSection index={2}>
-                <SectionHeader
-                  title={t('notifications.earlier', 'Earlier')}
-                  style={styles.sectionHeader}
-                />
+                <ThemedText variant="subtitle" style={styles.sectionTitle}>
+                  {t('notifications.earlier', 'Earlier')}
+                </ThemedText>
                 {earlierNotifications.map((notification) => (
-                  <NotificationItem
+                  <NotificationCard
                     key={notification.notificationId}
                     notification={notification}
                     onPress={handleNotificationPress}
@@ -218,15 +363,117 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 24,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  headerCard: {
+    borderWidth: 1,
+    padding: 16,
     marginTop: 8,
     marginBottom: 16,
   },
-  sectionHeader: {
-    marginTop: 16,
+  headerTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  headerSubtitle: {
+    marginTop: 4,
+  },
+  unreadBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    gap: 6,
+  },
+  unreadBadgeText: {
+    fontWeight: '800',
+  },
+  markAllButton: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    marginTop: 14,
+  },
+  markAllText: {
+    fontWeight: '800',
+  },
+  sectionTitle: {
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  notificationCard: {
+    position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    borderWidth: 1,
+    padding: 12,
+    marginBottom: 10,
+    overflow: 'hidden',
+  },
+  pressedCard: {
+    opacity: 0.78,
+    transform: [{ scale: 0.99 }],
+  },
+  unreadRail: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+  },
+  notificationIcon: {
+    width: 42,
+    height: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  notificationContent: {
+    flex: 1,
+    minWidth: 0,
+  },
+  notificationTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  notificationTitle: {
+    flex: 1,
+  },
+  timeText: {
+    flexShrink: 0,
+    fontWeight: '700',
+  },
+  notificationMessage: {
+    marginTop: 4,
+    lineHeight: 19,
+  },
+  notificationFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginTop: 10,
+  },
+  typePill: {
+    maxWidth: '86%',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+  },
+  typePillText: {
+    fontWeight: '800',
+  },
+  newDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  chevron: {
+    marginLeft: 8,
+    marginTop: 12,
   },
   loadingContainer: {
     flex: 1,
