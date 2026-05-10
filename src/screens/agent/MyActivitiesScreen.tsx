@@ -12,6 +12,9 @@ import {
   ScreenSkeleton,
   ThemedButton,
   useAlert,
+  StatusTimeline,
+  activityRequestTimeline,
+  BackButton,
 } from '../../components';
 import { useTheme } from '../../theme';
 import {
@@ -21,7 +24,7 @@ import {
   useDeclineActivityRequestMutation,
   useCompleteActivityRequestMutation,
 } from '../../services/api/apiSlice';
-import { formatDateTimeCongo } from '../../utils';
+import { formatDateTimeCongo, normalizeRequestStatus } from '../../utils';
 import type {
   CollectingAgentActivity,
   ActivityRequestStatus,
@@ -146,9 +149,14 @@ const MyActivitiesScreen: React.FC = () => {
 
   const pendingRequests = useMemo(() => {
     const rows = Array.isArray(requestsData?.data) ? requestsData!.data : [];
-    return rows.filter(
-      (r) => r.requestStatus === 'Requested' || r.requestStatus === 'Accepted',
-    );
+    // Normalize first — backend may serialize ActivityRequestStatus as
+    // either the string ("Requested") or the numeric enum (1). Strict
+    // equality on string literals would silently drop every row when
+    // the wire is numeric.
+    return rows.filter((r) => {
+      const status = normalizeRequestStatus(r.requestStatus);
+      return status === 'Requested' || status === 'Accepted';
+    });
   }, [requestsData]);
 
   const [acceptRequest, { isLoading: accepting }] = useAcceptActivityRequestMutation();
@@ -156,6 +164,13 @@ const MyActivitiesScreen: React.FC = () => {
   const [completeRequest, { isLoading: completing }] = useCompleteActivityRequestMutation();
 
   const activities = useMemo(() => (Array.isArray(data?.data) ? data!.data : []), [data]);
+
+  const handleOpenActivity = (activityId: number) => {
+    router.push({
+      pathname: '/agent-activity-detail',
+      params: { activityId: String(activityId) },
+    });
+  };
 
   const handleAccept = async (activityId: number) => {
     try {
@@ -275,9 +290,11 @@ const MyActivitiesScreen: React.FC = () => {
     const key = normalizeActivityType(item.activityType);
     const meta = ACTIVITY_META[key];
     const iconColor = resolveIconColor(meta.colorToken);
-    const badge = item.requestStatus ? requestStatusTheme[item.requestStatus] : null;
-    const isRequested = item.requestStatus === 'Requested';
-    const isAccepted = item.requestStatus === 'Accepted';
+    const status = normalizeRequestStatus(item.requestStatus);
+    const badge = status ? requestStatusTheme[status] : null;
+    const timeline = status ? activityRequestTimeline(status) : null;
+    const isRequested = status === 'Requested';
+    const isAccepted = status === 'Accepted';
     const parentName =
       item.parent?.firstName && item.parent?.lastName
         ? `${item.parent.firstName} ${item.parent.lastName}`
@@ -286,6 +303,7 @@ const MyActivitiesScreen: React.FC = () => {
       <ThemedCard
         key={item.activityId}
         variant="elevated"
+        onPress={() => handleOpenActivity(item.activityId)}
         style={{
           ...styles.requestCard,
           borderColor: theme.colors.primary,
@@ -319,6 +337,7 @@ const MyActivitiesScreen: React.FC = () => {
                   </ThemedText>
                 </View>
               ) : null}
+              <Ionicons name="chevron-forward" size={18} color={theme.colors.textTertiary} />
             </View>
 
             <ThemedText variant="body" style={styles.activityDescription}>
@@ -340,6 +359,10 @@ const MyActivitiesScreen: React.FC = () => {
                 {item.notes}
               </ThemedText>
             )}
+
+            {timeline ? (
+              <StatusTimeline steps={timeline.steps} currentKey={timeline.currentKey} compact />
+            ) : null}
 
             <View style={styles.actionsRow}>
               {isRequested ? (
@@ -379,8 +402,15 @@ const MyActivitiesScreen: React.FC = () => {
     const key = normalizeActivityType(item.activityType);
     const meta = ACTIVITY_META[key];
     const iconColor = resolveIconColor(meta.colorToken);
+    const status = normalizeRequestStatus(item.requestStatus);
+    const badge = status ? requestStatusTheme[status] : null;
+    const timeline = status ? activityRequestTimeline(status) : null;
     return (
-      <ThemedCard variant="outlined" style={styles.activityCard}>
+      <ThemedCard
+        variant="outlined"
+        onPress={() => handleOpenActivity(item.activityId)}
+        style={styles.activityCard}
+      >
         <View style={styles.activityRow}>
           <View
             style={[
@@ -399,7 +429,21 @@ const MyActivitiesScreen: React.FC = () => {
               <ThemedText variant="caption" color={theme.colors.textTertiary}>
                 {formatDateTimeCongo(item.activityDate || item.createdOn || new Date().toISOString())}
               </ThemedText>
+              <Ionicons name="chevron-forward" size={18} color={theme.colors.textTertiary} />
             </View>
+
+            {badge ? (
+              <View
+                style={[
+                  styles.inlineBadge,
+                  { backgroundColor: badge.bg, borderRadius: theme.borderRadius.sm },
+                ]}
+              >
+                <ThemedText variant="caption" color={badge.fg} style={styles.badgeLabel}>
+                  {badge.label}
+                </ThemedText>
+              </View>
+            ) : null}
 
             <ThemedText variant="body" style={styles.activityDescription}>
               {item.activityDescription}
@@ -418,6 +462,10 @@ const MyActivitiesScreen: React.FC = () => {
                 {item.notes}
               </ThemedText>
             )}
+
+            {timeline ? (
+              <StatusTimeline steps={timeline.steps} currentKey={timeline.currentKey} compact />
+            ) : null}
           </View>
         </View>
       </ThemedCard>
@@ -427,9 +475,7 @@ const MyActivitiesScreen: React.FC = () => {
   const headerBlock = (
     <>
       <View style={styles.headerRow}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={8}>
-          <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
-        </Pressable>
+        <BackButton label={t('common.back', 'Retour')} showLabel={false} style={styles.backBtn} />
         <ThemedText variant="h1" style={styles.headerTitle}>
           {t('agent.activities.title', 'My Activities')}
         </ThemedText>
@@ -614,6 +660,12 @@ const styles = StyleSheet.create({
   badge: {
     paddingHorizontal: 8,
     paddingVertical: 2,
+  },
+  inlineBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginBottom: 6,
   },
   badgeLabel: {
     fontWeight: '700',

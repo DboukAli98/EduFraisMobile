@@ -45,14 +45,6 @@ import type { MyLoyaltyRewardDto, LoyaltyRulePeriodType } from '../../types';
  * pointsLabel" rather than a currency value.
  */
 
-const RULE_PERIOD_LABEL: Record<LoyaltyRulePeriodType, string> = {
-  None: '',
-  Daily: 'Daily',
-  Weekly: 'Weekly',
-  Monthly: 'Monthly',
-  ProgramLifetime: 'Lifetime',
-};
-
 const startOfThisWeekUtc = (): Date => {
   // Monday-anchored to match the backend `Weekly` PeriodType.
   const now = new Date();
@@ -81,6 +73,16 @@ const AgentLoyaltyScreen: React.FC = () => {
   const memberId = summary?.member.loyaltyMemberId ?? 0;
   const programId = summary?.program.loyaltyProgramId ?? 0;
   const pointsLabel = summary?.program.pointsLabel || 'Points';
+  const rulePeriodLabel: Record<LoyaltyRulePeriodType, string> = useMemo(
+    () => ({
+      None: '',
+      Daily: t('loyalty.period.Daily', 'Daily'),
+      Weekly: t('loyalty.period.Weekly', 'Weekly'),
+      Monthly: t('loyalty.period.Monthly', 'Monthly'),
+      ProgramLifetime: t('loyalty.period.ProgramLifetime', 'Lifetime'),
+    }),
+    [t],
+  );
 
   const { data: rulesResp } = useGetMyLoyaltyRulesQuery({ loyaltyProgramId: programId }, { skip: !programId });
   const rules = rulesResp?.data ?? [];
@@ -322,7 +324,7 @@ const AgentLoyaltyScreen: React.FC = () => {
                   {rule.maxAwardsPerMember && rule.maxAwardsPerMember > 0 ? (
                     <View style={[styles.conditionPill, { backgroundColor: theme.colors.borderLight }]}>
                       <ThemedText variant="caption" color={theme.colors.textSecondary}>
-                        {rule.maxAwardsPerMember}× / {RULE_PERIOD_LABEL[rule.periodType] || '∞'}
+                        {rule.maxAwardsPerMember}× / {rulePeriodLabel[rule.periodType] || '∞'}
                       </ThemedText>
                     </View>
                   ) : null}

@@ -11,6 +11,7 @@ import {
   Avatar,
   ThemedButton,
   useAlert,
+  BackButton,
 } from '../../components';
 import { useTheme } from '../../theme';
 import { useAppSelector } from '../../hooks';
@@ -205,9 +206,7 @@ const LogActivityScreen: React.FC = () => {
   return (
     <ScreenContainer>
       <View style={styles.headerRow}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={8}>
-          <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
-        </Pressable>
+        <BackButton label={t('common.back', 'Retour')} showLabel={false} style={styles.backBtn} />
         <ThemedText variant="h1" style={styles.headerTitle}>
           {t('agent.logActivity.title', 'Log Activity')}
         </ThemedText>

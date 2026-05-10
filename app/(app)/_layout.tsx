@@ -289,11 +289,19 @@ export default function AppLayout() {
         options={{ href: null }}
       />
       <Tabs.Screen
+        name="agent-activity-detail"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
         name="log-activity"
         options={{ href: null }}
       />
       <Tabs.Screen
         name="request-activity"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="activity-request-detail"
         options={{ href: null }}
       />
       <Tabs.Screen

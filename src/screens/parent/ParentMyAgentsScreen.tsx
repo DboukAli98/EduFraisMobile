@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-  View, StyleSheet, Pressable, SectionList, RefreshControl } from 'react-native';
+  View, StyleSheet, Pressable, SectionList, RefreshControl
+} from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -14,6 +15,8 @@ import {
   Avatar,
   EmptyState,
   ScreenSkeleton,
+  StatusTimeline,
+  agentRequestTimeline,
 } from '../../components';
 import { useTheme } from '../../theme';
 import { useAnimatedEntry, staggerDelay, useAppSelector } from '../../hooks';
@@ -53,6 +56,10 @@ const AgentRow: React.FC<AgentRowProps> = ({ row, index, parentId, onPress }) =>
   const anim = useAnimatedEntry({ type: 'slideUp', delay: staggerDelay(index + 1) });
 
   const status = getStatus(row);
+  const backendStatus = row.approvalStatus === 'Pending' || row.approvalStatus === 'Rejected'
+    ? row.approvalStatus
+    : 'Approved';
+  const timeline = agentRequestTimeline(backendStatus);
   const agent = row.collectingAgent;
   const firstName = agent?.firstName || '';
   const lastName = agent?.lastName || '';
@@ -134,6 +141,7 @@ const AgentRow: React.FC<AgentRowProps> = ({ row, index, parentId, onPress }) =>
           </View>
           <Ionicons name="chevron-forward" size={20} color={theme.colors.textTertiary} />
         </View>
+        <StatusTimeline steps={timeline.steps} currentKey={timeline.currentKey} compact />
       </ThemedCard>
     </Animated.View>
   );

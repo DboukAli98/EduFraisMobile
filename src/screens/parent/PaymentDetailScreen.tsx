@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import {
-  View, StyleSheet, TouchableOpacity
+  View, StyleSheet, Pressable
 } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +16,7 @@ import {
   PaymentStatusBadge,
   ScreenSkeleton,
   CommissionBreakdownCard,
+  BackButton,
 } from '../../components';
 import { useTheme } from '../../theme';
 import { useAnimatedEntry, staggerDelay, useResponsive, useAppSelector } from '../../hooks';
@@ -331,16 +332,7 @@ const PaymentDetailScreen: React.FC = () => {
   return (
     <ScreenContainer>
       {/* Back Button */}
-      <TouchableOpacity
-        onPress={() => router.back()}
-        style={styles.backButton}
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-      >
-        <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
-        <ThemedText variant="body" style={styles.backLabel}>
-          {t('common.back', 'Back')}
-        </ThemedText>
-      </TouchableOpacity>
+      <BackButton label={t('common.back', 'Retour')} style={styles.backButton} />
 
       {/* Status Banner */}
       <Animated.View style={[styles.statusBanner, statusAnim]}>
@@ -476,7 +468,7 @@ const PaymentDetailScreen: React.FC = () => {
       </Animated.View>
 
       {/* View History Link */}
-      <TouchableOpacity
+      <Pressable
         onPress={() => router.push('/payment-history')}
         style={styles.historyLink}
       >
@@ -484,7 +476,7 @@ const PaymentDetailScreen: React.FC = () => {
         <ThemedText variant="body" color={theme.colors.primary} style={styles.historyLinkText}>
           {t('parent.paymentDetail.viewHistory', 'View Payment History')}
         </ThemedText>
-      </TouchableOpacity>
+      </Pressable>
     </ScreenContainer>
   );
 };

@@ -16,6 +16,7 @@ import {
   EmptyState,
   ScreenSkeleton,
   ThemedButton,
+  BackButton,
 } from '../../components';
 import { useTheme } from '../../theme';
 import { useAnimatedEntry, staggerDelay, useAppSelector } from '../../hooks';
@@ -242,9 +243,7 @@ const RequestAgentScreen: React.FC = () => {
   return (
     <ScreenContainer scrollable={false}>
       <Animated.View style={[styles.headerRow, headerAnim]}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
-        </Pressable>
+        <BackButton label={t('common.back', 'Retour')} showLabel={false} style={styles.backBtn} />
         <ThemedText variant="h1">{t('parent.agents.requestTitle', 'Request Agent')}</ThemedText>
       </Animated.View>
 

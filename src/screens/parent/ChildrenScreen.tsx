@@ -12,6 +12,8 @@ import {
   Avatar,
   EmptyState,
   ScreenSkeleton,
+  StatusTimeline,
+  childApprovalTimeline,
 } from '../../components';
 import { useTheme } from '../../theme';
 import { useAnimatedEntry, staggerDelay, useAppSelector } from '../../hooks';
@@ -20,6 +22,7 @@ import {
   useGetParentPendingRejectedChildrenQuery,
 } from '../../services/api/apiSlice';
 import type { ChildWithGradeDto, Child } from '../../types';
+import type { ChildApprovalStatus } from '../../types';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -90,6 +93,9 @@ const ChildCard: React.FC<ChildCardProps> = ({ child, index, onPress }) => {
     },
   };
   const sc = statusConfig[child.status];
+  const backendStatus: ChildApprovalStatus =
+    child.status === 'approved' ? 'Approved' : child.status === 'rejected' ? 'Rejected' : 'Pending';
+  const timeline = childApprovalTimeline(backendStatus);
 
   return (
     <Animated.View style={anim}>
@@ -133,6 +139,7 @@ const ChildCard: React.FC<ChildCardProps> = ({ child, index, onPress }) => {
           </View>
           <Ionicons name="chevron-forward" size={20} color={theme.colors.textTertiary} />
         </View>
+        <StatusTimeline steps={timeline.steps} currentKey={timeline.currentKey} compact />
       </ThemedCard>
     </Animated.View>
   );

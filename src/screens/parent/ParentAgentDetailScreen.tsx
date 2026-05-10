@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import {
-  View, StyleSheet, Linking, Pressable } from 'react-native';
+  View, StyleSheet, Linking, Pressable
+} from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -25,7 +26,7 @@ import {
   useGetMyActivityRequestsQuery,
   useCancelActivityRequestMutation,
 } from '../../services/api/apiSlice';
-import { formatDate, formatDateTimeCongo } from '../../utils';
+import { formatDate, formatDateTimeCongo, normalizeRequestStatus } from '../../utils';
 import type {
   CollectingAgentParents,
   CollectingAgentActivity,
@@ -205,6 +206,13 @@ const ParentAgentDetailScreen: React.FC = () => {
     router.push({
       pathname: '/request-activity',
       params: { collectingAgentId: String(agent.collectingAgentId) },
+    });
+  };
+
+  const handleViewActivityRequest = (req: CollectingAgentActivity) => {
+    router.push({
+      pathname: '/activity-request-detail',
+      params: { activityId: String(req.activityId) },
     });
   };
 
@@ -414,10 +422,10 @@ const ParentAgentDetailScreen: React.FC = () => {
           ) : (
             <View style={styles.requestList}>
               {outgoingRequests.map((req) => {
-                const status =
-                  (typeof req.requestStatus === 'string'
-                    ? req.requestStatus
-                    : undefined) || 'Requested';
+                // Backend may emit the status as a string ("Requested")
+                // or a numeric enum (1). Normalize to the canonical
+                // string form before comparing.
+                const status = normalizeRequestStatus(req.requestStatus) ?? 'Requested';
                 const badge = statusTheme[status as ActivityRequestStatus];
                 const canCancel =
                   status === 'Requested' || status === 'Accepted';
@@ -425,6 +433,7 @@ const ParentAgentDetailScreen: React.FC = () => {
                   <ThemedCard
                     key={req.activityId}
                     variant="outlined"
+                    onPress={() => handleViewActivityRequest(req)}
                     style={styles.requestCard}
                   >
                     <View style={styles.requestHeader}>
@@ -452,6 +461,11 @@ const ParentAgentDetailScreen: React.FC = () => {
                           {badge.label}
                         </ThemedText>
                       </View>
+                      <Ionicons
+                        name="chevron-forward"
+                        size={18}
+                        color={theme.colors.textTertiary}
+                      />
                     </View>
                     <ThemedText variant="body" style={{ marginTop: 4 }}>
                       {req.activityDescription}
@@ -463,8 +477,8 @@ const ParentAgentDetailScreen: React.FC = () => {
                     >
                       {formatDateTimeCongo(
                         req.requestedAt ||
-                          req.createdOn ||
-                          new Date().toISOString(),
+                        req.createdOn ||
+                        new Date().toISOString(),
                       )}
                     </ThemedText>
                     {status === 'Declined' && req.declineReason ? (
@@ -477,6 +491,13 @@ const ParentAgentDetailScreen: React.FC = () => {
                         {req.declineReason}
                       </ThemedText>
                     ) : null}
+                    <ThemedText
+                      variant="caption"
+                      color={theme.colors.primary}
+                      style={styles.openDetailsText}
+                    >
+                      {t('parent.requestActivity.openDetails', 'View timeline')}
+                    </ThemedText>
                     {canCancel ? (
                       <ThemedButton
                         title={t(
@@ -587,6 +608,10 @@ const styles = StyleSheet.create({
   cancelBtn: {
     marginTop: 10,
     alignSelf: 'flex-start',
+  },
+  openDetailsText: {
+    marginTop: 8,
+    fontWeight: '700',
   },
   emptyCard: {
     paddingVertical: 16,

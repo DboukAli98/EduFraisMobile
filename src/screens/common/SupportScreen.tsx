@@ -13,6 +13,8 @@ import {
   ThemedButton,
   EmptyState,
   LoadingSkeleton,
+  StatusTimeline,
+  supportRequestTimeline,
 } from '../../components';
 import { useGetAllSupportRequestsQuery } from '../../services/api/apiSlice';
 import { SUPPORT_REQUEST_DIRECTIONS, SUPPORT_REQUEST_STATUSES } from '../../constants';
@@ -36,6 +38,8 @@ const getStatusLabel = (statusId: number, t: any): string => {
       return t('support.inProgress', 'In Progress');
     case SUPPORT_REQUEST_STATUSES.Resolved:
       return t('support.resolved', 'Resolved');
+    case SUPPORT_REQUEST_STATUSES.Stall:
+      return t('support.stall', 'Stall');
     case SUPPORT_REQUEST_STATUSES.Cancelled:
       return t('support.cancelled', 'Cancelled');
     default:
@@ -51,6 +55,8 @@ const getStatusColor = (statusId: number, colors: any): string => {
       return colors.info;
     case SUPPORT_REQUEST_STATUSES.Resolved:
       return colors.success;
+    case SUPPORT_REQUEST_STATUSES.Stall:
+      return colors.accent;
     case SUPPORT_REQUEST_STATUSES.Cancelled:
       return colors.error;
     default:
@@ -260,6 +266,7 @@ export default function SupportScreen() {
           const statusLabel = getStatusLabel(request.fK_StatusId, t);
           const requestTypeLabel = translateSupportType(request.supportRequestType, t);
           const priorityLabel = translatePriority(request.priority, t);
+          const timeline = supportRequestTimeline(request.fK_StatusId);
 
           return (
             <AnimatedSection key={request.supportRequestId} index={index + 2}>
@@ -355,6 +362,7 @@ export default function SupportScreen() {
                     </ThemedText>
                   </View>
                 </View>
+                <StatusTimeline steps={timeline.steps} currentKey={timeline.currentKey} compact />
               </ThemedCard>
             </AnimatedSection>
           );

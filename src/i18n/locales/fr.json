@@ -16,7 +16,9 @@
     "viewAll": "Voir tout",
     "noResults": "Aucun résultat trouvé",
     "error": "Une erreur est survenue",
+    "genericError": "Une erreur est survenue. Veuillez réessayer.",
     "success": "Succès",
+    "welcome": "Bon retour",
     "currency": "CDF",
     "or": "ou",
     "ok": "OK",
@@ -321,6 +323,7 @@
     },
     "open": "Ouvert",
     "inProgress": "En cours",
+    "stall": "En pause",
     "resolved": "Résolu"
   },
   "notifications": {
@@ -587,6 +590,7 @@
       "callFailed": "Impossible de lancer l'appel",
       "emailFailed": "Impossible d'ouvrir l'e-mail",
       "cancel": "Annuler",
+      "cancelButton": "Annuler",
       "cancelTitle": "Annuler la demande",
       "cancelMsg": "Êtes-vous sûr de vouloir annuler cette demande ?"
     },
@@ -610,12 +614,27 @@
       "descriptionRequired": "Veuillez décrire ce dont vous avez besoin",
       "noAgents": "Vous n'avez encore aucun agent approuvé. Demandez-en un avant de soumettre une demande d'activité.",
       "cta": "Demander une activité",
+      "yourRequests": "Vos demandes",
       "outgoingTitle": "Mes demandes",
       "outgoingEmpty": "Aucune demande envoyée.",
       "cancel": "Annuler",
+      "cancelButton": "Annuler",
       "cancelTitle": "Annuler la demande",
       "cancelMsg": "Voulez-vous vraiment annuler cette demande ?",
+      "cancelConfirm": "L'agent ne verra plus cette demande.",
+      "cancelConfirmButton": "Oui, annuler",
       "declineReasonLabel": "Motif",
+      "declinedReason": "Motif",
+      "noneYet": "Vous n'avez encore rien demandé à cet agent.",
+      "openDetails": "Voir le suivi",
+      "detailTitle": "Détail de la demande",
+      "timelineTitle": "Suivi",
+      "requestInfo": "Informations",
+      "requestedOn": "Demandé le",
+      "acceptedOn": "Accepté le",
+      "completedOn": "Terminé le",
+      "cancelledOn": "Annulé le",
+      "notFound": "Demande introuvable",
       "types": {
         "PhoneCall": "Appel téléphonique",
         "FieldVisit": "Visite sur place",
@@ -748,6 +767,12 @@
     "redemptions": "Mes échanges",
     "rules": "Comment gagner",
     "notEnrolled": "Effectuez votre premier paiement pour rejoindre le programme de fidélité.",
+    "period": {
+      "Daily": "Quotidien",
+      "Weekly": "Hebdomadaire",
+      "Monthly": "Mensuel",
+      "ProgramLifetime": "Durée du programme"
+    },
     "unavailable": {
       "notYetAvailable": "Pas encore disponible",
       "expired": "Récompense expirée",
@@ -1153,6 +1178,12 @@
     "noPendingDesc": "Il n'y a aucune commission en attente à soumettre.",
     "payoutRequested": "Demande de virement soumise avec succès.",
     "payoutError": "Échec de la soumission de la demande de virement.",
+    "commissionTypes": {
+      "Collection": "Collecte",
+      "Bonus": "Bonus",
+      "Incentive": "Prime",
+      "Penalty": "Pénalité"
+    },
     "commissionFilter": {
       "all": "Tout",
       "pending": "En attente",
@@ -1165,6 +1196,7 @@
       "pickParentStep": "Choisissez le parent",
       "parentOptionalStep": "Le parent est facultatif pour ce type",
       "noParents": "Vous n'avez pas encore de parents assignés. Demandez à votre directeur de vous en assigner avant d'enregistrer des activités liées à un parent.",
+      "noParentsOptional": "Vous n'avez pas encore de parents assignés. Vous pouvez quand même enregistrer cette activité sans la lier à un parent.",
       "descriptionSection": "Description",
       "detailsStep": "Décrivez l'activité",
       "descriptionPlaceholder": "Que s'est-il passé ? (requis)",
@@ -1183,6 +1215,26 @@
       "title": "Mes activités",
       "logNew": "Enregistrer une activité",
       "parentAnonymous": "Parent",
+      "inboxTitle": "Demandes des parents",
+      "detailTitle": "Détail de l'activité",
+      "timelineTitle": "Suivi",
+      "activityInfo": "Informations",
+      "requestStatus": "Statut",
+      "requestedOn": "Demandé le",
+      "acceptedOn": "Accepté le",
+      "completedOn": "Terminé le",
+      "cancelledOn": "Annulé le",
+      "activityDate": "Date de l'activité",
+      "from": "De",
+      "notFound": "Activité introuvable",
+      "accept": "Accepter",
+      "decline": "Refuser",
+      "markComplete": "Marquer terminé",
+      "complete": "Terminer",
+      "declineTitle": "Refuser la demande",
+      "declinePrompt": "Le parent sera informé que vous ne pouvez pas traiter cette demande.",
+      "completeTitle": "Marquer comme terminé ?",
+      "completePrompt": "Le parent sera informé que cette activité est terminée.",
       "emptyTitle": "Aucune activité",
       "emptyDescription": "Enregistrez un appel, une visite terrain ou un paiement pour commencer à suivre votre travail ici.",
       "types": {
@@ -1194,7 +1246,8 @@
         "ParentUnassigned": "Parent désassigné",
         "FieldVisit": "Visite terrain",
         "PhoneCall": "Appel téléphonique",
-        "Other": "Autre"
+        "Other": "Autre",
+        "PaymentHelp": "Aide au paiement"
       },
       "filters": {
         "all": "Tout",
@@ -1208,6 +1261,14 @@
     "loyalty": {
       "thisWeek": "Cette semaine",
       "noRules": "Aucune règle de gain pour le moment. Une fois définie par votre directeur, elle apparaîtra ici."
+    },
+    "portfolio": {
+      "assignedCount_one": "{{count}} parent assigné",
+      "assignedCount_other": "{{count}} parents assignés",
+      "emptyTitle": "Aucun parent assigné",
+      "emptyDesc": "Le directeur ne vous a pas encore assigné de parent. Une fois assignés, ils apparaîtront ici.",
+      "searchEmptyTitle": "Aucun résultat",
+      "searchEmptyDesc": "Aucun parent ne correspond à votre recherche."
     }
   }
 }

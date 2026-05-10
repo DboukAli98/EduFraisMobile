@@ -31,3 +31,5 @@ export { decodeJwt, extractUserFromToken, isTokenExpired } from "./jwt";
 export { resolveNotificationRoute } from "./notificationRouting";
 
 export { generatePaymentReference } from "./paymentReference";
+
+export { normalizeRequestStatus } from "./activityStatus";

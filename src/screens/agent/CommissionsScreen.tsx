@@ -213,7 +213,7 @@ export default function CommissionsScreen() {
             <ThemedCard variant="outlined" style={styles.commissionCard}>
               <View style={styles.commissionHeader}>
                 <ThemedText variant="bodySmall" style={{ fontWeight: '600', flex: 1 }}>
-                  {commission.commissionType}
+                  {t(`agent.commissionTypes.${commission.commissionType}`, commission.commissionType)}
                 </ThemedText>
                 <PaymentStatusBadge
                   status={commission.isApproved ? 'Paid' : 'Pending'}

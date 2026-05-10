@@ -16,7 +16,9 @@
     "viewAll": "View All",
     "noResults": "No results found",
     "error": "Something went wrong",
+    "genericError": "Something went wrong. Please try again.",
     "success": "Success",
+    "welcome": "Welcome back",
     "currency": "CDF",
     "or": "or",
     "ok": "OK",
@@ -321,6 +323,7 @@
     },
     "open": "Open",
     "inProgress": "In Progress",
+    "stall": "Stall",
     "resolved": "Resolved"
   },
   "notifications": {
@@ -587,6 +590,7 @@
       "callFailed": "Unable to start the call",
       "emailFailed": "Unable to open email",
       "cancel": "Cancel",
+      "cancelButton": "Cancel",
       "cancelTitle": "Cancel Request",
       "cancelMsg": "Are you sure you want to cancel this request?"
     },
@@ -610,12 +614,27 @@
       "descriptionRequired": "Please describe what you need",
       "noAgents": "You have no approved agents yet. Ask your director or request one before filing activity requests.",
       "cta": "Request an Activity",
+      "yourRequests": "Your Requests",
       "outgoingTitle": "My Requests",
       "outgoingEmpty": "No requests sent yet.",
       "cancel": "Cancel",
+      "cancelButton": "Cancel",
       "cancelTitle": "Cancel Request",
       "cancelMsg": "Are you sure you want to cancel this request?",
+      "cancelConfirm": "The agent will no longer see this request.",
+      "cancelConfirmButton": "Yes, cancel",
       "declineReasonLabel": "Reason",
+      "declinedReason": "Reason",
+      "noneYet": "You haven't asked this agent for anything yet.",
+      "openDetails": "View timeline",
+      "detailTitle": "Request Details",
+      "timelineTitle": "Timeline",
+      "requestInfo": "Information",
+      "requestedOn": "Requested on",
+      "acceptedOn": "Accepted on",
+      "completedOn": "Completed on",
+      "cancelledOn": "Cancelled on",
+      "notFound": "Request not found",
       "types": {
         "PhoneCall": "Phone Call",
         "FieldVisit": "Field Visit",
@@ -748,6 +767,12 @@
     "redemptions": "My redemptions",
     "rules": "How to earn",
     "notEnrolled": "Make your first payment to join the loyalty program.",
+    "period": {
+      "Daily": "Daily",
+      "Weekly": "Weekly",
+      "Monthly": "Monthly",
+      "ProgramLifetime": "Lifetime"
+    },
     "unavailable": {
       "notYetAvailable": "Not yet available",
       "expired": "Reward expired",
@@ -1153,6 +1178,12 @@
     "noPendingDesc": "There are no pending commissions to request payout for.",
     "payoutRequested": "Payout request submitted successfully.",
     "payoutError": "Failed to submit payout request.",
+    "commissionTypes": {
+      "Collection": "Collection",
+      "Bonus": "Bonus",
+      "Incentive": "Incentive",
+      "Penalty": "Penalty"
+    },
     "commissionFilter": {
       "all": "All",
       "pending": "Pending",
@@ -1165,6 +1196,7 @@
       "pickParentStep": "Choose the parent",
       "parentOptionalStep": "Parent is optional for this type",
       "noParents": "You have no assigned parents yet. Ask your director to assign you before logging activities tied to a parent.",
+      "noParentsOptional": "You have no assigned parents yet. You can still save this activity without linking it to a parent.",
       "descriptionSection": "Description",
       "detailsStep": "Describe the activity",
       "descriptionPlaceholder": "What happened? (required)",
@@ -1183,6 +1215,26 @@
       "title": "My Activities",
       "logNew": "Log New Activity",
       "parentAnonymous": "Parent",
+      "inboxTitle": "Parent Requests",
+      "detailTitle": "Activity Details",
+      "timelineTitle": "Timeline",
+      "activityInfo": "Information",
+      "requestStatus": "Status",
+      "requestedOn": "Requested on",
+      "acceptedOn": "Accepted on",
+      "completedOn": "Completed on",
+      "cancelledOn": "Cancelled on",
+      "activityDate": "Activity date",
+      "from": "From",
+      "notFound": "Activity not found",
+      "accept": "Accept",
+      "decline": "Decline",
+      "markComplete": "Mark Completed",
+      "complete": "Complete",
+      "declineTitle": "Decline Request",
+      "declinePrompt": "The parent will be notified that you cannot handle this request.",
+      "completeTitle": "Mark as completed?",
+      "completePrompt": "The parent will be notified that this activity is done.",
       "emptyTitle": "No activities yet",
       "emptyDescription": "Log a phone call, field visit or payment to start tracking your work here.",
       "types": {
@@ -1194,7 +1246,8 @@
         "ParentUnassigned": "Parent Unassigned",
         "FieldVisit": "Field Visit",
         "PhoneCall": "Phone Call",
-        "Other": "Other"
+        "Other": "Other",
+        "PaymentHelp": "Payment Help"
       },
       "filters": {
         "all": "All",
@@ -1208,6 +1261,14 @@
     "loyalty": {
       "thisWeek": "This week",
       "noRules": "No earning rules right now. Once your director sets one, it will appear here."
+    },
+    "portfolio": {
+      "assignedCount_one": "{{count}} parent assigned",
+      "assignedCount_other": "{{count}} parents assigned",
+      "emptyTitle": "No parents assigned",
+      "emptyDesc": "Your director hasn't assigned any parents to you yet. Once assigned, they'll appear here.",
+      "searchEmptyTitle": "No results",
+      "searchEmptyDesc": "No parent matches your search."
     }
   }
 }

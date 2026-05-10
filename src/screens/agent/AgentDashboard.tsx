@@ -24,6 +24,33 @@ import {
 import { formatCurrency, formatDateTimeCongo } from '../../utils';
 import { PointsBadge } from '../../components/loyalty';
 
+const ACTIVITY_TYPE_KEYS = [
+  'PaymentCollected',
+  'PaymentAttempted',
+  'ParentContact',
+  'SupportRequestHandled',
+  'ParentAssigned',
+  'ParentUnassigned',
+  'FieldVisit',
+  'PhoneCall',
+  'Other',
+  'PaymentHelp',
+] as const;
+
+type ActivityKey = (typeof ACTIVITY_TYPE_KEYS)[number];
+
+const normalizeActivityType = (value: string | number | undefined): ActivityKey => {
+  if (typeof value === 'number') {
+    return ACTIVITY_TYPE_KEYS[value] ?? 'Other';
+  }
+
+  if (value && (ACTIVITY_TYPE_KEYS as readonly string[]).includes(value)) {
+    return value as ActivityKey;
+  }
+
+  return 'Other';
+};
+
 const AnimatedSection: React.FC<{
   index: number;
   children: React.ReactNode;
@@ -263,7 +290,7 @@ export default function AgentDashboard() {
                     {formatCurrency(item.commissionAmount)}
                   </ThemedText>
                   <ThemedText variant="caption" color={theme.colors.textSecondary}>
-                    {item.commissionType} - {item.commissionRate}%
+                    {t(`agent.commissionTypes.${item.commissionType}`, item.commissionType)} - {item.commissionRate}%
                   </ThemedText>
                 </View>
                 <ThemedText
@@ -309,7 +336,12 @@ export default function AgentDashboard() {
                   <View style={styles.activityTopRow}>
                     <View style={[styles.activityTypeBadge, { backgroundColor: theme.colors.primary + '18', borderRadius: theme.borderRadius.sm }]}>
                       <ThemedText variant="caption" color={theme.colors.primary} style={{ fontWeight: '700', fontSize: 10 }}>
-                        {item.activityTypeDisplayName || ''}
+                        {String(
+                          t(
+                            `agent.activities.types.${normalizeActivityType(item.activityType)}`,
+                            item.activityTypeDisplayName || '',
+                          ),
+                        )}
                       </ThemedText>
                     </View>
                     <ThemedText variant="caption" color={theme.colors.textTertiary} style={styles.activityTime}>
